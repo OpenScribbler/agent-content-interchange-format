@@ -17,7 +17,7 @@ This spec defines a **provider-neutral canonical format** for skills. It serves 
 - A canonical data model for skills in YAML frontmatter
 - The set of canonical capability keys and what each means
 - How provider-native fields map to canonical keys across 15 providers
-- Carrier rules (where the canonical fields live — YAML frontmatter in the skill file itself)
+- Carrier rules (sidecar is the primary canonical carrier; YAML frontmatter in the skill file is an opt-in supplementary layer)
 - A conversion enum for provider extensions that have no canonical equivalent
 - Open questions that must be resolved before this spec reaches normative status
 
@@ -36,7 +36,7 @@ HIF is the canonical interchange format for hooks. SIF follows the same architec
 - Both use a conversion enum (`translated | embedded | dropped | preserved | not-portable`) for provider extensions
 - Both leave provider-exclusive fields in a `provider_data` escape hatch
 
-The key structural difference: hooks require a sidecar file because the host tool owns the config file schema. Skills are Markdown files that publishers author directly — the YAML frontmatter in `SKILL.md` is the carrier. No sidecar is required.
+The key structural difference is the publisher input surface: hooks have no inline path because the host tool owns the config file schema (`settings.json`, `mcp.json`), so the sidecar is the only input mechanism. Skills are Markdown files publishers author directly, so YAML frontmatter in `SKILL.md` is also available as an opt-in publisher input. Both content types share the same canonical artifact at the registry layer — a sidecar.
 
 ---
 
@@ -231,11 +231,20 @@ These are fields present in one or more providers that currently have no canonic
 
 ## 5. Carrier Rules
 
-Skills are Markdown files that publishers author directly. Unlike hooks (where the host tool owns `settings.json`) or MCP configs (where the host tool owns `mcp.json`), a skill's canonical data has a natural home: **YAML frontmatter in `SKILL.md`**.
+A skill's canonical metadata has two carriers: a sidecar file that is always generated at the registry layer, and YAML frontmatter inside `SKILL.md` that is available as an opt-in publisher input.
 
-### 5.1 Primary carrier: YAML frontmatter
+### 5.1 Primary carrier: sidecar (always generated)
 
-All canonical fields defined in §2 live in the YAML frontmatter block at the top of `SKILL.md`:
+Every skill in a conforming registry has a canonical sidecar record containing the fields defined in §2. The sidecar is the authoritative source for downstream consumers. Two production paths are conformant:
+
+- **Registry-generated.** The registry crawls the publisher source, parses any frontmatter present, and emits a sidecar. This is the primary path for the existing installed base, which has no L2 metadata in source files.
+- **Publisher-side CI.** Publishers may opt into a CI workflow that generates the sidecar at publish time and stores it alongside the content. The sidecar is still the canonical artifact; the CI path simply moves generation upstream.
+
+Publishers are never required to hand-author sidecars.
+
+### 5.2 Supplementary carrier: YAML frontmatter (opt-in)
+
+Publishers may also maintain canonical fields in the YAML frontmatter block at the top of `SKILL.md`:
 
 ```
 ---
@@ -244,13 +253,11 @@ All canonical fields defined in §2 live in the YAML frontmatter block at the to
 <skill body — Markdown instructional content>
 ```
 
-This is the same convention used by 14 of the 15 providers in this survey (kiro uses `POWER.md` instead of `SKILL.md` but otherwise follows the same frontmatter pattern).
+This is the same convention used by 14 of the 15 providers in this survey (kiro uses `POWER.md` instead of `SKILL.md` but otherwise follows the same frontmatter pattern). Frontmatter is intentionally redundant with the sidecar; the redundancy serves portability so a copied `SKILL.md` carries its own metadata.
 
-### 5.2 No sidecar required
+**Data flows sidecar → frontmatter, never the reverse.** A publisher who opts into the frontmatter path may populate it manually or via a second optional CI workflow that projects sidecar values into the source file. The frontmatter CI MUST block the build on any conflict between an existing ACIF field in frontmatter and the canonical sidecar value (default behavior); auto-overwrite is available via an explicit input (`conflict-resolution: overwrite`). Missing ACIF fields are added silently. Non-ACIF fields (harness keys, publisher custom metadata) always pass through untouched.
 
-Because the carrier is the skill file itself, no additional sidecar file is required for canonical metadata. This is the L2 publisher metadata spec's "frontmatter-capable" category: publishers declare metadata inline without authoring a separate file.
-
-The `openai.yaml` companion file used by codex is a provider-specific extension (`not-portable`) — it carries codex-specific interface and policy metadata that has no canonical equivalent in this spec.
+The `openai.yaml` companion file used by codex is a provider-specific extension (`not-portable`) — it carries codex-specific interface and policy metadata that has no canonical equivalent in this spec and is not the ACIF sidecar.
 
 ### 5.3 Directory structure is normative
 
