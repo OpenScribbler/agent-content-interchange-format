@@ -25,15 +25,17 @@ license:                                                 # optional
 
 ## Carrier Rules
 
-Where the manifest fields live depends on the content type:
+Sidecars are the universal primary artifact for every content type. Frontmatter is an optional supplementary layer for content types that support it.
 
-| Content type | Carrier | Reason |
+| Content type | Primary carrier | Publisher frontmatter |
 |---|---|---|
-| hook, mcp_config | Sidecar file (e.g., `session-start.hook.yaml`) | Harness owns the top-level config schema (`settings.json`, `mcp.json`) — inline metadata isn't possible |
-| skill, rule, agent, command | YAML frontmatter in the content file | Publisher authors the file directly — frontmatter is the natural carrier |
+| hook, mcp_config | Sidecar file (always generated) | Not possible — harness owns `settings.json`/`mcp.json`; no inline surface exists |
+| skill, rule, agent, command | Sidecar file (always generated) | Opt-in — hand-authored or CI-populated alongside the sidecar |
 
-For frontmatter, `kind` is optional (inferred from the canonical filename, e.g., `SKILL.md` → `kind: skill`).
+**Data flows sidecar → frontmatter, never the reverse.** The frontmatter CI reads the canonical sidecar and projects its values into the source file. Frontmatter is intentionally redundant with the sidecar; that redundancy serves portability (a copied file carries its own metadata).
+
 For sidecars, `kind` is required — the file has no implicit type.
+For frontmatter, `kind` is optional (inferred from the canonical filename, e.g., `SKILL.md` → `kind: skill`).
 
 ---
 
@@ -85,11 +87,12 @@ hook:
 | 7 | `auxiliary_files` = runtime deps | Files the script loads, not what the harness invokes. Harness-invoked files belong in `scripts`. |
 | 8 | `requires` not `providers` | Capability requirements are stable; provider lists are brittle and don't reflect partial support. Registry computes provider compatibility from its capability matrix. |
 | 9 | `event` is distinct from `display_name` | `event` = WHEN (lifecycle trigger); `display_name` = WHAT (behavior description). A repo can have two hooks on the same event — they need distinct, meaningful names. |
-| 10 | Frontmatter is publisher input; registry-generated sidecar is canonical | Hybrid B/A carrier model. Registries promote frontmatter into sidecars; source files are never modified. Auto-generation is the primary path for existing content. |
+| 10 | Sidecar is the universal primary carrier | Sidecar files are generated for every content type without exception. For hooks and mcp_configs the sidecar is the only input surface. For skills, rules, agents, and commands, frontmatter is an optional supplementary layer — hand-authored or CI-populated. The sidecar is always canonical; frontmatter reflects it, not the other way around. Registries MUST NOT write to source files. |
 | 11 | Two-section L2 record (`publisher_section` + `registry_section`) | Structure is the provenance. No merge layer, no per-field markers. `publisher_section` = registry's faithful observation of frontmatter; `registry_section` = computed fields. |
 | 12 | `body_hash` is distinct from any external integrity hash | Body hash covers content body bytes only (frontmatter stripped, LF-normalized). An external integrity system may compute its own hash over different bytes. The two are not interchangeable and the spec does not equate them. |
 | 13 | No external system named in spec text | The spec defines a slot (`attestation_hash` in `registry_section`) for an external integrity/attestation hash. What fills that slot is an implementation choice. No specific system is named. |
 | 14 | Sidecar binding by `body_hash` (single-file items) | The sidecar's `body_hash` uniquely identifies the content file it annotates. No naming convention required. Multi-file binding deferred (OQ-2). |
+| 15 | Frontmatter CI reconciliation: block on conflict, overwrite on opt-in | When the frontmatter CI finds an ACIF field already present in a source file that conflicts with the canonical sidecar value, the default behavior is to block the build and surface the conflict — no silent overwrites. Auto-overwrite (with logging) is available via an explicit CI input (`conflict-resolution: overwrite`). Missing ACIF fields are added silently (non-destructive). Non-ACIF fields always pass through untouched regardless of setting. |
 
 ---
 
