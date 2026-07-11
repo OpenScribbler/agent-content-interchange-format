@@ -52,16 +52,19 @@ See the panel consensus docs and SHAPE.md's OQ-7 row for the full record.
   resolved (absent = all). provider_capability_coverage row deferred, gated on
   capmon data. See `panel/platform-commands-consensus.md`.
 
-### Step 3 — Close the open questions
+### Step 3 — Close the open questions (dispositions adopted 2026-07-11)
 
 - OQ-6: DONE — resolved by Decision #33 (absent = all; platform_commands panel).
-- OQ-8: body-content derivation generally (extended twice — now spans @-refs,
-  placeholder tokens, injection directives; structured-record bar recorded;
-  the never-parse branch MUST re-hear spec-purist's preserved rules dissent).
-- OQ-9: two-tier freshness precedence (sidecar `expires` vs external attestation).
-- OQ-10: latent-field promotion (SkillMeta + CommandMeta; uniformity constraint).
-- Pin the literal `ACIF_PACK_NAMESPACE` UUIDv5 constant (registry-operator's
-  OP-COND-1: non-negotiable before v0.1 publication).
+- OQ-8: DONE for v0.1 — never-parse adopted as the v0.1 answer; the grammar
+  question is an owned ROADMAP.md deferral ("Body-content reference grammar")
+  carrying the structured-record bar, the OP-COND-RULES-4/-5 lints, and the
+  binding never-parse dissent re-hearing obligation.
+- OQ-9: mini-review run (spec-purist + registry-operator, same pair as OQ-11);
+  strawman: most-restrictive-wins.
+- OQ-10: DONE — owned ROADMAP.md deferral ("Latent-field promotion") carrying
+  the uniformity constraint and all recorded promotion obligations.
+- `ACIF_PACK_NAMESPACE`: PINNED — `93516344-00e5-419b-a230-6e8b1d02f87d`
+  (Appendix A.4); TV-3 reference UUID computed and recorded. OP-COND-1 closed.
 
 Definition of done requires "no open OQ without an owner" — OQs may close for
 v0.1 or be explicitly roadmap-deferred with owners; both satisfy it.

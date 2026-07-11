@@ -71,3 +71,33 @@ Awesome-lists (e.g., `punkpeye/awesome-mcp-servers`, `jim-schwoebel/awesome_ai_a
 **Why deferred:** Out of scope by design. These point *to* publishers; ACIF talks to publishers directly.
 
 **What it would take to revisit:** Never — this is a permanent scope boundary, not a deferral.
+
+### Body-content reference grammar (owned deferral of OQ-8)
+
+**Owner: the roadmap — carries binding obligations.** Whether ACIF's capability layer ever parses body content — rules' `@path` imports, skills' `@sibling.md` references, commands' positional argument forms, gemini's `!{shell}`/`@{file}` injection directives — and under what structure. ACIF v0.1's answer (adopted 2026-07-11, SHAPE.md OQ-8) is never-parse: capability dispositions read canonical structured content only; heuristic body signals are advisory-tier only.
+
+**Why deferred:** No v0.1 consumer needs body-content derivation; the advisory tier delivers the installer-join value (commands walk); and pinning a reference grammar is multi-panel work. The de facto standing rule (derivation-vs-heuristic refinement) already governs.
+
+**Binding obligations for whoever resolves this permanently:**
+- **The structured-record bar (commands walk):** "grammar pinned" legitimizes derivation only if the canonicalizer resolves body content into a structured canonical record (e.g., an `imports[]` array) a predicate reads correct-by-construction — a grammar that merely recognizes patterns leaves any scan a heuristic → advisory tier at most.
+- **Grammar branch consequences:** rules' `file_imports` becomes DERIVABLE (registry-computed, whole-corpus, zero author burden — never `requires`-eligible in any branch); the deferred OP-COND-RULES-4/-5 lints become implementable (@-target classes `{in-bundle, absolute, home, url}` — the `@~/.aws/credentials` exfil / `@https://` remote-fetch threat context recorded in the rules walk); Decision #31's fence-awareness and positional-form canonicalization unlock.
+- **Never-parse branch obligation:** spec-purist's preserved rules dissent (`panel/rules-requires-consensus.md` §9 — silent semantic corruption of @-importing rules; OOS-routing a works-fine-without-it-failing capability is "the theater move on the other side") **MUST be re-heard before never-parse is finalized permanently.** The v0.1 deferral deliberately does not trigger this — it defers rather than finalizes.
+- In no branch does any body-carried capability become `requires`-eligible (out-of-band guardrail + three-way routing, Decision #23).
+
+**What it would take to revisit:** A registry or installer needs the @-import join normatively (not advisorily), or the OP-COND-RULES-5 security lint is wanted as normative rather than registry-discretion.
+
+### Latent-field promotion (owned deferral of OQ-10)
+
+**Owner: the roadmap — carries binding obligations.** Whether `SkillMeta`'s `AllowedTools`/`DisallowedTools`/`Model`/bundled `Hooks` and `CommandMeta`'s `AllowedTools`/`Model`/`Agent`/`Effort`/`Context`/`DisableModelInvocation`/`UserInvocable` are promoted to canonical capability vocabulary. Deferred 2026-07-11 (SHAPE.md OQ-10).
+
+**Why deferred:** Transport ≠ promotion — v0.1 carries all latent fields 1:1 as opaque passthrough (round-trip fidelity), and nothing in v0.1 consumes them as capabilities. Promotion is a vocabulary-walk-scale effort across two content types.
+
+**Binding obligations for whoever promotes:**
+- **Uniformity constraint (commands walk):** activation-adjacent fields (commands' `UserInvocable`/`DisableModelInvocation`, skills' equivalents) MUST be disposed uniformly — same representation, same `D_K` shape; six-types-co-equal forbids a user-invocability signal installers parse two ways.
+- `allowed_tools` MUST use Decision #25's canonical tool vocabulary (no second tool vocabulary).
+- Commands' `agent` is a latent NAME-based cross-type reference — promotion requires resolving name-vs-UUID against Decision #21's UUID pattern first (Decision #28 input).
+- `effort` needs a Decision #30/#31-style enum + total mapping if promoted; `model` stays opaque (provider-ID allowlists are the Decision #8 brittle-list trap).
+- Any promoted key routes per the three-way routing (Decision #23); latent-field presence never softens the orphan-key reject in the interim.
+- OP-COND-SKILLS-5 remains coupled here.
+
+**What it would take to revisit:** An installer needs tool-restriction or model-selection filtering across skills/commands (the agents walk already derives these for agents), or a registry wants cross-type invocability filtering.
