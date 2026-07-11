@@ -1,3 +1,4 @@
 .claude/projects/
 .develop/
 .vscode/
+__pycache__/

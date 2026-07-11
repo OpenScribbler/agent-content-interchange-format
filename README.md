@@ -1,140 +1,107 @@
-# agent-content-interchange-format
+# ACIF — Agent Content Interchange Format
 
-A set of independent, layered specifications for describing, distributing, and rendering AI agent content — skills, hooks, rules, commands, sub-agents, and MCP configs — across the AI coding tool ecosystem.
+A set of layered specifications for describing, distributing, and rendering AI
+agent content — hooks, skills, rules, commands, sub-agents, and MCP
+configurations — across the AI coding tool ecosystem.
+
+**Status: ACIF 0.1 (Draft) — the full specification set and conformance suite
+are published in this repository.**
 
 ## Why this exists
 
-Today, AI agent content is published in provider-native formats. A "hook" for Claude Code, a "hook" for Cursor, and a "hook" for Codex are three different files even when they invoke the same underlying behavior. There is no provider-neutral way to:
+AI agent content is published in provider-native formats. A "hook" for one
+tool, the same hook for a second tool, and the same hook for a third are three
+different files even when they invoke identical behavior. There is no
+provider-neutral way to:
 
-1. **Describe** what an agent content item *is* (its capabilities, dependencies, runtime needs)
+1. **Describe** what an agent content item *is* — its canonical form, identity, and change signal
 2. **Distribute** it through a registry that doesn't care which provider it targets
 3. **Render** it back into one or more provider-native shells
 
-This project pulls those three concerns apart into independent specs that can be adopted incrementally.
+ACIF pulls those concerns apart into layered specs that can be adopted
+incrementally.
 
 ## Not a vendor plugin or marketplace system
 
-ACIF is **not** a plugin format, a marketplace schema, or a distribution mechanism for any single provider. It is a direct, open-source, provider-agnostic alternative to those systems.
+ACIF is **not** a plugin format, a marketplace schema, or a distribution
+mechanism for any single provider. It is a direct, open-source,
+provider-agnostic alternative to those systems.
 
-Vendor plugin and marketplace systems — Anthropic's `.claude-plugin/plugin.json` and `marketplace.json`, similar formats from other tooling vendors, and the various "install our extension to publish here" registries — are exactly the problem ACIF exists to solve. They tie content authors to one vendor's distribution path. Adopting a vendor's plugin format means accepting that vendor's roadmap, that vendor's discovery surface, that vendor's installation flow, and that vendor's terms. If your skill or rule or agent only ships through one vendor's marketplace, your content lives at that vendor's pleasure.
+Vendor plugin and marketplace systems tie content authors to one vendor's
+distribution path: that vendor's roadmap, discovery surface, installation
+flow, and terms. ACIF treats those systems as the status quo it competes with,
+not as authoritative inputs to its design:
 
-ACIF treats those systems as the status quo it competes with, not as authoritative inputs to its design:
+- ACIF's carrier model, hashing, and discovery rules are designed around the **content itself** — the `SKILL.md` directory, the rule file, the MCP wiring — not around any vendor's plugin manifest.
+- Vendor plugin and marketplace manifests are not authoritative in ACIF's content-source model. Where a plugin manifest appears in the pack-inference precedence chain ([ACIF-PUBLISHER] §9.1) it contributes a *name*, nothing more.
+- The "publish once, render to N tools" model deliberately routes around distribution lock-in: publishers describe content in a neutral format; registries serve it without vendor approval; render-back emits provider-native files for whichever tools the consumer actually uses.
 
-- ACIF's carrier model, hashing, and discovery rules are designed around the **content itself** — the SKILL.md directory, the `.mdc` rule file, the AGENTS.md marker, the `.mcp.json` runtime wiring — not around any vendor's plugin manifest.
-- Vendor plugin and marketplace manifests are not in ACIF's content-source precedence chain. A repo that ships only a `.claude-plugin/marketplace.json` is treated as a repo with no ACIF pack identity (registry-inferred, per Decision #18) — same treatment as a repo with no manifest at all.
-- ACIF's "publish once, render to N tools" model deliberately routes around vendor distribution lock-in. Publishers describe content in a neutral format; registries serve it without vendor approval; render-back emits provider-native files for whichever tools the consumer actually uses.
+The six content types — **hook, skill, rule, command, agent, mcp_config** —
+are co-equal and are the units that should be portable.
 
-The six content types ACIF cares about — **hook, skill, rule, command, agent, mcp_config** — are the units that should be portable. Vendor plugin and marketplace systems are distribution wrappers around those units. ACIF is the alternative wrapper: open, neutral, and not owned by any one vendor.
+## The specification set
 
-## The four layers
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  L4  Render-back                                            │
-│      Canonical item  →  provider-native files               │
-│      (e.g., one canonical hook → hooks.json + hooks-cursor) │
-└─────────────────────────────────────────────────────────────┘
-                            ▲
-┌─────────────────────────────────────────────────────────────┐
-│  L3  Registry Consumption Spec                              │
-│      How a registry indexes, hashes, and serves content     │
-│      Includes auto-generation when publisher metadata is    │
-│      absent (Debian-overlay pattern).                       │
-└─────────────────────────────────────────────────────────────┘
-                            ▲
-┌─────────────────────────────────────────────────────────────┐
-│  L2  Publisher Metadata Spec                                │
-│      Author-side: what publishers declare per content item  │
-│      (version label, dependencies, runtime, etc.).          │
-│      Sidecars are the universal carrier; frontmatter is an  │
-│      opt-in supplementary layer for skills/rules/etc.       │
-└─────────────────────────────────────────────────────────────┘
-                            ▲
-┌─────────────────────────────────────────────────────────────┐
-│  L1  Canonical Interchange Formats (per content type)       │
-│      Provider-neutral data model for each content type.     │
-│      One spec per type, each independent and versioned.     │
-│      hooks-interchange (HIF) is the exemplar.               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-Each layer is independently adoptable. A publisher can adopt L2 without L1. A registry can adopt L3 without forcing publishers to adopt L2 (it auto-generates the metadata). Render-back (L4) is a tooling concern that consumes L1.
-
-## Layer details
-
-### L1 — Canonical Interchange Formats
-
-One spec per content type. Each is a standalone document that defines:
-
-- The canonical capability vocabulary for that content type
-- How provider-native fields map to canonical keys
-- A conversion enum: `translated | embedded | dropped | preserved | not-portable`
-- Reference test vectors and (ideally) reference implementations
-
-**Status:**
-
-| Content type | Canonical format | Spec status |
+| Layer | Spec | Defines |
 |---|---|---|
-| Hooks | HIF in syllago (`docs/provider-formats/*.yaml`, canonical-keys.yaml) | Exemplar — not yet pulled into `specs/hooks-interchange/` |
-| Skills | Implemented in syllago | Draft at `specs/skill-interchange/spec.md` (snapshot 2026-05-11) |
-| MCP configs | Implemented in syllago | Not yet externalized |
-| Commands | Implemented in syllago | Not yet externalized |
-| Sub-agents | Implemented in syllago | Not yet externalized |
-| Rules | Implemented in syllago | Not yet externalized |
+| Core | [`specs/core/`](specs/core/spec.md) — **[ACIF-CORE]** | Common envelope, carrier model, identity + `body_hash` change signal, canonicalization disciplines, capability (`requires`) model, canonical tool vocabulary |
+| L1 | [`specs/hooks-interchange/`](specs/hooks-interchange/spec.md) — **[ACIF-HOOK]** | Canonical hook model, event vocabulary (39 events), per-OS script selection, sidecar-only hash preimage |
+| L1 | [`specs/skill-interchange/`](specs/skill-interchange/spec.md) — **[ACIF-SKILL]** | Activation model + materialization, body classification, discovery tiers |
+| L1 | [`specs/rule-interchange/`](specs/rule-interchange/spec.md) — **[ACIF-RULE]** | Activation-mode vocabulary (first ACIF-owned enum), glob consistency, prose opacity |
+| L1 | [`specs/command-interchange/`](specs/command-interchange/spec.md) — **[ACIF-COMMAND]** | Argument-placeholder vocabulary + rewrite, passthrough frontmatter surface |
+| L1 | [`specs/agent-interchange/`](specs/agent-interchange/spec.md) — **[ACIF-AGENT]** | Agent envelope (tools/model/MCP/skills), tool-name canonicalization, name-declared references |
+| L1 | [`specs/mcp-interchange/`](specs/mcp-interchange/spec.md) — **[ACIF-MCP]** | Transport-default materialization, MCP wiring hash preimage |
+| L2 | [`specs/publisher-spec/`](specs/publisher-spec/spec.md) — **[ACIF-PUBLISHER]** | Two-section published record, `publisher_section` + `metadata_hash`, frontmatter reconciliation, pack model + inference algorithm |
+| L3 | [`specs/registry-spec/`](specs/registry-spec/spec.md) — **[ACIF-REGISTRY]** | `registry_section` schema, change-signal surfaces, projections, `source_uri` pipeline, freshness model |
+| L4 | [`specs/render-back/`](specs/render-back/spec.md) — **[ACIF-RENDER]** | Deterministic render function, fidelity classes, degradation diagnostics, round-trip bounds |
 
-The canonical formats already exist as code in syllago (`cli/internal/capmon/recognize_*.go` + `docs/spec/canonical-keys.yaml` + `docs/provider-formats/*.yaml`). What this project does is *externalize* them into independent, versioned specs that other tools can implement without depending on syllago.
+Each layer is independently adoptable; every document declares its
+dependencies and conformance classes explicitly.
 
-### L2 — Publisher Metadata Spec
+## Conformance suite
 
-Defines what a publisher declares about each content item: version label, dependencies, runtime requirements, license, content type, capabilities.
+[`conformance/`](conformance/README.md) publishes the test-vector catalog —
+150 vectors across 11 families. **The vectors are normatively authoritative
+over prose**: an implementation that contradicts a published vector is
+non-conformant regardless of any prose reading. Reference implementations
+under `conformance/reference/` are informative.
 
-**Carrier rules:**
+## Design principles (short form)
 
-- **Sidecar (always generated)** — universal primary carrier for every content type. Generated by the registry or by an optional publisher-side CI workflow. Hand-authored sidecars are never required.
-- **Frontmatter (opt-in)** — for skills, rules, agents, and commands, publishers may also maintain canonical fields in YAML frontmatter inside the content file. Either hand-authored or auto-populated by a second optional CI workflow. Hooks and MCP configs have no frontmatter path because the harness owns `settings.json`/`mcp.json`.
-
-The sidecar is canonical at the registry layer. Frontmatter is a publisher convenience that mirrors the sidecar for portability — a copied content file carries its own metadata. Data flows sidecar → frontmatter, never the reverse. The frontmatter CI is conservative by default: it blocks the build on any conflict with the canonical sidecar, requiring explicit opt-in to auto-overwrite.
-
-The publisher does as little as possible. Most existing content has no L2 metadata at all; the registry auto-generates everything from the body. Frontmatter is for publishers who want to declare canonical fields explicitly.
-
-### L3 — Registry Consumption Spec
-
-Defines how a registry:
-
-1. Indexes content from publisher repos
-2. Computes `content_hash` over canonical bytes (the identity primitive)
-3. Auto-generates publisher metadata when absent (Debian overlay pattern)
-4. Serves content to install tools (conforming clients per MOAT)
-
-The registry never modifies the publisher's files. Auto-generated metadata is overlay metadata held by the registry, not pushed back upstream.
-
-### L4 — Render-back
-
-Given a canonical item (L1), deterministically emit one or more provider-native files. A single canonical hook produces both `hooks.json` (Claude format) and `hooks-cursor.json` (Cursor format) from the same source.
-
-Render-back is what makes the canonical formats useful: publishers author once, registries serve once, tools install for any provider.
+- **`body_hash` is the change signal.** Content identity and change detection ride a pinned content-hash algorithm, not version strings. Version is advisory; hashes are dispositive.
+- **Canonicalize, then hash.** Provider dialects converge on canonical bytes — vocabularies translated, defaults materialized, one rule in one place — so two implementations can never disagree about what changed.
+- **Structure is the provenance.** Publisher-declared and registry-computed data live in different record sections; there are no per-field trust markers to forge or forget.
+- **Capabilities are derived, not declared.** Every walked capability is either derivable from canonical structure or out of scope; the `requires` slot is empty across all six types in 0.1, reserved for genuinely out-of-band environmental pins.
+- **Degradation is loud.** Rendering to a less-capable provider is allowed, but every semantic loss carries a named, machine-readable diagnostic.
 
 ## Relationship to other projects
 
-- **MOAT** — Signs and attests content bytes. Composes underneath this project: registries that implement L3 can use MOAT to attest their indexes; conforming clients verify those attestations at install. MOAT does not care about content type or capability — it operates on bytes.
-- **syllago** — Personal package manager and conversion engine that already implements all six canonical formats internally. This project externalizes those formats into independent specs so other tools can adopt them without depending on syllago.
+- **MOAT** — the informative provenance of the `body_hash` algorithm ([ACIF-CORE] §7 restates it as ACIF-owned normative text) and one candidate filler of the registry-layer attestation slot. ACIF names no external integrity system normatively; the slot is deliberately agnostic.
+- **capmon** — a provider capability matrix that publishes per-provider facts *conforming to* ACIF's canonical vocabularies (the caniuse-to-MDN analogy). Authority direction: ACIF owns the vocabularies; capmon and the syllago converter conform to ACIF's copies, not the reverse.
 
-## Working method
+## Design record
 
-This is an exercise, not a deliverable yet. We use `obra/superpowers` (cloned to `~/.local/src/superpowers/`) as real-world test data — it ships skills, hooks, and four provider plugins (Claude, Cursor, Codex, Gemini), so every layer has a concrete case to validate against.
-
-Each artifact is written incrementally, with redirection between steps. The point is to discover where the layering is wrong, not to produce a finished spec on the first pass.
+`SHAPE.md` is the historical design record — 34 decisions, the open-question
+ledger, and the spec-promotion ratifications — with full panel deliberations
+under `panel/`. Where the record and a spec disagree, the spec governs.
+Deferred work lives in `ROADMAP.md` (roadmap items, not version commitments).
 
 ## Layout
 
 ```
 specs/
-  hooks-interchange/      # L1 — Hook Interchange Format
-  skill-interchange/      # L1 — Skill canonical format (stub, follow HIF template)
-  ...                     # one per content type
-publisher-spec/           # L2
-registry-spec/            # L3
-render-back/              # L4
-examples/
-  obra/                   # End-to-end trace of obra/superpowers through all layers
+  core/                  # [ACIF-CORE]
+  hooks-interchange/     # [ACIF-HOOK]      (L1)
+  skill-interchange/     # [ACIF-SKILL]     (L1)
+  rule-interchange/      # [ACIF-RULE]      (L1)
+  command-interchange/   # [ACIF-COMMAND]   (L1)
+  agent-interchange/     # [ACIF-AGENT]     (L1)
+  mcp-interchange/       # [ACIF-MCP]       (L1)
+  publisher-spec/        # [ACIF-PUBLISHER] (L2)
+  registry-spec/         # [ACIF-REGISTRY]  (L3)
+  render-back/           # [ACIF-RENDER]    (L4)
+conformance/             # normative test vectors + informative reference impls
+SHAPE.md                 # historical design record (Decisions #1–#34)
+panel/                   # panel consensus records behind the decisions
+ROADMAP.md               # deferred scope
+examples/                # end-to-end traces over real-world content
 ```
