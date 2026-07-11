@@ -52,15 +52,20 @@ See the panel consensus docs and SHAPE.md's OQ-7 row for the full record.
   resolved (absent = all). provider_capability_coverage row deferred, gated on
   capmon data. See `panel/platform-commands-consensus.md`.
 
-### Step 3 — Close the open questions (dispositions adopted 2026-07-11)
+### Step 3 — Close the open questions — DONE (2026-07-11)
+
+**No open OQ without an owner: satisfied.** OQ-1..7, 9, 11 resolved; OQ-6
+resolved via Decision #33; OQ-8 and OQ-10 are owned ROADMAP.md deferrals;
+namespace pinned. The definition-of-done clause for OQs is fully met.
 
 - OQ-6: DONE — resolved by Decision #33 (absent = all; platform_commands panel).
 - OQ-8: DONE for v0.1 — never-parse adopted as the v0.1 answer; the grammar
   question is an owned ROADMAP.md deferral ("Body-content reference grammar")
   carrying the structured-record bar, the OP-COND-RULES-4/-5 lints, and the
   binding never-parse dissent re-hearing obligation.
-- OQ-9: mini-review run (spec-purist + registry-operator, same pair as OQ-11);
-  strawman: most-restrictive-wins.
+- OQ-9: DONE — Decision #34 (orthogonal freshness axes; the min() strawman
+  rejected from both directions; zero new fields; first resolution adopted
+  under Holden's standing delegation). See `panel/freshness-consensus.md`.
 - OQ-10: DONE — owned ROADMAP.md deferral ("Latent-field promotion") carrying
   the uniformity constraint and all recorded promotion obligations.
 - `ACIF_PACK_NAMESPACE`: PINNED — `93516344-00e5-419b-a230-6e8b1d02f87d`

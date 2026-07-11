@@ -101,3 +101,13 @@ Awesome-lists (e.g., `punkpeye/awesome-mcp-servers`, `jim-schwoebel/awesome_ai_a
 - OP-COND-SKILLS-5 remains coupled here.
 
 **What it would take to revisit:** An installer needs tool-restriction or model-selection filtering across skills/commands (the agents walk already derives these for agents), or a registry wants cross-type invocability filtering.
+
+### `attestation_valid_until` informative mirror (OQ-9 roadmap valve)
+
+An OPTIONAL, informative `registry_section` field mirroring the external attestation's validity horizon, for offline/air-gapped consumers that cannot fetch the attestation manifest at decision time. Deferred 2026-07-11 by the OQ-9 mini-review (Decision #34 adopted orthogonal freshness axes with zero new fields).
+
+**Why deferred:** Reducing heterogeneous external validity representations (cert `notAfter`, transparency-log inclusion time, policy TTLs) to one instant requires the registry to understand the external system's semantics — the which-timestamp ambiguity Decision #13's agnosticism exists to avoid. And a consumer making attestation-based decisions must verify the attestation anyway, which yields validity under the system's own rules for free.
+
+**Binding obligations if it lands:** OPTIONAL and informative only, carrying an explicit "may be stale; MUST NOT be a staleness input" disclaimer (parallel to `publisher_metadata`); spec-purist's absence semantics govern (absent = drops out of any consumer computation — never "expired," never a freshness extension); Decision #34's no-blending rule is unaffected. Revisit alongside the content-revocation feed (Decision #33 roadmap) — a revocation signal addresses the freeze-surface concern more directly than any expiry heuristic.
+
+**What it would take to revisit:** Offline/air-gapped consumers with attestation-based policies materialize as a real deployment class.
