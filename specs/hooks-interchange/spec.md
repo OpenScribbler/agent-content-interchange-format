@@ -62,6 +62,8 @@ This document extends the [ACIF-CORE] §4 conformance classes with hook-specific
 
 **Conforming renderer** — software that emits a provider-native form from canonical form; satisfies §12.
 
+Registry conformance is defined in [ACIF-REGISTRY]; §13 of this document states the hook-specific compute obligations a conforming registry inherits.
+
 The test-vector families in Appendix C are normatively authoritative: an implementation that contradicts a published vector is non-conformant regardless of any prose reading.
 
 ## 6. Canonical Hook Model
@@ -83,7 +85,7 @@ hook:
                                   # logical entrypoint (§7)
         - type: file
           path: hooks/check-write
-          os: [linux, darwin]     # OPTIONAL — omit if OS-agnostic
+          os: [darwin, linux]     # OPTIONAL — sorted set (§7.1); omit if OS-agnostic
           arch: [amd64, arm64]    # OPTIONAL — advisory in 0.1 (§7.1)
         - type: file
           path: hooks/check-write.cmd
@@ -93,7 +95,7 @@ hook:
         #   content: |
         #     #!/bin/bash
         #     echo "checked"
-        #   os: [linux, darwin]
+        #   os: [darwin, linux]
       async: false                # OPTIONAL — default false
       timeout: 60                 # OPTIONAL
       status_message: "Checking"  # OPTIONAL
@@ -119,7 +121,7 @@ hook:
 
 **`matcher`** — OPTIONAL. When present, MUST be non-empty ([ACIF-CORE] §8.3). Canonicalization translates matcher components per [ACIF-CORE] Appendix A.3. Absent in canonical form when the source carries no matcher or an empty one.
 
-**`handlers`** — REQUIRED, one or more entries. Each entry's `type` MUST be a member of the Appendix B enum in canonical form; the absent-type legacy residual is materialized per §8.2. Fields meaningful per type are listed in Appendix B; a handler carrying a field not meaningful for its type retains it as opaque passthrough ([ACIF-CORE] §8.5).
+**`handlers`** — REQUIRED, one or more entries; an absent or empty `handlers` array MUST be rejected with `acif.hook.handlers_missing`. Handler order is semantically significant (it is the execution order for the event) and is preserved through canonicalization and serialization. Each entry's `type` MUST be a member of the Appendix B enum in canonical form; the absent-type legacy residual is materialized per §8.2. Fields meaningful per type are listed in Appendix B; a handler carrying a field not meaningful for its type retains it as opaque passthrough ([ACIF-CORE] §8.5).
 
 **`scripts`** — REQUIRED on every `type: command` handler, one or more entries; MUST NOT appear on other handler types. Each entry carries `type: file` with `path`, or `type: inline` with `content`; `os` and `arch` are OPTIONAL per §7. Entries are OS-variants of the handler's single logical entrypoint — they are alternatives selected by target OS, not a sequence.
 
@@ -142,9 +144,10 @@ This section is written type-general — it constrains any script entry carrying
 ### 7.1 Closed OS enum; absence and empty semantics
 
 - `os` values form the closed enum `{windows, linux, darwin}`, matched by exact byte comparison ([ACIF-CORE] §8.3). A non-member value MUST be rejected with `acif.hook.script_os_invalid`. Provider aliases (e.g., `osx`) are rewritten before validation and MUST NOT survive into canonical form.
-- **`os` absent means unconstrained**: the entry is a selection candidate on every enum member. Absence MUST NOT be canonicalized to the full enumeration `[windows, linux, darwin]` — the two forms are distinct canonical bytes, and rewriting one into the other silently moves `body_hash`.
+- **`os` absent means unconstrained**: the entry is a selection candidate on every enum member. Absence MUST NOT be canonicalized to the full enumeration `[darwin, linux, windows]` — the two forms are distinct canonical bytes, and rewriting one into the other silently moves `body_hash`.
 - **`os: []` is not absence**: an empty array matches nothing, making the entry unreachable; it MUST be rejected with `acif.hook.script_os_empty` (an empty `arch` array likewise: `acif.hook.script_arch_empty`).
-- **`arch` does not participate in selection in ACIF 0.1.** It is carried verbatim in canonical form and surfaced as advisory registry data (§13.1). Selection on `arch` is a roadmap item gated on a closed arch enum with alias mapping.
+- **`arch` does not participate in selection in ACIF 0.1.** It is carried in canonical form and surfaced as advisory registry data (§13.1). Selection on `arch` is a roadmap item gated on a closed arch enum with alias mapping.
+- **Canonical array order:** `os` and `arch` express sets, not sequences. In canonical form their elements MUST be sorted by raw UTF-8 byte order and MUST NOT contain duplicates. Two sources differing only in tag order canonicalize to identical bytes and identical `body_hash`.
 
 ### 7.2 Disjointness at canonicalization
 
@@ -163,7 +166,7 @@ For each command handler's `scripts` array, canonicalization MUST verify:
 
 Both diagnostics MUST be fix-forward ([ACIF-CORE] §8.7): they name the remedy (add explicit `os:` tags that partition the enum).
 
-*(Informative)* Ambiguity is rejected at canonicalization rather than tie-broken at runtime. A specificity ordering was considered and rejected: overlapping `os`×`arch` coverage sets are incomparable, and a most-specific-wins rule is silent exactly where it is needed — two conforming providers would run different scripts. Note also that the common untagged multi-script layout (`.sh` + `.ps1` + `.cmd`, no tags) rejects as multiple default entries. That layout genuinely is ambiguous under these semantics; the fix-forward diagnostic is the adoption mitigation, and registries SHOULD measure reject rates on representative crawls.
+*(Informative)* Ambiguity is rejected at canonicalization rather than tie-broken at runtime. A specificity ordering was considered and rejected: overlapping `os`×`arch` coverage sets are incomparable, and a most-specific-wins rule is silent exactly where it is needed — two conforming providers would run different scripts. Note also that the common untagged multi-script layout (`.sh` + `.ps1` + `.cmd`, no tags) rejects as multiple default entries. That layout genuinely is ambiguous under these semantics; the fix-forward diagnostic is the adoption mitigation, and registries are advised to measure reject rates on representative crawls.
 
 ### 7.3 Selection
 
@@ -182,13 +185,13 @@ The mapping from observed provider per-OS mechanisms to canonical script entries
 | Source mechanism | Canonical mapping | Diagnostics / provenance |
 |---|---|---|
 | Per-OS key map (`windows` / `linux` / `osx` keys, each with a command) plus a base command | Each per-OS key → a singleton constrained entry (`osx` renamed `darwin` before validation); the base command → the default entry | Lossless; provenance `declared` |
-| Dual shell fields (`bash` and `powershell` commands) | `bash` → constrained entry `os: [linux, darwin]`; `powershell` → constrained entry `os: [windows]` | MUST emit `acif.hook.platform_shell_os_proxy`; provenance `inferred-from-convention` |
-| Filename-extension convention | `.ps1` / `.cmd` / `.bat` → `os: [windows]`; `.sh` and extensionless → `os: [linux, darwin]`; any other extension → default entry, MUST emit `acif.hook.platform_filename_uninferable`; successful inference MUST emit `acif.hook.platform_filename_inferred` (INFORMATIVE) | Provenance `inferred-from-convention` |
+| Dual shell fields (`bash` and `powershell` commands) | `bash` → constrained entry `os: [darwin, linux]`; `powershell` → constrained entry `os: [windows]` | MUST emit `acif.hook.platform_shell_os_proxy`; provenance `inferred-from-convention` |
+| Filename-extension convention | `.ps1` / `.cmd` / `.bat` → `os: [windows]`; `.sh` and extensionless → `os: [darwin, linux]`; any other extension → default entry, MUST emit `acif.hook.platform_filename_uninferable`; successful inference MUST emit `acif.hook.platform_filename_inferred` (INFORMATIVE) | Provenance `inferred-from-convention` |
 | Single interpreter-selection field on one command (e.g., `shell: powershell`) | Excluded from OS mapping — one entrypoint plus an interpreter flag is nothing to map; the field is carried as opaque passthrough | See §12.3 (structured encoder); the value participates in the hash preimage (§9) |
 | Single command, no per-OS mechanism | Default entry | — |
 | Any unmapped mechanism | MUST reject `acif.hook.platform_unmappable` | Totality net |
 
-*(Informative)* The shell-field collapse is semantically wrong as a general claim — PowerShell is cross-platform, and bash exists on Windows — and is retained on the entrypoint-count rationale: two distinct command fields are two entrypoints, hence mappable, whereas an interpreter flag on one command is one entrypoint. The MUST-emit diagnostic and `inferred-from-convention` provenance exist because these rows mint an OS tag the author never wrote. The extension convention has a disclosed false mapping: an extensionless script with a PowerShell shebang infers unix.
+*(Informative)* The shell-field collapse is semantically wrong as a general claim — PowerShell is cross-platform, and bash exists on Windows — and is retained on the entrypoint-count rationale: two distinct command fields are two entrypoints, hence mappable, whereas an interpreter flag on one command is one entrypoint. The mandatory diagnostics and `inferred-from-convention` provenance exist because these rows mint an OS tag the author never wrote. The extension convention has a disclosed false mapping: an extensionless script with a PowerShell shebang infers unix.
 
 ### 7.5 Tag provenance
 
@@ -214,7 +217,7 @@ All inputs are taken from the **post-canonicalization** form: after §7.4 mappin
 
 ### 9.2 File manifest
 
-The referenced-file set of a hook is: every `type: file` script entry's `path` across all handlers, plus every `auxiliary_files` entry's `path`. Each referenced file MUST exist at ingestion; a missing referenced file MUST be rejected with `acif.hook.script_file_missing`.
+The referenced-file set of a hook is: every `type: file` script entry's `path` across all handlers, plus every `auxiliary_files` entry's `path`. Each referenced file MUST exist at ingestion ([ACIF-CORE] §2); a conforming canonicalizer MUST reject a missing referenced file with `acif.hook.script_file_missing`.
 
 Build the manifest exactly as in [ACIF-CORE] §7.4, with these bindings:
 
@@ -229,7 +232,16 @@ Let `DH` be the string `sha256:` followed by the lowercase hex SHA-256 of the ma
 
 ### 9.3 Wiring serialization
 
-Let `W` be the canonical JSON serialization ([ACIF-CORE] §8.6, RFC 8785) of the complete canonical `hook` extension-block object — `event`, `matcher`, `handlers` (including every script entry with `type`, `path` or `content`, `os`, `arch`, and all opaque passthrough fields such as an interpreter-selection field), `auxiliary_files`, `blocking`, `requires`, and `activation_target` — with absent fields omitted.
+Let `W` be the canonical JSON serialization ([ACIF-CORE] §8.6, RFC 8785) of the complete canonical `hook` extension-block object with absent fields omitted. There is no field-level selection: every field of the canonical block enters `W`, including handler fields (`async`, `timeout`, `status_message`, per-type fields), every script entry (`type`, `path` or `content`, `os`, `arch`), all opaque passthrough fields (such as an interpreter-selection field), `event`, `matcher`, `auxiliary_files`, `blocking`, `requires`, and `activation_target`. The field list here is illustrative, not exhaustive.
+
+Array ordering in `W` ([ACIF-CORE] §8.6):
+
+- `handlers` — order significant, preserved (§6.2).
+- `os`, `arch` — sorted, duplicate-free sets (§7.1).
+- `scripts` within a handler — order not significant; entries MUST be sorted by the raw UTF-8 byte order of each entry's own canonical JSON serialization.
+- `auxiliary_files` — entries MUST be sorted by the raw UTF-8 byte order of `path`; duplicate paths appear once.
+
+**Inline content normalization:** a `type: inline` entry's `content` string is normalized at canonicalization exactly as a text file is under [ACIF-CORE] §7.3 — leading UTF-8 BOM stripped, CRLF and lone CR normalized to LF — before entering `W` (and before the §13.1 executable-identity hash). Inline and file-carried scripts therefore normalize identically.
 
 ### 9.4 Preimage and value
 
@@ -251,12 +263,13 @@ The recognized `requires` vocabulary for hooks is **empty** in ACIF 0.1. Every c
 
 | Key | D_K over canonical body B |
 |---|---|
-| `handler_types` | `∃ i . B.handlers[i].type ≠ ""` — always derivable-true on a conforming record (handlers is REQUIRED); the predicate is pinned for uniformity. The set of distinct types observed is a registry projection, not the predicate output. |
+| `handler_types` | `∃ i . B.handlers[i].type ≠ ""` — constant derivable-true on a conforming record (`handlers` is REQUIRED and non-empty, §6.2); the predicate exists as a disposition, not a signal. The derivable-false case is unreachable on valid input: an empty `handlers` array rejects with `acif.hook.handlers_missing` before any predicate runs. The set of distinct types observed is a registry projection, not the predicate output. |
 | `matcher_patterns` | `B.matcher present` (present implies non-empty per §6.2) |
 | `async_execution` | `∃ i . B.handlers[i].async == true` |
-| `os_coverage` (§13.1) | `∃` script entry with `os` present — derivable-false means the hook is fully portable |
 
 Each predicate produces `{derivable-true, derivable-false}` per the boolean discipline; each conjunct cites a single canonical field validated at canonicalization before the predicate runs.
+
+*(Informative)* The registry projection `os_coverage` (§13.1) is likewise a correct-by-construction derivation over the canonical body, but it is a registry-projection surface, not a member of the hook `requires` vocabulary disposed here; the disposed vocabulary has exactly three DERIVABLE keys.
 
 ### 10.2 OUT-OF-SCOPE-AT-L1 keys *(informative rationale)*
 
@@ -276,7 +289,9 @@ Selection (§7.3) is total, so a hook can resolve to a defined no-op on an insta
 |---|---|
 | A default entry exists, or a constrained entry matches | Proceed |
 | No match, no default, and `blocking: true` | MUST refuse installation on that segment, with operator opt-in to override |
-| No match, no default, and `blocking: false` | SHOULD warn; install proceeds and the handler is a defined no-op on that segment |
+| No match, no default, and `blocking: false` | SHOULD warn with `acif.hook.script_no_platform_match` (install-time class); install proceeds and the handler is a defined no-op on that segment |
+
+The identifier `acif.hook.script_no_platform_match` serves two distinct obligations: §7.3 binds whichever implementation *evaluates selection* (MUST report when the no-op branch is taken), while this section binds the install tool *predicting coverage* before installation (SHOULD warn, upgraded to MUST refuse by the `blocking: true` row). The two obligations never bind the same actor for the same act.
 
 *(Informative)* A `blocking: true` hook is by declaration a gate; installing it where it silently never fires is a fail-open control — the deployment inventory shows the control present while the target platform never runs it. `blocking` is the criticality discriminant already in the schema; no separate severity field exists.
 
@@ -290,7 +305,7 @@ Rendering to a provider with no per-OS mechanism: emit the default entry, drop c
 
 ### 12.2 No-default degradation
 
-Rendering an all-constrained hook (no default entry) to a no-mechanism provider: if the render context declares a target OS, emit the entry selected for that OS (§7.3); otherwise the renderer MUST refuse with `acif.hook.no_default_for_degraded_render`. *(Informative: this is the one refuse outcome in hook render-back — with no default and no declared target, every choice of emitted entry is wrong for some deployment, so no defined-safe output exists.)*
+Rendering an all-constrained hook (no default entry) to a no-mechanism provider is keyed on the selection result: if the render context declares a target OS and §7.3 selection for that OS yields an entry, emit that entry; in every other case — no target OS declared, or the declared target OS yields no selection — the renderer MUST refuse with `acif.hook.no_default_for_degraded_render`. *(Informative: this is the one refuse outcome in hook render-back — without a selected entry, every choice of emitted output is wrong for some deployment, so no defined-safe output exists.)*
 
 ### 12.3 Passthrough and round-trip
 
@@ -304,17 +319,19 @@ The projections in this section are computed by registries over the canonical bo
 
 ### 13.1 `os_coverage`
 
+A conforming registry MUST compute the `os_coverage` projection for every hook item at ingest:
+
 ```yaml
 os_coverage:
   derivable: true          # ∃ script entry with os present
-  os: [linux, darwin]      # union of declared os tags across entries
+  os: [darwin, linux]      # union of declared os tags, sorted (§7.1)
   arch: []                 # union of declared arch tags (advisory)
   unconstrained: true      # ∃ default entry ("is there a run-anywhere fallback?")
   os_divergent: false      # see predicate below
   provenance: declared     # declared | inferred-from-convention | mixed (§7.5)
 ```
 
-**`os_divergent` predicate:** define a script entry's executable identity as `(type, path)` for `type: file` and `(type, SHA-256(content))` for `type: inline`. A command handler is divergent iff there exist enum members `o1 ≠ o2` whose §7.3 selections both exist and have different executable identities. `os_divergent` is true iff any handler is divergent.
+**`os_divergent` predicate:** define a script entry's executable identity as `(type, path)` for `type: file` and `(type, SHA-256(content))` for `type: inline` (content normalized per §9.3). A command handler is divergent iff there exist enum members `o1 ≠ o2` whose §7.3 selections both exist and have different executable identities. `os_divergent` is true iff any handler is divergent. *(Informative: path-based identity for file entries is intentionally conservative — identical bytes at two distinct paths read as divergent; false negatives are impossible.)*
 
 *(Informative)* The `os` set alone cannot distinguish one portable script tagged for three OSes from three different per-OS programs; `os_divergent` is the boolean that makes a fleet policy such as "no OS-divergent hooks" implementable. `provenance` is `declared` when no tag was minted by a §7.4 heuristic row, `inferred-from-convention` when all were, `mixed` otherwise.
 
@@ -327,6 +344,7 @@ Registries MUST compute, per canonical event name, the set of providers recogniz
 | Identifier | Class | Condition |
 |---|---|---|
 | `acif.hook.event_unrecognized` | reject | Event name neither canonical nor a mapped provider-native name (§6.2) |
+| `acif.hook.handlers_missing` | reject | `handlers` absent or empty (§6.2) |
 | `acif.hook.handler_type_unrecognized` | reject | Handler type neither canonical nor a mapped provider-native name (§8.2) |
 | `acif.hook.script_os_invalid` | reject | `os` value outside the closed enum, or inexact byte form (§7.1) |
 | `acif.hook.script_os_empty` | reject | `os: []` (§7.1) |
@@ -340,7 +358,7 @@ Registries MUST compute, per canonical event name, the set of providers recogniz
 | `acif.hook.platform_shell_os_proxy` | diagnostic (MUST-emit) | OS tags minted from dual shell fields (§7.4) |
 | `acif.hook.platform_filename_uninferable` | diagnostic (MUST-emit) | Extension convention could not infer an OS (§7.4) |
 | `acif.hook.platform_filename_inferred` | diagnostic (INFORMATIVE) | Extension convention minted an OS tag (§7.4) |
-| `acif.hook.script_no_platform_match` | diagnostic (runtime/install) | Selection resolved to the defined no-op (§7.3) |
+| `acif.hook.script_no_platform_match` | diagnostic (runtime MUST-report; install-time SHOULD-warn) | Selection resolved, or would resolve, to the defined no-op (§7.3, §11) |
 
 Reject-class identifiers make canonicalization fail; diagnostic-class identifiers accompany successful processing. All reject diagnostics for authoring errors are fix-forward ([ACIF-CORE] §8.7).
 
@@ -348,7 +366,7 @@ Reject-class identifiers make canonicalization fail; diagnostic-class identifier
 
 **Review evasion via OS divergence.** A per-OS-divergent hook resolves to a branch that reviewers on other operating systems never execute. Severity is HIGH in the review-evasion direction: review fleets are commonly single-OS, and the divergence is invisible without the §13.1 signals. This is not a new attack class — it is conditional-payload gating with the OS axis made legible in structure — and its moderation priority sits below always-executing content classes, because the divergence gates an existing execution primitive rather than adding one.
 
-**What `body_hash` buys — and does not.** With the §9 preimage, `body_hash` is anti-swap (all branches and all routing bound into one value; no substitution between review and delivery) and anti-blindness (an OS re-target or interpreter flip fires the change signal). It does NOT establish that any branch was inspected: a malicious branch can be present in the attested artifact, committed by every hash, and scrutinized by no one. Moderation SHOULD scan all branches, not the scanning host's branch — the cheapest attack places the payload in the branch the moderation stack analyzes worst.
+**What `body_hash` buys — and does not.** With the §9 preimage, `body_hash` is anti-swap (all branches and all routing bound into one value; no substitution between review and delivery) and anti-blindness (an OS re-target or interpreter flip fires the change signal). It does not establish that any branch was inspected: a malicious branch can be present in the attested artifact, committed by every hash, and scrutinized by no one. Moderation pipelines should scan all branches, not the scanning host's branch — the cheapest attack places the payload in the branch the moderation stack analyzes worst.
 
 **The decoy shape is well-formed.** One benign default entry plus one malicious `os: [windows]` override passes every §7.2 check and resolves cleanly to the malicious branch on Windows. Ambiguity rejection closes non-determinism, not divergence abuse; the countermeasures are the `os_divergent` and `provenance` signals, whole-branch moderation, and (roadmap) behavioral verification.
 
@@ -452,9 +470,9 @@ The absent-type legacy residual materializes to `command` per §8.2.
 
 The vectors in these families, published in the `conformance/` directory, are normatively authoritative over prose. Family definitions:
 
-**TV-HOOK-\*** (capability model): (a) empty `requires` conformant; (b) orphan-key reject (`requires.handler_types` on a hook); (c) unknown-key three-valued evaluation; (d) `D_K` handler_types; (e) `D_K` matcher_patterns; (f) `D_K` async_execution; (g) canonical event-name round-trip, `body_hash` post-translation; (h) canonical handler-type round-trip.
+**TV-HOOK-\*** (capability model): (a) empty `requires` conformant; (b) orphan-key reject (`requires.handler_types` on a hook); (c) unknown-key three-valued evaluation; (d) `D_K` handler_types — derivable-true on a conforming record; the empty-`handlers` input tests the `acif.hook.handlers_missing` reject, not a derivable-false result (the derivable-false branch is unreachable on valid input, §10.1); (e) `D_K` matcher_patterns; (f) `D_K` async_execution; (g) canonical event-name round-trip, `body_hash` post-translation; (h) canonical handler-type round-trip.
 
-**TV-PLATFORM-\*** (per-OS selection, canonicalization, hash coverage): (a) absence=all; (b) constrained-beats-default; (c) empty-list rejects; (d) invalid OS values (`freebsd`; case-variant `Linux`); (e) default ambiguity; (f) constrained overlap with named colliding OS + indices; (g) disjoint set passes; (g′) decoy accept — one default + one `os:[windows]` ACCEPTS (documents that selection determinism is not divergence safety); (h) no-match no-default → defined no-op + diagnostic; (i) per-OS key-map canonicalization to four disjoint entries, `body_hash` post-mapping; (j) `osx` never in canonical form; (k) shell-field collapse + MUST `platform_shell_os_proxy` + provenance; (l) extension-convention table incl. `.cmd`/`.bat`, `.xyz` → default + `platform_filename_uninferable`, and the disclosed false mapping (extensionless pwsh shebang infers unix); (m) interpreter-flag exclusion — no `os` synthesized; render-back structured-encodes an injection-shaped passthrough value; (n) `platform_unmappable`; (o) render-back drop + MUST `platform_override_dropped`; (p) no-default render: target-OS emit else refuse; (q) **hash coverage — flipping one `os` tag with script bytes unchanged MUST move `body_hash`; flipping an interpreter-selection passthrough value likewise** (this vector fails against any implementation that omits §9.3's wiring serialization); (r) round-trip identity modulo documented-lossy cases, dead-default preserved; (s) `os_coverage` projection incl. the divergence pair — one entry tagged `[linux,darwin,windows]` → `os_divergent: false` vs three per-OS entries → `true` with identical `os` sets; (t) install coverage-gap — `blocking: true` MUST-refuse vs `blocking: false` SHOULD-warn.
+**TV-PLATFORM-\*** (per-OS selection, canonicalization, hash coverage): (a) absence=all; (b) constrained-beats-default; (c) empty-list rejects; (d) invalid OS values (`freebsd`; case-variant `Linux`); (e) default ambiguity; (f) constrained overlap with named colliding OS + indices; (g) disjoint set passes; (g′) decoy accept — one default + one `os:[windows]` ACCEPTS (documents that selection determinism is not divergence safety); (h) no-match no-default → defined no-op + diagnostic; (i) per-OS key-map canonicalization to four disjoint entries, `body_hash` post-mapping; (j) `osx` never in canonical form; (k) shell-field collapse + MUST `platform_shell_os_proxy` + provenance; (l) extension-convention table incl. `.cmd`/`.bat`, `.xyz` → default + `platform_filename_uninferable`, and the disclosed false mapping (extensionless pwsh shebang infers unix); (m) interpreter-flag exclusion — no `os` synthesized; render-back structured-encodes an injection-shaped passthrough value; (n) `platform_unmappable`; (o) render-back drop + MUST `platform_override_dropped`; (p) no-default render: selected-entry emit when the declared target OS yields a selection; refuse both when no target is declared and when the declared target yields no selection; (q) **hash coverage — flipping one `os` tag with script bytes unchanged MUST move `body_hash`; flipping an interpreter-selection passthrough value likewise** (this vector fails against any implementation that omits §9.3's wiring serialization); (q′) **determinism — two sources differing only in `os` tag order, `scripts[]` entry order, or inline-content line endings MUST yield byte-identical canonical form and identical `body_hash`** (§7.1, §9.3); (r) round-trip identity modulo documented-lossy cases, dead-default preserved; (s) `os_coverage` projection incl. the divergence pair — one entry tagged `[darwin,linux,windows]` → `os_divergent: false` vs three per-OS entries → `true` with identical `os` sets; (t) install coverage-gap — `blocking: true` MUST-refuse vs `blocking: false` SHOULD-warn.
 
 Individual vector IDs are assigned in the conformance suite.
 
@@ -466,4 +484,4 @@ The event vocabulary and handler-type enum were repatriated from a frozen snapsh
 
 Preserved positions recorded for future revision: three panel variants proposed admitting one or more script-runtime keys (`json_io_protocol`; `input_modification` + `permission_control`) to `requires` for command handlers — re-heard if corpus evidence shows authors declaring them. A stricter fail-closed render rule for `blocking: true` hooks was overridden by observed provider warn-default behavior; enterprise policy engines obtain that posture via `os_divergent` + provenance refusal. A closed enum for interpreter-selection passthrough was rejected as a brittle list; if a passthrough splice vulnerability ever appears in a renderer, revisit enum validation before adding escaping.
 
-Newly minted at spec-promotion time (not present in the design record; flagged for review): `acif.hook.event_unrecognized`, `acif.hook.handler_type_unrecognized`, `acif.hook.script_file_missing`; the §9.4 preimage framing; the §13.1 `os_divergent` executable-identity predicate; and the §6.3 model unification.
+Newly minted at spec-promotion time (not present in the design record; flagged for review): `acif.hook.event_unrecognized`, `acif.hook.handlers_missing`, `acif.hook.handler_type_unrecognized`, `acif.hook.script_file_missing`; the §9.4 preimage framing, including its broadening from the design record's `scripts[]`-only wiring to the entire canonical extension block; the §7.1/§9.3 canonical array-ordering and inline-content-normalization pins; the §13.1 `os_divergent` executable-identity predicate; and the §6.3 model unification. The preimage broadening and the model unification were ratified back into the design record (SHAPE.md Decisions #19/#33, hook extension block, Appendix C.3, TV-HOOK row) at promotion time. A spec-purist review of both exemplar documents ran before replication; all findings were applied.

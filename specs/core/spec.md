@@ -64,6 +64,8 @@ Dependency direction: every other ACIF document depends normatively on this one.
 
 **fix-forward diagnostic** — a diagnostic whose text names the remedy that makes the input conformant, not only the defect.
 
+**ingestion** — the point at which a canonicalizer first reads an item's source and referenced bytes. Reject conditions gated "at ingestion" bind the conforming canonicalizer; a validator consuming already-canonical form does not re-evaluate them.
+
 ## 3. Requirements Language
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as shown here.
@@ -188,6 +190,8 @@ Each file in the body is classified **text** or **binary**:
 
 **Binary files** are hashed as SHA-256 over their raw bytes.
 
+*(Informative)* The text/binary classification exists solely to make hashing stable; it is not a security classification. Some plain-text script extensions (e.g., `.ps1`, `.cmd`, `.bat`) are outside `TEXT_EXTENSIONS` and hash as raw bytes, so a line-ending-only edit moves their hash where it would not move a `.sh` file's. Moderation logic distinguishing source scripts from opaque compiled artifacts must not key on this flag. The set is closed at this value because the algorithm is adopted verbatim from its provenance (§7.1) together with its published test vectors; revising the set is a hash-breaking change reserved for a future algorithm version.
+
 **Single-file bodies** with a frontmatter surface are hashed as SHA-256 over the canonical text form of the content with the frontmatter block stripped. A change confined to frontmatter does not move `body_hash`; it moves `metadata_hash` ([ACIF-PUBLISHER]).
 
 ### 7.4 Directory combine (multi-file bodies)
@@ -245,6 +249,8 @@ Where multiple canonical names map to one provider-native name, reverse translat
 
 Where this document set requires a canonical JSON serialization of a value, the serialization is the JSON Canonicalization Scheme [RFC8785] applied to the value: UTF-8, object members sorted, no insignificant whitespace. Fields absent from the canonical form are omitted, not null-filled — absence is semantically distinct from every present value.
 
+RFC 8785 preserves array element order. Where a specification's canonical value contains an array whose element order is not semantically significant, that specification MUST define the canonical element ordering before serialization, and MUST state explicitly where array order is significant and preserved. An unpinned array order in a hash preimage is a cross-implementation determinism defect.
+
 ### 8.7 Diagnostics
 
 - Every named error identifier in this document set is stable and MUST be reported verbatim (`acif.<area>.<condition>`).
@@ -297,11 +303,11 @@ A canonical body MAY reference another item (e.g., a hook naming the skill it ac
 
 ## 11. Security Considerations
 
-**Self-asserted metadata.** Every envelope and frontmatter field is self-asserted by the publisher. `display_name`, `description`, `license`, and `version` carry no integrity guarantee. Consumers MUST NOT make trust decisions from self-asserted metadata without independent verification.
+**Self-asserted metadata.** Every envelope and frontmatter field is self-asserted by the publisher. `display_name`, `description`, `license`, and `version` carry no integrity guarantee; nothing in this format verifies them, and a consumer that treats them as verified has no basis for doing so. The enforceable protections are the testable rules elsewhere in this document set: the three-valued capability evaluation (§9.5), the cross-reference refusal rule (§10), and the registry-layer integrity surfaces ([ACIF-REGISTRY]).
 
 **Hash scope.** `body_hash` proves that bytes are unchanged; it does not prove the bytes were inspected or are safe. All branches, scripts, and prose of an item are bound into one hash — the hash is complete in coverage, not in inspection. An external attestation slot exists at the registry layer ([ACIF-REGISTRY]); what fills it is out of scope for ACIF.
 
-**Executable and prompt-bearing content.** Items carry executable scripts (hooks) and prose that becomes model instructions at runtime (skills, rules, agents, commands). Prompt-injection content in prose fields is load-bearing; `description` is a moderation surface. Registries and install tools SHOULD surface the size and provenance signals defined in [ACIF-REGISTRY] before content reaches execution.
+**Executable and prompt-bearing content.** Items carry executable scripts (hooks) and prose that becomes model instructions at runtime (skills, rules, agents, commands). Prompt-injection content in prose fields is load-bearing; `description` is a moderation surface. The size and provenance signals defined in [ACIF-REGISTRY] exist so that registries and install tools can surface this risk before content reaches execution.
 
 **Identity manipulation.** `id` is publisher-generated and self-asserted; two publishers can claim the same UUID. Cross-registry identity comparison uses `body_hash`, not `id` (see [ACIF-REGISTRY]).
 
