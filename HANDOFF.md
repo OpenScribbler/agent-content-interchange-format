@@ -74,16 +74,17 @@ namespace pinned. The definition-of-done clause for OQs is fully met.
 Definition of done requires "no open OQ without an owner" — OQs may close for
 v0.1 or be explicitly roadmap-deferred with owners; both satisfy it.
 
-### Step 4 — Vocabulary repatriation (syllago → ACIF)
+### Step 4 — Vocabulary repatriation (syllago → ACIF) — DONE (2026-07-11)
 
-Decisions #25 and #29 pin canonical vocabularies by *frozen-snapshot reference to
-syllago source paths* (`cli/internal/converter/toolmap.go`, `hooks.go`). Under
-the new authority direction this is backwards, and those paths are going stale
-(capmon extraction). Inline the pinned vocabularies into ACIF spec text as owned
-normative appendices: canonical tool names, hook event vocabulary (~30 names),
-handler-type enum. Syllago/capmon then conform to ACIF's copy, not vice versa.
-Decisions #30 and #31 (ACIF-originated vocabularies) already established the
-owned-vocab pattern to migrate to.
+**Appendix C** (SHAPE.md) now carries the ACIF-owned canonical vocabularies:
+C.1 tool names (17 — full per-provider mapping, reverse-translation
+tiebreakers, matcher discipline, MCP tool-name formats), C.2 hook events
+(exactly 39, not the estimated ~30), C.3 handler-type enum with the
+absent-type→command legacy residual. Decisions #25/#29 amended — authority
+direction inverted; syllago/capmon conform to ACIF's copy. Transcription
+verified mechanically against syllago @ cf047f52 (byte-exact, both tables).
+Remaining syllago/capmon mentions in SHAPE.md are informative provenance
+only — the no-normative-reference clause of the definition of done is met.
 
 ### Step 5 — Promote SHAPE.md into the actual specs
 
