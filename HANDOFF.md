@@ -1,7 +1,8 @@
 # HANDOFF — Finish ACIF v0.1
 
-> Written 2026-07-10 from a capmon planning session. Read this first, then SHAPE.md.
-> Delete this file when the plan below is absorbed into normal working docs.
+> Written 2026-07-10 from a capmon planning session; refreshed 2026-07-10 after
+> the OQ-7 close. Read this first, then SHAPE.md. Delete this file when the
+> plan below is absorbed into normal working docs.
 
 ## Why ACIF is now the priority
 
@@ -13,71 +14,72 @@ evolve through ACIF spec changes. capmon's publish contract reserves a `spec_ref
 field per canonical key, to be filled as each L1 spec lands. Finishing ACIF
 therefore unblocks capmon's consumer contract — ACIF first, capmon Phase 4 after.
 
-## Current state (verified 2026-07-10)
+## Current state (verified 2026-07-10, post-OQ-7 close)
 
-- SHAPE.md carries **29 decisions** and the registry-section schema.
-- **Four vocabulary walks complete** (all panel-resolved, `requires` empty for
-  v0.1): MCP, agents, hooks, and **skills** — but the skills walk result is NOT
-  yet folded into SHAPE.md. `panel/skills-requires-consensus.md` (untracked) is
-  the adopted record; SHAPE.md OQ-7 still wrongly lists skills as "remaining."
-- **Nothing committed since 2026-05-11.** Untracked: ROADMAP.md, four consensus
-  docs (skills, hooks, agents, mcp), panel/pack-model*, research/, .develop/.
-  Modified: SHAPE.md, README.md, examples/obra/*, specs/skill-interchange/spec.md.
-- The long grill session that produced the skills consensus was not finished.
-  Its transcripts are not recoverable from this handoff — the consensus doc is
-  the record. **If any selection you remember making is missing from
-  `panel/skills-requires-consensus.md`, surface it before Step 2.**
+- SHAPE.md carries **31 decisions**, all six extension blocks, and the
+  registry-section schema. Working tree clean at `c7e3398`.
+- **Steps 0–2 below are DONE.** All six vocabulary walks are panel-resolved,
+  folded into SHAPE.md, and committed: MCP, agents, hooks, skills, rules
+  (first 2:2 split — Decision #30, out-of-band guardrail), and commands
+  (3:1 — Decision #31, derivation-vs-heuristic refinement, three-way routing).
+  **OQ-7 is CLOSED six-for-six, validated** — `requires` is empty/absent for
+  v0.1 on every content type.
+- Panel records: `panel/{mcp,agents,hooks,skills,rules,commands}-requires-consensus.md`.
+  The rules and commands docs carry the standing tests governing all future
+  capability questions: the **out-of-band eligibility guardrail**, the
+  **derivation-vs-heuristic refinement**, and the **three-way routing**
+  (body → derivable/opaque; provider → matrix; user-environment → requires).
 
 ## The plan
 
-### Step 0 — Commit the working tree
-Review and commit the outstanding work as-is (consensus docs, ROADMAP, research)
-before changing anything. It is months of panel output sitting unprotected.
+### Steps 0–2 — DONE (2026-07-10)
 
-### Step 1 — Fold the skills consensus into SHAPE.md
-Everything adopted in `panel/skills-requires-consensus.md`:
-- **Amend Decision #19**: add the normative single-file vs multi-file
-  *classification predicate* (spec-purist's gap — same defect class Decision #24
-  fixed for MCP transport defaults).
-- **Amend Decision #21**: `activation.user_invocable: bool` (default true),
-  defaults materialized at canonicalization, `body_hash` computed
-  post-materialization. (Remy's adoption-data objection was overridden by Holden;
-  preserve it as informative caution.)
-- Record the skills per-key disposition table (4 DERIVABLE / 11 OOS-L1 / 0
-  eligible), the single-clause `auto_invocable` predicate, the
-  `skill_bundled_resources` tightening (exclusion list per registry-operator).
-- Update OQ-7 (skills slice resolved), add OQ-10 (SkillMeta
-  allowed-tools/model/hooks promotion), add TV-SKILL-* family to Appendix B.
-- Whitespace-only string rule for all D_K predicates (Strict: `len(s) > 0`).
+Working tree committed; skills consensus folded into SHAPE.md (Decision #19/#21
+amendments); rules and commands walks run and cascaded (Decisions #30, #31).
+See the panel consensus docs and SHAPE.md's OQ-7 row for the full record.
 
-### Step 2 — Remaining vocabulary walks: rules, then commands
-Same panel process (remy, karpathy, spec-purist, registry-operator; same
-three-way disposition under Decision #23). The panel has flagged **rules as the
-load-bearing test** of empty-as-steady-state — it is the prose-purest content
-type, and spec-purist warned that a fifth unresolved scaffolding gap turns the
-principle into "normative theater." Expect this walk to either validate the
-principle or produce the first `requires`-eligible key. Do not force empty.
+### Queued design items (before or alongside Step 3)
+
+- **OQ-11 — `source_uri` normative tightening** (filed 2026-07-10). Substance:
+  RFC 3986, https-only, post-redirect, percent-encoding per §6.2.2, fragment
+  stripped, last-path-segment normative for direct file URLs. Must land before
+  TV-11+ vectors (Step 6 dependency). Likely shape: targeted mini-review
+  (spec-purist ± registry-operator), not a full panel.
+- **`platform_commands` batched panel** (queued since May). Reviewer set:
+  registry-operator + spec-purist + valsorda + enterprise-security. Gather
+  context first: grep capmon + provider-capabilities for what platform_commands
+  means post-extraction (it was a HIF-era question).
 
 ### Step 3 — Close the open questions
+
 - OQ-6: `os`/`arch` absence semantics ("all" vs "unspecified").
-- OQ-8: skill supplementary-file referencing (Remy explicitly kept this open —
-  body-hash answers "bundle intact," not "which file is referenced").
+- OQ-8: body-content derivation generally (extended twice — now spans @-refs,
+  placeholder tokens, injection directives; structured-record bar recorded;
+  the never-parse branch MUST re-hear spec-purist's preserved rules dissent).
 - OQ-9: two-tier freshness precedence (sidecar `expires` vs external attestation).
-- OQ-10: latent SkillMeta field promotion (from Step 1).
+- OQ-10: latent-field promotion (SkillMeta + CommandMeta; uniformity constraint).
+- OQ-11: source_uri tightening (above).
 - Pin the literal `ACIF_PACK_NAMESPACE` UUIDv5 constant (registry-operator's
   OP-COND-1: non-negotiable before v0.1 publication).
 
+Definition of done requires "no open OQ without an owner" — OQs may close for
+v0.1 or be explicitly roadmap-deferred with owners; both satisfy it.
+
 ### Step 4 — Vocabulary repatriation (syllago → ACIF)
+
 Decisions #25 and #29 pin canonical vocabularies by *frozen-snapshot reference to
 syllago source paths* (`cli/internal/converter/toolmap.go`, `hooks.go`). Under
 the new authority direction this is backwards, and those paths are going stale
 (capmon extraction). Inline the pinned vocabularies into ACIF spec text as owned
 normative appendices: canonical tool names, hook event vocabulary (~30 names),
 handler-type enum. Syllago/capmon then conform to ACIF's copy, not vice versa.
+Decisions #30 and #31 (ACIF-originated vocabularies) already established the
+owned-vocab pattern to migrate to.
 
 ### Step 5 — Promote SHAPE.md into the actual specs
+
 SHAPE.md self-describes as "not a spec — a snapshot. Promote to individual spec
-files once stable." After Steps 1–4 it is stable. Ship order:
+files once stable." After Steps 3–4 it is stable. Ship order:
 1. `specs/hooks-interchange/` — the designated exemplar, currently empty.
    Source material: SHAPE hook block + Decision #29 vocab + capmon's
    canonical-keys/provider-formats data (now at `~/.local/src/capmon` post-inversion).
@@ -90,11 +92,12 @@ files once stable." After Steps 1–4 it is stable. Ship order:
    provider-support decisions consume capmon's capability matrix.
 
 ### Step 6 — Conformance suite
+
 `conformance/` directory with the full TV catalog (TV-1..10, TV-MCP-*,
-TV-AGENT-*, TV-HOOK-*, TV-SKILL-*, plus rules/commands families from Step 2).
-Appendix B is explicit: the vectors are normatively authoritative; reference
-scripts are informative. Reference impls for `body_hash` already exist in
-`../moat/reference/`.
+TV-AGENT-*, TV-HOOK-*, TV-SKILL-*, TV-RULE-*, TV-COMMAND-*). Appendix B is
+explicit: the vectors are normatively authoritative; reference scripts are
+informative. Reference impls for `body_hash` already exist in
+`../moat/reference/`. TV-11+ vectors are gated on OQ-11.
 
 ## Definition of done (v0.1)
 
@@ -105,7 +108,7 @@ conform to ACIF, not the reverse).
 
 ## Pointers
 
-- Panel records: `panel/*-consensus.md` (skills is the newest and unfolded one)
+- Panel records: `panel/*-consensus.md` (all six walks folded into SHAPE.md)
 - Deferred scope: ROADMAP.md (do not let deferred items creep into v0.1)
 - capmon relationship: capmon publishes provider capability *facts* conforming to
   ACIF vocabularies; the caniuse-to-MDN analogy. Its inversion plan lives in the
