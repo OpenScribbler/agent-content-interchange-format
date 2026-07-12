@@ -122,11 +122,11 @@
       hooks/lin.sh: "#!/bin/sh\necho lin\n"
       hooks/mac.sh: "#!/bin/sh\necho mac\n"
   expect:
-    canonical_scripts:
-      - {type: file, path: hooks/base.sh}
-      - {type: file, path: hooks/win.cmd, os: [windows]}
-      - {type: file, path: hooks/lin.sh, os: [linux]}
+    canonical_scripts:   # canonical order — sorted by each entry's JCS bytes ([ACIF-HOOK] §9.3)
       - {type: file, path: hooks/mac.sh, os: [darwin]}
+      - {type: file, path: hooks/lin.sh, os: [linux]}
+      - {type: file, path: hooks/win.cmd, os: [windows]}
+      - {type: file, path: hooks/base.sh}
     provenance: declared
     body_hash: "11f1e91480d2fdfd247311cc52240bf0fb2293febeccaeeadafacd74707cb32d"
 

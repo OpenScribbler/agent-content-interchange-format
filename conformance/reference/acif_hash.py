@@ -93,14 +93,18 @@ def file_hash(name: str, data: bytes) -> str:
 # ── frontmatter strip ([ACIF-CORE] §7.3, single-file bodies) ─────────────────
 
 def strip_frontmatter(data: bytes) -> bytes:
-    """Remove a leading YAML frontmatter block delimited by '---' lines."""
+    """Remove a leading YAML frontmatter block delimited by '---' lines.
+    The closing delimiter line may be terminated by LF or by end of input
+    ([ACIF-CORE] §7.3)."""
     text = canonical_text(data)
     if not text.startswith(b"---\n"):
         return text
     end = text.find(b"\n---\n", 3)
-    if end == -1:
-        return text
-    return text[end + len(b"\n---\n"):]
+    if end != -1:
+        return text[end + len(b"\n---\n"):]
+    if text.endswith(b"\n---"):
+        return b""
+    return text
 
 
 # ── body classification ([ACIF-CORE] §7.2) ───────────────────────────────────

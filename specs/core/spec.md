@@ -192,7 +192,7 @@ Each file in the body is classified **text** or **binary**:
 
 *(Informative)* The text/binary classification exists solely to make hashing stable; it is not a security classification. Some plain-text script extensions (e.g., `.ps1`, `.cmd`, `.bat`) are outside `TEXT_EXTENSIONS` and hash as raw bytes, so a line-ending-only edit moves their hash where it would not move a `.sh` file's. Moderation logic distinguishing source scripts from opaque compiled artifacts must not key on this flag. The set is closed at this value because the algorithm is adopted verbatim from its provenance (§7.1) together with its published test vectors; revising the set is a hash-breaking change reserved for a future algorithm version.
 
-**Single-file bodies** with a frontmatter surface are hashed as SHA-256 over the canonical text form of the content with the frontmatter block stripped. A change confined to frontmatter does not move `body_hash`; it moves `metadata_hash` ([ACIF-PUBLISHER]).
+**Single-file bodies** with a frontmatter surface are hashed as SHA-256 over the canonical text form of the content with the frontmatter block stripped. The frontmatter block is delimited in the canonical text form by a leading line consisting of `---` and the next subsequent line consisting of `---`, where the closing line is terminated by LF or by end of input; the block, both delimiter lines included, is removed. A change confined to frontmatter does not move `body_hash`; it moves `metadata_hash` ([ACIF-PUBLISHER]).
 
 ### 7.4 Directory combine (multi-file bodies)
 
@@ -310,7 +310,7 @@ Empty `requires` on all six content types is the validated steady state of ACIF 
 
 A canonical body MAY reference another item (e.g., a hook naming the skill it activates, an agent naming MCP configurations). Requirements:
 
-- Load-bearing cross-references MUST use the target item's `id` (UUID). Name-based fields alongside a reference are human-readable advisory only; implementations MUST NOT resolve through them.
+- A reference is authored in one of two forms. A **UUID-authored** reference carries the target item's `id`; a name field alongside it is human-readable advisory only, and implementations MUST NOT resolve through the advisory name. A **name-declared** reference carries only a name, where that is all the source format provides (e.g., an agent's MCP-server and skill names); it enters the `declared` state and is resolved to a target `id` by registry compute ([ACIF-REGISTRY]). Load-bearing *consumption* — linkage, install refusal — always uses the authored or resolved `id`; a consumer MUST NOT treat a raw name match as resolution.
 - Each reference site resolves to one of four states: `declared | resolved | unresolved | revoked`. Resolution is registry compute ([ACIF-REGISTRY]); the state vocabulary is pinned here so all documents share it.
 - Install tools MUST refuse items carrying any `unresolved` or `revoked` reference unless the operator has explicitly opted in.
 

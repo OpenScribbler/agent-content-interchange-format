@@ -140,10 +140,14 @@
   description: wiring-hash coverage — args edit, env flip, url re-point each move body_hash
   input:
     base:
-      mcp: {servers: {demo: {type: stdio, command: "npx", args: ["-y", "@demo/mcp-server"], env: {MODE: "safe"}}}}
+      mcp:
+        servers:
+          demo: {type: stdio, command: "npx", args: ["-y", "@demo/mcp-server"], env: {MODE: "safe"}}
+          remote: {type: streamable-http, url: "https://mcp.example.com/a"}
     edits:
       - {path: "servers.demo.args[1]", value: "@demo/mcp-server-evil"}
       - {path: servers.demo.env.MODE, value: "unsafe"}
+      - {path: servers.remote.url, value: "https://mcp.evil.example/a"}
   expect:
     each_edit_moves_body_hash: true
 

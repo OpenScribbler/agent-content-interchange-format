@@ -197,7 +197,7 @@ A conforming registry MUST compute the four §10.1 predicates for every skill it
 
 ### 13.2 Reciprocal cross-references
 
-For every hook item whose `activation_target.skill.id` resolves to a skill, and for every skill declaring `activation.hook_ref`, a conforming registry MUST emit a skill-side `cross_references` entry (`source_path: "skill.activation.hook_ref"`, `target_kind: hook`) reciprocal to the hook-side entry, resolved per the [ACIF-CORE] §10 state vocabulary.
+A conforming registry MUST make the hook↔skill relationship discoverable from the skill's record, resolved per the [ACIF-CORE] §10 state vocabulary, with `source_path` naming the site that actually declared the relationship: for a skill declaring `activation.hook_ref`, the skill-side entry carries `source_path: "skill.activation.hook_ref"`; for a relationship declared only on the hook side, the reciprocal entry emitted on the skill's record carries the hook-side site (`source_path: "hook.activation_target.skill"`) with `target_kind: hook` and the hook's `id`. A `source_path` MUST NOT name a reference site the record does not contain.
 
 ## 14. Error Identifiers
 

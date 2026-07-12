@@ -98,7 +98,7 @@
     projection:
       derivable: true
       mode: glob
-      globs: {present: true, count: 3, sample_max: 16, truncated: false}
+      globs: {present: true, count: 3, sample: ["a/**", "b/**", "c/**"], truncated: false}   # sample capped at 16
 
 - id: TV-RULE-h
   spec: "[ACIF-RULE] §9"

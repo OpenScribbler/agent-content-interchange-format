@@ -14,7 +14,7 @@ This document defines the canonical interchange form for the rule content type: 
 
 A rule is a Markdown document whose prose becomes standing model instructions — coding conventions, project constraints, style guidance. Unlike a skill, a rule has no invocation surface of its own: what varies across providers is *when it loads*. Provider formats express that trigger through at least six distinct mechanisms (always-on defaults, glob triggers, frontmatter glob lists, model discretion, manual invocation, slash commands); this document defines the provider-neutral canonical activation vocabulary those mechanisms canonicalize to and render back from.
 
-Rules are a frontmatter-bearing content type ([ACIF-CORE] §6.1): the sidecar is the primary carrier, and frontmatter on the source file is an opt-in supplementary layer. The rule body is prose that ACIF 0.1 carries opaquely (§8.4).
+Rules are a frontmatter-bearing content type ([ACIF-CORE] §6.1): the sidecar is the primary carrier, and frontmatter on the source file is an opt-in supplementary layer. The rule body is prose that ACIF 0.1 carries opaquely (§8.3).
 
 The activation-mode vocabulary in this document is ACIF-originated: no prior implementation structure could represent all four canonical modes, so this vocabulary was authored for ACIF rather than adopted from a provider or converter snapshot. Downstream implementations conform to this document's copy.
 
@@ -95,7 +95,7 @@ Canonical form therefore always carries an explicit `activation.mode`. Validator
 
 ### 8.1 Body classification and `body_hash`
 
-The rule's canonical body is the rule source file's prose, classified and hashed per [ACIF-CORE] §7: single-file bodies hash the canonical text form with the frontmatter block stripped; a rule shipping co-located content files classifies multi-file per [ACIF-CORE] §7.2 and hashes per §7.4.
+The rule's canonical body is the rule source file's prose, classified and hashed per [ACIF-CORE] §7: single-file bodies hash the canonical text form with the frontmatter block stripped; a rule shipping co-located content files classifies multi-file per [ACIF-CORE] §7.2 and hashes per [ACIF-CORE] §7.4.
 
 ### 8.2 Extension-block hash coverage
 
