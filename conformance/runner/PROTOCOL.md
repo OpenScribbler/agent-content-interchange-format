@@ -150,7 +150,15 @@ discipline):
 | `publisher_section` | faithfully-observed publisher section |
 | `classification` | `single-file` \| `multi-file` per [ACIF-CORE] §7.2 |
 | `conformant` / `reason` | §3 verdict transport, for record-validation forms |
+| `installable` | boolean install-disposition summary on record-validation forms (e.g. a pack-less item is first-class: `conformant: true, installable: true`) |
 | `diagnostics` | §3.1 |
+
+Pack-manifest form: `kind: "pack"` with `manifests` (array of
+`{"source": "<manifest filename>", …provider manifest fields}`) requests
+pack-identity reconciliation ([ACIF-PUBLISHER] §9.1) →
+`result`: `canonical_source`, `canonical_display_name`, `diagnostics`
+(`acif.publisher.pack_source_conflict` with Appendix A params on
+conflict).
 
 Rejections use the error response with the spec-minted identifier
 (`acif.body.symlink`, `acif.body.path_collision`, `acif.body.empty`,
@@ -238,6 +246,12 @@ when the request is for one) → `result`: `projection` (the projected
 value), or `conformant`/`reason` verdict transport for
 projection-validation forms.
 
+Pinned projection: `"projection": "script_selection"` evaluates the
+per-OS selection rule ([ACIF-HOOK] §7.3) — `input` additionally carries
+`targets` (array of OS enum members) →
+`result`: `{"selection": {"<os>": "<selected path>" | "none"}, "diagnostics": […]}`
+(`acif.hook.script_no_platform_match` on a no-match target).
+
 Pinned projection: `"projection": "derived_capabilities"` evaluates the
 per-type derivation predicates D_K ([ACIF-REGISTRY] §8.1; the L1 specs'
 "DERIVABLE keys" sections) over the supplied record →
@@ -251,8 +265,32 @@ the vectors', the wire vocabulary is boolean.
 
 Cross-reference resolution ([ACIF-REGISTRY] §9).
 `input`: `item`, `registry_state` (the known-items table the vector
-supplies) → `result`: `cross_reference` (resolution outcome),
-`reciprocal_entries` (emitted reciprocal records, where asserted).
+supplies) → `result`: `cross_reference` (object or array),
+`reciprocal_entries` (emitted reciprocal records, where asserted),
+`install` (disposition string, where resolution outcome determines one).
+
+Pinned `cross_reference` object schema: `source_path`, `declared_name`,
+`target_kind`, `resolution` (`resolved` | `unresolved` | `revoked`),
+`target_id` (when resolved). An unresolved reference carries a §3.1
+diagnostic whose `params` include `declared_name`.
+
+### 4.12 `evaluate_install`
+
+Install-time disposition over a record the vector supplies fully formed
+([ACIF-HOOK] §11 coverage-gap rule; [ACIF-CORE] §10 / [ACIF-REGISTRY] §9
+revoked-reference refusal). `input`: `item` (or canonical record),
+optional `install_target_os` → `result`: `install` (disposition string,
+e.g. `refuse-unless-operator-opt-in`, `proceed`), `diagnostics`.
+
+### 4.13 `reconcile_frontmatter`
+
+Publisher-side frontmatter CI reconciliation ([ACIF-PUBLISHER] §7).
+`input`: `sidecar_value` (canonical declared values),
+`source_frontmatter` (what the source file carries), `mode` (`default` |
+`overwrite`) → `result`: `action` (`add-silently` | `leave-untouched` |
+`block` | `overwrite`), `diagnostics`
+(`acif.publisher.frontmatter_conflict` accompanies `block` and
+`overwrite`-with-log outcomes).
 
 ## Appendix A — Pinned diagnostic params
 
@@ -265,6 +303,7 @@ Payload-pinned (a vector asserts params content):
 |---|---|---|
 | `acif.hook.script_platform_ambiguous` | `os` (colliding OS tag), `entries` (colliding entry indices, input order) | TV-PLATFORM-f |
 | `acif.source_uri.filename_conflict` | `declared_name`, `url_derived_name` | the §10.5 record-both vector |
+| `acif.publisher.pack_source_conflict` | `sources` (conflicting manifest filenames), `values` (conflicting values, same order) | TV-L2-f |
 
 Identifier-only (vectors assert presence of the id; `params` MAY be empty
 and is not asserted): `acif.command.placeholder_named_arg_collapsed`,

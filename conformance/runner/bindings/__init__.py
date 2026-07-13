@@ -28,7 +28,15 @@ def load_all() -> None:
     global _LOADED
     if _LOADED:
         return
+    importlib.import_module(__name__ + ".core")
     importlib.import_module(__name__ + ".hook")
+    importlib.import_module(__name__ + ".platform")
+    importlib.import_module(__name__ + ".skill")
+    importlib.import_module(__name__ + ".rule")
+    importlib.import_module(__name__ + ".command")
+    importlib.import_module(__name__ + ".agent")
+    importlib.import_module(__name__ + ".mcp")
+    importlib.import_module(__name__ + ".render")
     _LOADED = True
 
 
@@ -68,153 +76,50 @@ def binding_set_hash() -> str:
 
 
 UNBOUND = {
-    "TV-AGENT-a",  # stage-2
-    "TV-AGENT-b",  # stage-2
-    "TV-AGENT-c",  # stage-2
-    "TV-AGENT-d",  # stage-2
-    "TV-AGENT-e",  # stage-2
-    "TV-AGENT-f",  # stage-2
-    "TV-AGENT-g",  # stage-2
-    "TV-AGENT-h",  # stage-2
-    "TV-AGENT-i",  # stage-2
-    "TV-AGENT-j",  # stage-2
-    "TV-AGENT-k",  # stage-2
-    "TV-COMMAND-a",  # stage-2
-    "TV-COMMAND-b",  # stage-2
-    "TV-COMMAND-c",  # stage-2
-    "TV-COMMAND-d",  # stage-2
-    "TV-COMMAND-e",  # stage-2
-    "TV-COMMAND-f",  # stage-2
-    "TV-COMMAND-g",  # stage-2
-    "TV-COMMAND-h",  # stage-2
-    "TV-COMMAND-i",  # stage-2
-    "TV-COMMAND-j",  # stage-2
-    "TV-COMMAND-k",  # stage-2
-    "TV-COMMAND-l",  # stage-2
-    "TV-COMMAND-m",  # stage-2
-    "TV-1",  # stage-2
-    "TV-2",  # stage-2
-    "TV-3",  # stage-2
-    "TV-4",  # stage-2
-    "TV-5",  # stage-2
-    "TV-6",  # stage-2
-    "TV-7",  # stage-2
-    "TV-8",  # stage-2
-    "TV-9",  # stage-2
-    "TV-10",  # stage-2
-    "TV-11",  # stage-2
-    "TV-12",  # stage-2
-    "TV-13",  # stage-2
-    "TV-L2-a",  # stage-2
-    "TV-L2-b",  # stage-2
-    "TV-L2-c",  # stage-2
-    "TV-L2-d",  # stage-2
-    "TV-L2-e",  # stage-2
-    "TV-L2-f",  # stage-2
-    "TV-L3-a",  # stage-2
-    "TV-L3-b",  # stage-2
-    "TV-L3-c",  # stage-2
-    "TV-L3-d",  # stage-2
-    "TV-FRESH-a",  # stage-2
-    "TV-FRESH-b",  # stage-2
-    "TV-FRESH-c",  # stage-2
-    "TV-FRESH-d",  # stage-2
-    "TV-FRESH-e",  # stage-2
-    "TV-FRESH-f",  # stage-2
-    "TV-FRESH-g",  # stage-2
-    "TV-FRESH-h",  # stage-2
-    "TV-FRESH-i",  # stage-2
-    "TV-FRESH-j",  # stage-2
-    "TV-FRESH-k",  # stage-2
-    "TV-MCP-a",  # stage-2
-    "TV-MCP-b",  # stage-2
-    "TV-MCP-c",  # stage-2
-    "TV-MCP-d",  # stage-2
-    "TV-MCP-e",  # stage-2
-    "TV-MCP-f",  # stage-2
-    "TV-MCP-g",  # stage-2
-    "TV-MCP-h",  # stage-2
-    "TV-MCP-i",  # stage-2
-    "TV-MCP-j",  # stage-2
-    "TV-MCP-k",  # stage-2
-    "TV-MCP-k2",  # stage-2
-    "TV-MCP-l",  # stage-2
-    "TV-MCP-m",  # stage-2
-    "TV-PLATFORM-a",  # stage-2
-    "TV-PLATFORM-b",  # stage-2
-    "TV-PLATFORM-c",  # stage-2
-    "TV-PLATFORM-d",  # stage-2
-    "TV-PLATFORM-e",  # stage-2
-    "TV-PLATFORM-f",  # stage-2
-    "TV-PLATFORM-g",  # stage-2
-    "TV-PLATFORM-g2",  # stage-2
-    "TV-PLATFORM-h",  # stage-2
-    "TV-PLATFORM-i",  # stage-2
-    "TV-PLATFORM-j",  # stage-2
-    "TV-PLATFORM-k",  # stage-2
-    "TV-PLATFORM-l",  # stage-2
-    "TV-PLATFORM-m",  # stage-2
-    "TV-PLATFORM-n",  # stage-2
-    "TV-PLATFORM-o",  # stage-2
-    "TV-PLATFORM-p",  # stage-2
-    "TV-PLATFORM-q",  # stage-2
-    "TV-PLATFORM-q2",  # stage-2
-    "TV-PLATFORM-r",  # stage-2
-    "TV-PLATFORM-s",  # stage-2
-    "TV-PLATFORM-t",  # stage-2
-    "TV-RENDER-a",  # stage-2
-    "TV-RENDER-b",  # stage-2
-    "TV-RENDER-c",  # stage-2
-    "TV-RENDER-d",  # stage-2
-    "TV-RULE-a",  # stage-2
-    "TV-RULE-b",  # stage-2
-    "TV-RULE-c",  # stage-2
-    "TV-RULE-d",  # stage-2
-    "TV-RULE-e",  # stage-2
-    "TV-RULE-f",  # stage-2
-    "TV-RULE-g",  # stage-2
-    "TV-RULE-h",  # stage-2
-    "TV-RULE-i",  # stage-2
-    "TV-RULE-j",  # stage-2
-    "TV-RULE-k",  # stage-2
-    "TV-RULE-l",  # stage-2
-    "TV-RULE-m",  # stage-2
-    "TV-SKILL-a",  # stage-2
-    "TV-SKILL-b",  # stage-2
-    "TV-SKILL-c",  # stage-2
-    "TV-SKILL-d",  # stage-2
-    "TV-SKILL-e",  # stage-2
-    "TV-SKILL-f",  # stage-2
-    "TV-SKILL-g",  # stage-2
-    "TV-SKILL-h",  # stage-2
-    "TV-SKILL-i",  # stage-2
-    "TV-SKILL-j",  # stage-2
-    "TV-SKILL-k",  # stage-2
-    "TV-SKILL-l",  # stage-2
-    "TV-SKILL-m",  # stage-2
-    "TV-SKILL-n",  # stage-2
-    "TV-URI-a",  # stage-2
-    "TV-URI-b",  # stage-2
-    "TV-URI-c",  # stage-2
-    "TV-URI-d",  # stage-2
-    "TV-URI-e",  # stage-2
-    "TV-URI-f",  # stage-2
-    "TV-URI-g",  # stage-2
-    "TV-URI-h",  # stage-2
-    "TV-URI-i",  # stage-2
-    "TV-URI-j",  # stage-2
-    "TV-URI-k",  # stage-2
-    "TV-URI-l",  # stage-2
-    "TV-URI-l2",  # stage-2
-    "TV-URI-m",  # stage-2
-    "TV-URI-n",  # stage-2
-    "TV-URI-o",  # stage-2
-    "TV-URI-o2",  # stage-2
-    "TV-URI-p",  # stage-2
-    "TV-URI-q",  # stage-2
-    "TV-URI-r",  # stage-2
-    "TV-URI-s",  # stage-2
-    "TV-URI-t",  # stage-2
-    "TV-URI-u",  # stage-2
-    "TV-URI-v",  # stage-2
+    "TV-8",  # protocol-gap: expect.installable has no PROTOCOL §4 result field
+    "TV-L2-d",  # protocol-gap: frontmatter CI action/log result surface is not pinned
+    "TV-L2-f",  # protocol-gap: pack-source conflict diagnostic payload params are not pinned
+    "TV-L3-d",  # protocol-gap: revoked cross-reference install disposition is not exposed by resolve_reference
+    "TV-AGENT-h",  # protocol-gap: render_back expectation does not name a render target
+    "TV-AGENT-j",  # protocol-gap: resolve_reference has no install disposition field
+    "TV-PLATFORM-a",  # protocol-gap: script selection has no PROTOCOL §4 operation/result field
+    "TV-PLATFORM-b",  # protocol-gap: script selection has no PROTOCOL §4 operation/result field
+    "TV-PLATFORM-h",  # protocol-gap: no-match selection has no PROTOCOL §4 operation/result field
+    "TV-PLATFORM-m",  # protocol-gap: render_back expectation does not name a render target
+    "TV-PLATFORM-t",  # protocol-gap: install coverage-gap disposition is not exposed by ingest/render/project
+    "TV-FRESH-a",  # stage-2b
+    "TV-FRESH-b",  # stage-2b
+    "TV-FRESH-c",  # stage-2b
+    "TV-FRESH-d",  # stage-2b
+    "TV-FRESH-e",  # stage-2b
+    "TV-FRESH-f",  # stage-2b
+    "TV-FRESH-g",  # stage-2b
+    "TV-FRESH-h",  # stage-2b
+    "TV-FRESH-i",  # stage-2b
+    "TV-FRESH-j",  # mock-crawl
+    "TV-FRESH-k",  # stage-2b
+    "TV-URI-a",  # stage-2b
+    "TV-URI-b",  # stage-2b
+    "TV-URI-c",  # stage-2b
+    "TV-URI-d",  # stage-2b
+    "TV-URI-e",  # stage-2b
+    "TV-URI-f",  # stage-2b
+    "TV-URI-g",  # stage-2b
+    "TV-URI-h",  # stage-2b
+    "TV-URI-i",  # stage-2b
+    "TV-URI-j",  # stage-2b
+    "TV-URI-k",  # stage-2b
+    "TV-URI-l",  # mock-transport
+    "TV-URI-l2",  # mock-transport
+    "TV-URI-m",  # mock-transport
+    "TV-URI-n",  # mock-transport
+    "TV-URI-o",  # stage-2b
+    "TV-URI-o2",  # stage-2b
+    "TV-URI-p",  # stage-2b
+    "TV-URI-q",  # stage-2b
+    "TV-URI-r",  # stage-2b
+    "TV-URI-s",  # stage-2b
+    "TV-URI-t",  # mock-crawl
+    "TV-URI-u",  # stage-2b
+    "TV-URI-v",  # stage-2b
 }
