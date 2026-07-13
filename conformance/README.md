@@ -54,8 +54,8 @@ description and encoded with YAML double-quoted escapes.
 
 ## Harness families
 
-Two harness families exist, and conformance MUST NOT be claimed on the static
-family alone where a spec requires both ([ACIF-REGISTRY] §5):
+Three harness families exist, and conformance MUST NOT be claimed on the static
+family alone where a spec requires more ([ACIF-REGISTRY] §5):
 
 - **static** — pure-function vectors: bytes in, canonical form / hash /
   identifier out. No I/O beyond the fixture.
