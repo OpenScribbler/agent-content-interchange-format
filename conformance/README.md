@@ -28,6 +28,8 @@ conformance/
   reference/         # informative — reference implementation + generator
     acif_hash.py     # body_hash / metadata_hash / sidecar-only preimage reference
     generate_vectors.py  # fills computed hash values into the catalogs
+  runner/            # conformance runner; DESIGN.md + PROTOCOL.md
+  adapters/          # development adapters
 ```
 
 ## Vector format

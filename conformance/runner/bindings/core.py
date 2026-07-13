@@ -10,13 +10,16 @@ from .common import (
     assert_error,
     assert_present_absent,
     assert_projection_field,
+    assert_relation,
     assert_result_field,
     assert_value,
     derive_pack_id,
+    evaluate_install,
     hash_value,
     ingest,
     project,
     provider_config,
+    reconcile_frontmatter,
     resolve_pack,
     result_for,
     send,
@@ -86,7 +89,8 @@ def tv_1(vector: Vector, session: Any, ctx: Any):
         assert_result_field(result, f"contexts[{idx}]", response, "body_hash", exp["body_hash"])
     if _all_ok(responses):
         observed = [hash_value(response, "body_hash") for response in responses]
-        result.add_check(
+        assert_relation(
+            result,
             "contexts",
             "body_hash_identical_across_contexts",
             exp["body_hash_identical_across_contexts"],
@@ -113,7 +117,8 @@ def tv_2(vector: Vector, session: Any, ctx: Any):
         assert_result_field(result, f"contexts[{idx}]", response, "metadata_hash", exp["metadata_hash"])
     if _all_ok(responses):
         observed = [hash_value(response, "metadata_hash") for response in responses]
-        result.add_check(
+        assert_relation(
+            result,
             "contexts",
             "metadata_hash_identical_across_contexts",
             exp["metadata_hash_identical_across_contexts"],
@@ -185,6 +190,24 @@ def tv_7(vector: Vector, session: Any, ctx: Any):
     return result
 
 
+@binding("TV-8")
+def tv_8(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    item = inp["item"]
+    kind = item.get("publisher_section", {}).get("kind", "skill")
+    response = send(
+        result,
+        session,
+        ctx,
+        ingest(kind, sidecar=item, context={"validation_surface": "publisher_packless_item"}),
+    )
+    assert_result_field(result, "item", response, "conformant", exp["conformant"])
+    assert_result_field(result, "item", response, "installable", exp["installable"])
+    return result
+
+
 @binding("TV-9")
 def tv_9(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
@@ -208,8 +231,9 @@ def tv_10(vector: Vector, session: Any, ctx: Any):
         observed_member = hash_value(response, "member_of")
         # DERIVATION: [ACIF-PUBLISHER] §8.1, §8.3 (from vector spec) make
         # pack identity the id, not the mutable display_name.
-        result.add_check("pack_after", "id_unchanged", exp["id_unchanged"], [before["id"], after["id"]], before["id"] == after["id"])
-        result.add_check(
+        assert_relation(result, "pack_after", "id_unchanged", exp["id_unchanged"], [before["id"], after["id"]], before["id"] == after["id"])
+        assert_relation(
+            result,
             "referencing_item",
             "reference_resolves_after_rename",
             exp["reference_resolves_after_rename"],
@@ -243,7 +267,8 @@ def tv_12(vector: Vector, session: Any, ctx: Any):
     assert_result_field(result, "base", base, "body_hash", exp["base"]["body_hash"])
     root_sidecar = send(result, session, ctx, _ingest_body(ctx, inp["with_root_sidecar"]))
     if base.kind == "ok" and root_sidecar.kind == "ok":
-        result.add_check(
+        assert_relation(
+            result,
             "with_root_sidecar",
             "body_hash_equals_base",
             exp["with_root_sidecar"]["body_hash_equals_base"],
@@ -255,7 +280,8 @@ def tv_12(vector: Vector, session: Any, ctx: Any):
     edited = send(result, session, ctx, _ingest_body(ctx, inp["subdir_sidecar_edited"]))
     assert_result_field(result, "subdir_sidecar_edited", edited, "body_hash", exp["subdir_sidecar_edited"]["body_hash"])
     if base.kind == "ok" and edited.kind == "ok":
-        result.add_check(
+        assert_relation(
+            result,
             "subdir_sidecar_edited",
             "body_hash_equals_base",
             exp["subdir_sidecar_edited"]["body_hash_equals_base"],
@@ -292,7 +318,7 @@ def tv_l2_a(vector: Vector, session: Any, ctx: Any):
             # DERIVATION: [ACIF-PUBLISHER] §5.2 (from vector spec) defines
             # publisher_declared as exactly publisher_section presence.
             observed = hash_value(response, "publisher_section") is not ABSENT
-            result.add_check(case, "publisher_declared", exp[case]["publisher_declared"], observed, observed == exp[case]["publisher_declared"])
+            assert_relation(result, case, "publisher_declared", exp[case]["publisher_declared"], observed, observed)
     return result
 
 
@@ -314,14 +340,16 @@ def tv_l2_b(vector: Vector, session: Any, ctx: Any):
     edited_sidecar.update(inp["edit"])
     edited = send(result, session, ctx, ingest("hook", sidecar=edited_sidecar))
     if response.kind == "ok" and edited.kind == "ok":
-        result.add_check(
+        assert_relation(
+            result,
             "edit",
             "metadata_hash_moves_on_edit",
             exp["metadata_hash_moves_on_edit"],
             [hash_value(response, "metadata_hash"), hash_value(edited, "metadata_hash")],
             hash_value(response, "metadata_hash") != hash_value(edited, "metadata_hash"),
         )
-        result.add_check(
+        assert_relation(
+            result,
             "edit",
             "body_hash_moves_on_edit",
             exp["body_hash_moves_on_edit"],
@@ -355,6 +383,32 @@ def tv_l2_c(vector: Vector, session: Any, ctx: Any):
     return result
 
 
+@binding("TV-L2-d")
+def tv_l2_d(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for idx, case in enumerate(inp["cases"], start=1):
+        expected = exp[f"case_{idx}"]
+        response = send(
+            result,
+            session,
+            ctx,
+            reconcile_frontmatter(inp["sidecar_value"], case["source_frontmatter"], case["mode"]),
+        )
+        assert_result_field(result, f"case_{idx}", response, "action", expected["action"])
+        diagnostic = expected.get("diagnostic") or expected.get("logged")
+        if diagnostic:
+            # DERIVATION: PROTOCOL.md §4.13 carries the vector's
+            # diagnostic-vs-logged distinction through the action value; both
+            # successful overwrite-with-log and blocking cases emit the same
+            # spec diagnostic id.
+            from .common import assert_diagnostic
+
+            assert_diagnostic(result, f"case_{idx}", response, diagnostic)
+    return result
+
+
 @binding("TV-L2-e")
 def tv_l2_e(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
@@ -367,6 +421,37 @@ def tv_l2_e(vector: Vector, session: Any, ctx: Any):
     assert_absent(result, "inferred_pack", inferred, "publisher_section", exp["inferred_pack"]["publisher_section"])
     assert_absent(result, "inferred_pack", inferred, "metadata_hash", exp["inferred_pack"]["metadata_hash"])
     assert_absent(result, "inferred_pack", inferred, "body_hash", exp["inferred_pack"]["body_hash"])
+    return result
+
+
+@binding("TV-L2-f")
+def tv_l2_f(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    response = send(
+        result,
+        session,
+        ctx,
+        {"op": "ingest", "input": {"kind": "pack", "manifests": inp["manifests"]}},
+    )
+    assert_result_field(result, "manifests", response, "canonical_source", exp["canonical_source"])
+    assert_result_field(result, "manifests", response, "canonical_display_name", exp["canonical_display_name"])
+    # DERIVATION: PROTOCOL.md Appendix A pins the diagnostic params as
+    # `sources` and `values`; the vector names the corresponding committed
+    # literals as `names_sources` and `names_values`.
+    from .common import assert_diagnostic
+
+    assert_diagnostic(
+        result,
+        "manifests",
+        response,
+        exp["diagnostic"]["id"],
+        {
+            "sources": exp["diagnostic"]["names_sources"],
+            "values": exp["diagnostic"]["names_values"],
+        },
+    )
     return result
 
 
@@ -396,4 +481,12 @@ def tv_l3_c(vector: Vector, session: Any, ctx: Any):
     # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
     response = send(result, session, ctx, project(vector.data["input"]["advisory"], "advisory"))
     assert_result_field(result, "advisory", response, "conformant", vector.data["expect"]["conformant"])
+    return result
+
+
+@binding("TV-L3-d")
+def tv_l3_d(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    response = send(result, session, ctx, evaluate_install(vector.data["input"]["item"]))
+    assert_result_field(result, "item", response, "install", vector.data["expect"]["install"])
     return result

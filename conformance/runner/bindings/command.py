@@ -8,6 +8,7 @@ from .common import (
     assert_diagnostic,
     assert_output_contains,
     assert_output_equals,
+    assert_relation,
     assert_result_field,
     assert_value,
     evaluate_requires,
@@ -66,7 +67,8 @@ def tv_command_a(vector: Vector, session: Any, ctx: Any):
         assert_value(result, case, "canonical_body", exp["canonical_body"], _canonical_body(response), response)
         assert_result_field(result, case, response, "body_hash", exp["body_hash"])
     if _all_ok([gemini, canonical]):
-        result.add_check(
+        assert_relation(
+            result,
             "sources",
             "body_hash_identical_across_sources",
             exp["body_hash_identical_across_sources"],
@@ -100,7 +102,8 @@ def tv_command_b(vector: Vector, session: Any, ctx: Any):
         assert_result_field(result, case, response, "body_hash", exp["body_hash"])
         assert_diagnostic(result, case, response, exp["diagnostic"])
     if _all_ok(responses):
-        result.add_check(
+        assert_relation(
+            result,
             "variants",
             "body_hash_identical",
             exp["body_hash_identical"],
@@ -111,12 +114,13 @@ def tv_command_b(vector: Vector, session: Any, ctx: Any):
         original = next(iter(inp["variant_1"]["files"].values()))
         rendered_output = output_value(rendered)
         observed_identity = rendered_output == original if isinstance(rendered_output, str) else ABSENT
-        result.add_check(
+        assert_relation(
+            result,
             "render",
             "render_back_identity",
             exp["render_back_identity"],
             observed_identity,
-            observed_identity == exp["render_back_identity"],
+            observed_identity is True,
         )
     return result
 
@@ -143,7 +147,7 @@ def tv_command_d(vector: Vector, session: Any, ctx: Any):
     assert_value(result, "files", "canonical_body", exp["canonical_body"], _canonical_body(response), response)
     advisory = send(result, session, ctx, project(hash_value(response, "canonical"), "advisory"))
     observed = _advisory_present(advisory)
-    result.add_check("files", "advisory_scan_counts_fenced_token", exp["advisory_scan_counts_fenced_token"], observed, observed == exp["advisory_scan_counts_fenced_token"])
+    assert_relation(result, "files", "advisory_scan_counts_fenced_token", exp["advisory_scan_counts_fenced_token"], observed, observed)
     return result
 
 
@@ -154,10 +158,10 @@ def tv_command_e(vector: Vector, session: Any, ctx: Any):
     response = send(result, session, ctx, _ingest_files(ctx, vector.data["input"], source_provider="canonical"))
     advisory = send(result, session, ctx, project(hash_value(response, "canonical"), "advisory"))
     observed = _advisory_present(advisory)
-    result.add_check("files", "recognized_as_placeholder", exp["recognized_as_placeholder"], observed, observed == exp["recognized_as_placeholder"])
+    assert_relation(result, "files", "recognized_as_placeholder", exp["recognized_as_placeholder"], observed, observed)
     # DERIVATION: [ACIF-COMMAND] §7 (from vector spec) has no escape
     # grammar; the same advisory observation carries this boolean.
-    result.add_check("files", "no_escape_grammar", exp["no_escape_grammar"], observed, observed == exp["no_escape_grammar"])
+    assert_relation(result, "files", "no_escape_grammar", exp["no_escape_grammar"], observed, observed)
     return result
 
 
@@ -167,7 +171,7 @@ def tv_command_f(vector: Vector, session: Any, ctx: Any):
     exp = vector.data["expect"]
     response = send(result, session, ctx, _ingest_files(ctx, vector.data["input"], source_provider="canonical"))
     original = next(iter(vector.data["input"]["files"].values()))
-    result.add_check("files", "canonical_body_verbatim", exp["canonical_body_verbatim"], _canonical_body(response), _canonical_body(response) == original)
+    assert_relation(result, "files", "canonical_body_verbatim", exp["canonical_body_verbatim"], _canonical_body(response), _canonical_body(response) == original)
     advisory = send(result, session, ctx, project(hash_value(response, "canonical"), "advisory"))
     assert_result_field(result, "files", advisory, "projection", exp["advisory"])
     result.add_check_equivalent(exp["note"])
@@ -180,11 +184,11 @@ def tv_command_g(vector: Vector, session: Any, ctx: Any):
     exp = vector.data["expect"]
     response = send(result, session, ctx, _ingest_files(ctx, vector.data["input"], source_provider="canonical"))
     original = next(iter(vector.data["input"]["files"].values()))
-    result.add_check("files", "canonical_body_verbatim", exp["canonical_body_verbatim"], _canonical_body(response), _canonical_body(response) == original)
+    assert_relation(result, "files", "canonical_body_verbatim", exp["canonical_body_verbatim"], _canonical_body(response), _canonical_body(response) == original)
     advisory = send(result, session, ctx, project(hash_value(response, "canonical"), "advisory"))
     observed = _advisory_present(advisory)
     observed_bool = observed is False
-    result.add_check("files", "not_recognized_as_placeholder", exp["not_recognized_as_placeholder"], observed_bool, observed_bool == exp["not_recognized_as_placeholder"])
+    assert_relation(result, "files", "not_recognized_as_placeholder", exp["not_recognized_as_placeholder"], observed_bool, observed_bool)
     return result
 
 
@@ -199,8 +203,8 @@ def tv_command_h(vector: Vector, session: Any, ctx: Any):
         responses.append(response)
         assert_result_field(result, case, response, "body_hash", exp["body_hash"])
     if _all_ok(responses):
-        result.add_check("variants", "body_hash_identical", exp["body_hash_identical"], [hash_value(r, "body_hash") for r in responses], hash_value(responses[0], "body_hash") == hash_value(responses[1], "body_hash"))
-        result.add_check("variants", "metadata_hash_differs", exp["metadata_hash_differs"], [hash_value(r, "metadata_hash") for r in responses], hash_value(responses[0], "metadata_hash") != hash_value(responses[1], "metadata_hash"))
+        assert_relation(result, "variants", "body_hash_identical", exp["body_hash_identical"], [hash_value(r, "body_hash") for r in responses], hash_value(responses[0], "body_hash") == hash_value(responses[1], "body_hash"))
+        assert_relation(result, "variants", "metadata_hash_differs", exp["metadata_hash_differs"], [hash_value(r, "metadata_hash") for r in responses], hash_value(responses[0], "metadata_hash") != hash_value(responses[1], "metadata_hash"))
     return result
 
 

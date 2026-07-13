@@ -4,6 +4,7 @@ import copy
 from typing import Any
 
 from . import binding
+from .common import assert_relation
 from ..protocol import AdapterResponse
 from ..report import VectorResult
 from ..vectors import Vector
@@ -273,10 +274,11 @@ def tv_hook_g(vector: Vector, session: Any, ctx: Any) -> VectorResult:
 
     if _all_ok(responses):
         observed_hashes = [_body_hash(response) for response in responses]
-        result.add_check(
+        assert_relation(
+            result,
             "recognized_variants",
             "body_hash_identical_across_variants",
-            True,
+            exp["body_hash_identical_across_variants"],
             observed_hashes,
             len(set(observed_hashes)) == 1,
         )
@@ -310,7 +312,8 @@ def tv_hook_h(vector: Vector, session: Any, ctx: Any) -> VectorResult:
     explicit_hook["handlers"][0]["type"] = "command"
     explicit_response = _send(result, session, ctx, _sidecar_ingest(explicit_hook))
     if absent_response.kind == "ok" and explicit_response.kind == "ok":
-        result.add_check(
+        assert_relation(
+            result,
             "absent_type",
             "body_hash_equals_explicit_command_variant",
             exp["absent_type"]["body_hash_equals_explicit_command_variant"],

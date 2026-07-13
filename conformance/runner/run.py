@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 from . import bindings
 from .fixtures import EnvBlocked, FixtureContext, FixtureError, probe_environment
+from .mock_http import MockHttpAuthority
 from .protocol import AdapterSession, ProtocolError
 from .report import VectorResult, build_report, make_out_of_scope
 from .scopes import required_vector_ids, summarize_scopes
@@ -12,6 +13,7 @@ from .vectors import CatalogSet, load_catalogs
 
 InvariantChecker = Callable[[list[Any], list[VectorResult]], None]
 INVARIANT_CHECKERS: list[InvariantChecker] = []
+INVARIANT_VECTOR_IDS: set[str] = set()
 
 
 @dataclass
@@ -58,6 +60,18 @@ def run_conformance(options: RunOptions) -> dict[str, Any]:
     if unknown_only:
         raise ValueError("unknown --only vector id(s): " + ", ".join(unknown_only))
 
+    mock_http: MockHttpAuthority | None = None
+    needs_mock_http = any(
+        vector.id in in_scope_ids and vector.harness == "mock-transport" or vector.id == "TV-URI-t" and vector.id in in_scope_ids
+        for vector in catalogs.vectors
+    )
+    if needs_mock_http and env.get("mock_http_tls", {}).get("ok"):
+        try:
+            mock_http = MockHttpAuthority()
+            env["mock_http_tls"]["detail"] = env["mock_http_tls"]["detail"] + "; per-run CA generated"
+        except EnvBlocked as exc:
+            env["mock_http_tls"] = {"ok": False, "detail": str(exc)}
+
     vector_results: list[VectorResult] = []
     for vector in catalogs.vectors:
         if only_ids and vector.id not in only_ids:
@@ -69,12 +83,7 @@ def run_conformance(options: RunOptions) -> dict[str, Any]:
         if hello_error is not None:
             vector_results.append(_harness_error(vector.id, vector.catalog, hello_error))
             continue
-        if vector.harness in {"mock-transport", "mock-crawl"}:
-            vector_results.append(
-                _harness_error(vector.id, vector.catalog, "harness family not yet implemented")
-            )
-            continue
-        if vector.harness != "static":
+        if vector.harness not in {"static", "mock-transport", "mock-crawl"}:
             vector_results.append(_harness_error(vector.id, vector.catalog, f"unknown harness family {vector.harness!r}"))
             continue
 
@@ -83,10 +92,22 @@ def run_conformance(options: RunOptions) -> dict[str, Any]:
             vector_results.append(_harness_error(vector.id, vector.catalog, "binding not implemented in this runner stage"))
             continue
 
-        ctx = FixtureContext(env, keep_fixtures=options.keep_fixtures)
+        ctx = FixtureContext(env, keep_fixtures=options.keep_fixtures, mock_http=mock_http)
         try:
             result = bind(vector, session, ctx)
+            if (
+                result.status == "pass"
+                and not result.checks
+                and not result.vacuous
+                and vector.id not in INVARIANT_VECTOR_IDS
+            ):
+                result.set_status("harness-error", "binding recorded no assertions")
         except EnvBlocked as exc:
+            if "mock_http_tls" in exc.failed and "mock_http_tls" in env:
+                env["mock_http_tls"]["ok"] = False
+                detail = env["mock_http_tls"].get("detail", "")
+                if "listener startup blocked" not in detail:
+                    env["mock_http_tls"]["detail"] = detail + "; listener startup blocked"
             result = VectorResult(id=vector.id, catalog=vector.catalog, status="env-blocked", message=str(exc))
         except FixtureError as exc:
             result = _harness_error(vector.id, vector.catalog, f"fixture error: {exc}")
@@ -120,6 +141,8 @@ def run_conformance(options: RunOptions) -> dict[str, Any]:
         scope_status=scope_status,
         vector_results=vector_results,
     )
+    if mock_http is not None:
+        mock_http.cleanup()
     session.close()
     return report
 

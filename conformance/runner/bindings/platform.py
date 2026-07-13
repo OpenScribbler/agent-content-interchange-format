@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any
+
+import yaml
 
 from . import binding
 from .common import (
@@ -11,12 +14,15 @@ from .common import (
     assert_ok,
     assert_output_contains,
     assert_output_excludes,
+    assert_relation,
     assert_result_field,
     assert_value,
+    evaluate_install,
     hash_value,
     ingest,
     output_value,
     project,
+    project_script_selection,
     provider_config,
     render,
     result_for,
@@ -96,6 +102,56 @@ def _all_ok(responses: list[AdapterResponse]) -> bool:
     return all(response.kind == "ok" for response in responses)
 
 
+def _parse_structured_output(output: Any) -> Any:
+    if not isinstance(output, str):
+        return ABSENT
+    for parser in (json.loads, yaml.safe_load):
+        try:
+            return parser(output)
+        except Exception:
+            pass
+    return ABSENT
+
+
+def _structured_value_only(value: Any, expected: str) -> tuple[bool, list[str]]:
+    exact_paths: list[str] = []
+    spliced_paths: list[str] = []
+
+    def walk(node: Any, path: str) -> None:
+        if isinstance(node, dict):
+            for key, child in node.items():
+                walk(child, f"{path}.{key}" if path else str(key))
+        elif isinstance(node, list):
+            for idx, child in enumerate(node):
+                walk(child, f"{path}[{idx}]")
+        elif isinstance(node, str):
+            if node == expected:
+                exact_paths.append(path)
+            elif expected in node:
+                spliced_paths.append(path)
+
+    walk(value, "")
+    return bool(exact_paths) and not spliced_paths, exact_paths + spliced_paths
+
+
+@binding("TV-PLATFORM-a")
+def tv_platform_a(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    response = send(result, session, ctx, project_script_selection(_canonical_hook(inp["scripts"]), inp["targets"]))
+    assert_result_field(result, "scripts", response, "selection", vector.data["expect"]["selection"])
+    return result
+
+
+@binding("TV-PLATFORM-b")
+def tv_platform_b(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    response = send(result, session, ctx, project_script_selection(_canonical_hook(inp["scripts"]), inp["targets"]))
+    assert_result_field(result, "scripts", response, "selection", vector.data["expect"]["selection"])
+    return result
+
+
 @binding("TV-PLATFORM-c")
 def tv_platform_c(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
@@ -151,6 +207,17 @@ def tv_platform_g2(vector: Vector, session: Any, ctx: Any):
     assert_ok(result, "scripts", response, "accept", exp["accept"])
     projection_response = send(result, session, ctx, project(_canonical_hook(inp["scripts"]), "os_coverage"))
     assert_result_field(result, "scripts", projection_response, "projection.os_divergent", exp["os_divergent"])
+    return result
+
+
+@binding("TV-PLATFORM-h")
+def tv_platform_h(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    response = send(result, session, ctx, project_script_selection(_canonical_hook(inp["scripts"]), inp["targets"]))
+    assert_result_field(result, "scripts", response, "selection", exp["selection"])
+    assert_diagnostic(result, "scripts", response, exp["diagnostic"])
     return result
 
 
@@ -237,6 +304,47 @@ def tv_platform_l(vector: Vector, session: Any, ctx: Any):
     return result
 
 
+@binding("TV-PLATFORM-m")
+def tv_platform_m(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    response = send(
+        result,
+        session,
+        ctx,
+        _ingest_provider(ctx, "per-os-key-map", inp["source"], files={"hooks/run": _default_file_content("hooks/run")}),
+    )
+    scripts = _scripts(response)
+    comparable_scripts = scripts
+    if isinstance(scripts, list):
+        comparable_scripts = [
+            {key: script[key] for key in ("type", "path", "os", "arch") if isinstance(script, dict) and key in script}
+            for script in scripts
+        ]
+    assert_value(result, "source", "canonical_scripts", exp["canonical_scripts"], comparable_scripts, response)
+    if response.kind == "ok":
+        observed_no_os = isinstance(scripts, list) and all(
+            not (isinstance(script, dict) and "os" in script) for script in scripts
+        )
+        assert_relation(result, "source", "no_os_synthesized", exp["no_os_synthesized"], observed_no_os, observed_no_os)
+        observed_passthrough = isinstance(scripts, list) and any(
+            isinstance(script, dict) and exp["passthrough_carried"] in script for script in scripts
+        )
+        result.add_check("source", "passthrough_carried", exp["passthrough_carried"], exp["passthrough_carried"] if observed_passthrough else scripts, observed_passthrough)
+        canonical = hash_value(response, "canonical")
+        rendered = send(result, session, ctx, render(canonical, "per-os-key-map-provider"))
+        parsed = _parse_structured_output(output_value(rendered))
+        value = inp["source"]["shell"]
+        structured, paths = _structured_value_only(parsed, value) if parsed is not ABSENT else (False, [ABSENT])
+        # DERIVATION: [ACIF-HOOK] §12.3 and [ACIF-CORE] §8.5 require opaque
+        # passthrough values to be emitted through the target structured
+        # encoder; an injection-shaped value must appear only as a parsed field
+        # value, never as part of a command string.
+        result.add_check("render", "render_back", exp["render_back"], paths, structured)
+    return result
+
+
 @binding("TV-PLATFORM-n")
 def tv_platform_n(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
@@ -299,7 +407,8 @@ def tv_platform_q(vector: Vector, session: Any, ctx: Any):
 
     if _all_ok([base, flipped, passthrough]):
         observed = [hash_value(base, "body_hash"), hash_value(flipped, "body_hash"), hash_value(passthrough, "body_hash")]
-        result.add_check(
+        assert_relation(
+            result,
             "edits",
             "each_edit_moves_body_hash",
             exp["each_edit_moves_body_hash"],
@@ -321,14 +430,16 @@ def tv_platform_q2(vector: Vector, session: Any, ctx: Any):
         responses.append(response)
         assert_result_field(result, case, response, "body_hash", exp["body_hash"])
     if _all_ok(responses):
-        result.add_check(
+        assert_relation(
+            result,
             "variants",
             "canonical_bytes_identical",
             exp["canonical_bytes_identical"],
             [hash_value(response, "canonical_bytes") for response in responses],
             hash_value(responses[0], "canonical_bytes") == hash_value(responses[1], "canonical_bytes"),
         )
-        result.add_check(
+        assert_relation(
+            result,
             "variants",
             "body_hash_identical",
             exp["body_hash_identical"],
@@ -354,9 +465,9 @@ def tv_platform_r(vector: Vector, session: Any, ctx: Any):
     )
     if rendered.kind == "ok" and roundtrip.kind == "ok":
         observed_scripts = _scripts(roundtrip)
-        result.add_check("roundtrip", "roundtrip_identity", exp["roundtrip_identity"], observed_scripts, observed_scripts == inp["canonical_scripts"])
+        assert_relation(result, "roundtrip", "roundtrip_identity", exp["roundtrip_identity"], observed_scripts, observed_scripts == inp["canonical_scripts"])
         dead_default = isinstance(observed_scripts, list) and inp["canonical_scripts"][0] in observed_scripts
-        result.add_check("roundtrip", "dead_default_preserved", exp["dead_default_preserved"], dead_default, dead_default == exp["dead_default_preserved"])
+        assert_relation(result, "roundtrip", "dead_default_preserved", exp["dead_default_preserved"], dead_default, dead_default)
     else:
         assert_result_field(result, "roundtrip", roundtrip, "canonical", canonical)
     return result
@@ -371,4 +482,19 @@ def tv_platform_s(vector: Vector, session: Any, ctx: Any):
         response = send(result, session, ctx, project(_canonical_hook(inp[case]["scripts"]), "os_coverage"))
         assert_result_field(result, case, response, "projection.os", exp[case]["os"])
         assert_result_field(result, case, response, "projection.os_divergent", exp[case]["os_divergent"])
+    return result
+
+
+@binding("TV-PLATFORM-t")
+def tv_platform_t(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for idx, case in enumerate(inp["cases"], start=1):
+        hook = _canonical_hook(inp["scripts"], blocking=case["blocking"])
+        response = send(result, session, ctx, evaluate_install(hook, inp["install_target_os"]))
+        expected = exp[f"case_{idx}"]
+        assert_result_field(result, f"case_{idx}", response, "install", expected["install"])
+        if "diagnostic" in expected:
+            assert_diagnostic(result, f"case_{idx}", response, expected["diagnostic"])
     return result

@@ -23,6 +23,7 @@ def probe_environment() -> dict[str, dict[str, Any]]:
         "byte_preserving_names": _probe_byte_preserving_names(),
         "symlink_creation": _probe_symlink_creation(),
         "case_sensitive": _probe_case_sensitive(),
+        "mock_http_tls": _probe_mock_http_tls(),
     }
 
 
@@ -67,6 +68,13 @@ def _probe_case_sensitive() -> dict[str, Any]:
             return {"ok": False, "detail": str(exc)}
 
 
+def _probe_mock_http_tls() -> dict[str, Any]:
+    openssl = shutil.which("openssl")
+    if openssl is None:
+        return {"ok": False, "detail": "openssl CLI not found; mock-transport TLS vectors are env-blocked"}
+    return {"ok": True, "detail": f"openssl CLI: {openssl}"}
+
+
 def required_capabilities(files: dict[str, Any]) -> set[str]:
     caps: set[str] = set()
     paths = list(files.keys())
@@ -86,9 +94,10 @@ def assert_capabilities(env: dict[str, dict[str, Any]], caps: set[str]) -> None:
 
 
 class FixtureContext:
-    def __init__(self, env: dict[str, dict[str, Any]], keep_fixtures: bool = False):
+    def __init__(self, env: dict[str, dict[str, Any]], keep_fixtures: bool = False, mock_http: Any = None):
         self.env = env
         self.keep_fixtures = keep_fixtures
+        self.mock_http = mock_http
         self.roots: list[Path] = []
         self.observations: list[Any] = []
 

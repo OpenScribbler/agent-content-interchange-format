@@ -166,6 +166,9 @@ def human_report(report: dict[str, Any]) -> str:
     for catalog in sorted(catalog_counts):
         counts = catalog_counts[catalog]
         parts = [f"{status}={count}" for status, count in sorted(counts.items()) if count]
+        vacuous = sum(1 for row in report["vectors"] if row["catalog"] == catalog and row.get("vacuous"))
+        if vacuous:
+            parts.append(f"vacuous={vacuous}")
         lines.append(f"  {catalog}: " + ", ".join(parts))
 
     problem_rows = [

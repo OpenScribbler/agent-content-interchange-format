@@ -15,8 +15,8 @@ from ..scopes import totality_check
 from ..vectors import load_catalogs
 
 CONFORMANCE_ROOT = Path(__file__).resolve().parents[2]
-HOOK_ID_RE = re.compile(r"^TV-HOOK-")
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+SABOTAGE_MUTATORS = ("field", "distinct-perturb", "memoize")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -152,34 +152,52 @@ def check_scopes_totality() -> None:
 
 def check_sabotage() -> None:
     catalogs = load_catalogs()
-    hook_ids = [vector.id for vector in catalogs.by_catalog["hook.yaml"]]
     base = run_conformance(
         RunOptions(
             adapter=f"{sys.executable} adapters/reference.py",
-            scopes=["hook"],
-            only=hook_ids,
             cwd=str(CONFORMANCE_ROOT),
         )
     )
-    mutated = run_conformance(
-        RunOptions(
-            adapter=f"{sys.executable} -m runner.selftest.mutating_adapter -- {sys.executable} adapters/reference.py",
-            scopes=["hook"],
-            only=hook_ids,
-            cwd=str(CONFORMANCE_ROOT),
+    mutated_reports = {
+        mutator: run_conformance(
+            RunOptions(
+                adapter=f"{sys.executable} -m runner.selftest.mutating_adapter --mode {mutator} -- {sys.executable} adapters/reference.py",
+                cwd=str(CONFORMANCE_ROOT),
+            )
         )
-    )
-    base_rows = {row["id"]: row for row in base["vectors"] if HOOK_ID_RE.match(row["id"])}
-    mutated_rows = {row["id"]: row for row in mutated["vectors"] if HOOK_ID_RE.match(row["id"])}
-    missing = sorted(set(hook_ids) - set(base_rows))
+        for mutator in SABOTAGE_MUTATORS
+    }
+    base_rows = {row["id"]: row for row in base["vectors"]}
+    mutated_rows = {
+        mutator: {row["id"]: row for row in report["vectors"]}
+        for mutator, report in mutated_reports.items()
+    }
+    catalog_ids = set(catalogs.by_id)
+    missing = sorted(catalog_ids - set(base_rows))
     if missing:
-        raise AssertionError("hook ids missing from report: " + ", ".join(missing))
+        raise AssertionError("vector ids missing from report: " + ", ".join(missing))
     failures: list[str] = []
-    for vid in hook_ids:
+    killed_by: dict[str, str] = {}
+    skip = {"unsupported", "harness-error", "out-of-scope", "env-blocked"}
+    for vid in sorted(catalog_ids):
         base_status = base_rows[vid]["status"]
-        if base_status in {"unsupported", "harness-error", "out-of-scope", "env-blocked"}:
+        if base_status in skip or base_rows[vid].get("vacuous"):
             continue
-        if mutated_rows[vid]["status"] != "fail":
-            failures.append(f"{vid}: sabotaged status {mutated_rows[vid]['status']} (baseline {base_status})")
+        killers = [
+            mutator
+            for mutator in SABOTAGE_MUTATORS
+            if mutated_rows[mutator].get(vid, {}).get("status") == "fail"
+        ]
+        if not killers:
+            statuses = {mutator: mutated_rows[mutator].get(vid, {}).get("status") for mutator in SABOTAGE_MUTATORS}
+            failures.append(f"{vid}: no mutator killed vector (baseline {base_status}, mutated {statuses})")
+        else:
+            killed_by[vid] = killers[0]
     if failures:
         raise AssertionError("; ".join(failures))
+    counts = {mutator: list(killed_by.values()).count(mutator) for mutator in SABOTAGE_MUTATORS}
+    print(
+        "sabotage kill summary: "
+        + ", ".join(f"{mutator}={counts[mutator]}" for mutator in SABOTAGE_MUTATORS)
+    )
+    print("sabotage kill map: " + ", ".join(f"{vid}={killed_by[vid]}" for vid in sorted(killed_by)))

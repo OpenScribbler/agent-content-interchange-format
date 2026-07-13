@@ -8,6 +8,7 @@ import yaml
 from . import binding
 from .common import (
     ABSENT,
+    assert_relation,
     diagnostics_for,
     hash_value,
     ingest,
@@ -71,7 +72,7 @@ def tv_render_a(vector: Vector, session: Any, ctx: Any):
     ]
     if all(response.kind == "ok" for response in responses):
         outputs = [output_value(response) for response in responses]
-        result.add_check("invocations", "output_byte_identical", exp["output_byte_identical"], outputs, len(set(outputs)) == 1)
+        assert_relation(result, "invocations", "output_byte_identical", exp["output_byte_identical"], outputs, len(set(outputs)) == 1)
     return result
 
 
@@ -86,12 +87,12 @@ def tv_render_b(vector: Vector, session: Any, ctx: Any):
         parsed = _parse_output(target, output_value(response))
         parses = parsed is not ABSENT
         round_trips = _contains_value(parsed, inp["canonical_passthrough_value"]) if parses else False
-        result.add_check(target, "output_parses_in_target_format", exp["output_parses_in_target_format"], parses, parses == exp["output_parses_in_target_format"])
-        result.add_check(target, "value_round_trips_byte_identical", exp["value_round_trips_byte_identical"], round_trips, round_trips == exp["value_round_trips_byte_identical"])
+        assert_relation(result, target, "output_parses_in_target_format", exp["output_parses_in_target_format"], parses, parses)
+        assert_relation(result, target, "value_round_trips_byte_identical", exp["value_round_trips_byte_identical"], round_trips, round_trips)
         # DERIVATION: [ACIF-RENDER] §8; [ACIF-CORE] §8.5 (from vector spec)
         # defines splice detection as the negation of structured parse+roundtrip.
         splice_detected = not (parses and round_trips)
-        result.add_check(target, "string_splice_detected", exp["string_splice_detected"], splice_detected, splice_detected == exp["string_splice_detected"])
+        assert_relation(result, target, "string_splice_detected", exp["string_splice_detected"], splice_detected, splice_detected)
     return result
 
 
@@ -118,7 +119,8 @@ def tv_render_d(vector: Vector, session: Any, ctx: Any):
             ingest(case["type"], provider_config=provider_config(case["target"], "rendered", output_value(rendered))),
         )
         if "roundtrip_body_hash_identical" in expected and all(response.kind == "ok" for response in (before, rendered, roundtrip)):
-            result.add_check(
+            assert_relation(
+                result,
                 f"case_{idx}",
                 "roundtrip_body_hash_identical",
                 expected["roundtrip_body_hash_identical"],
@@ -130,7 +132,8 @@ def tv_render_d(vector: Vector, session: Any, ctx: Any):
             observed = sorted(lossy) if isinstance(lossy, list) else ABSENT
             expected_lossy = sorted(case["lossy_set"])
             result.add_check(f"case_{idx}", "lossy_set", case["lossy_set"], observed, observed == expected_lossy)
-            result.add_check(
+            assert_relation(
+                result,
                 f"case_{idx}",
                 "differences_within_lossy_set",
                 expected["differences_within_lossy_set"],
@@ -171,6 +174,7 @@ def _register_invariant() -> None:
 
     if _paired_degradation_invariant not in runner_run.INVARIANT_CHECKERS:
         runner_run.INVARIANT_CHECKERS.append(_paired_degradation_invariant)
+    runner_run.INVARIANT_VECTOR_IDS.add("TV-RENDER-c")
 
 
 _register_invariant()

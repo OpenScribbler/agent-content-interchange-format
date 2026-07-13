@@ -6,7 +6,9 @@ import yaml
 from . import binding
 from .common import (
     assert_derived_capability,
+    assert_relation,
     assert_result_field,
+    diagnostics_for,
     evaluate_requires,
     hash_value,
     ingest,
@@ -14,6 +16,7 @@ from .common import (
     project_derived_capabilities,
     provider_config,
     render,
+    resolve_reference,
     result_for,
     send,
 )
@@ -59,6 +62,21 @@ def _with_body(files: dict[str, str], entry_file: str, body: str) -> dict[str, s
 
 def _all_ok(responses: list[AdapterResponse]) -> bool:
     return all(response.kind == "ok" for response in responses)
+
+
+AGENT_NATIVE_BY_PROVIDER = {
+    # DERIVATION: copied from [ACIF-CORE] Appendix A, `agent` row. The vector
+    # pins render-back as provider-native-name-per-target without enumerating
+    # targets, so the binding embeds the normative row used by renderers.
+    "claude-code": "Agent",
+    "copilot-cli": "task",
+    "opencode": "task",
+    "vs-code-copilot": "Agent",
+    "zed": "spawn_agent",
+    "codex": "spawn_agent",
+    "kiro": "use_subagent",
+    "factory-droid": "Task",
+}
 
 
 @binding("TV-AGENT-a")
@@ -139,6 +157,58 @@ def tv_agent_g(vector: Vector, session: Any, ctx: Any):
     return result
 
 
+@binding("TV-AGENT-h")
+def tv_agent_h(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    responses: list[AdapterResponse] = []
+    for idx, variant in enumerate(inp["variants"], start=1):
+        files = {
+            "agent.md": "---\n"
+            + yaml.safe_dump({"tools": variant["frontmatter_tools"]}, sort_keys=False)
+            + "---\n"
+            + inp["common_body"]
+        }
+        response = send(result, session, ctx, ingest("agent", body_root=ctx.materialize(files), entry_file="agent.md"))
+        responses.append(response)
+        assert_result_field(result, f"variant_{idx}", response, "canonical.agent.tools", exp["canonical_tools_all_variants"])
+    if _all_ok(responses):
+        body_hashes = [hash_value(response, "body_hash") for response in responses]
+        metadata_hashes = [hash_value(response, "metadata_hash") for response in responses]
+        assert_relation(
+            result,
+            "variants",
+            "body_hash_identical_across_variants",
+            exp["body_hash_identical_across_variants"],
+            body_hashes,
+            len(set(body_hashes)) == 1,
+        )
+        assert_relation(
+            result,
+            "variants",
+            "metadata_hash_differs_across_variants",
+            exp["metadata_hash_differs_across_variants"],
+            metadata_hashes,
+            len(set(metadata_hashes)) == len(metadata_hashes),
+        )
+        canonical = {"agent": {"tools": exp["canonical_tools_all_variants"]}}
+        for provider, native in AGENT_NATIVE_BY_PROVIDER.items():
+            rendered = send(result, session, ctx, render(canonical, provider))
+            output = output_value(rendered)
+            contains_native = isinstance(output, str) and native in output
+            result.add_check(provider, "provider_native_name", native, output, contains_native)
+            roundtrip = send(
+                result,
+                session,
+                ctx,
+                ingest("agent", provider_config=provider_config(provider, "agent.rendered", output)),
+            )
+            assert_result_field(result, provider, roundtrip, "canonical.agent.tools", exp["canonical_tools_all_variants"])
+        result.add_check_equivalent(exp["render_back"])
+    return result
+
+
 @binding("TV-AGENT-i")
 def tv_agent_i(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
@@ -152,10 +222,38 @@ def tv_agent_i(vector: Vector, session: Any, ctx: Any):
     edit_2_files = _with_body(base_files, entry_file, inp["edits"][1]["prose"])
     edit_2 = send(result, session, ctx, _ingest_agent_files(ctx, edit_2_files))
     if _all_ok([base, edit_1, edit_2]):
-        result.add_check("edit_1", "metadata_hash_moves", exp["edit_1"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_1, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_1, "metadata_hash"))
-        result.add_check("edit_1", "body_hash_moves", exp["edit_1"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_1, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_1, "body_hash"))
-        result.add_check("edit_2", "metadata_hash_moves", exp["edit_2"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_2, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_2, "metadata_hash"))
-        result.add_check("edit_2", "body_hash_moves", exp["edit_2"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_2, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_2, "body_hash"))
+        assert_relation(result, "edit_1", "metadata_hash_moves", exp["edit_1"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_1, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_1, "metadata_hash"))
+        assert_relation(result, "edit_1", "body_hash_moves", exp["edit_1"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_1, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_1, "body_hash"))
+        assert_relation(result, "edit_2", "metadata_hash_moves", exp["edit_2"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_2, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_2, "metadata_hash"))
+        assert_relation(result, "edit_2", "body_hash_moves", exp["edit_2"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_2, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_2, "body_hash"))
+    return result
+
+
+@binding("TV-AGENT-j")
+def tv_agent_j(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for idx, state in enumerate(inp["registry_states"], start=1):
+        response = send(result, session, ctx, resolve_reference(_agent_item(inp["agent"]), state))
+        expected = exp[f"state_{idx}"]
+        if idx == 1:
+            assert_result_field(result, "state_1", response, "cross_reference", expected["cross_reference"])
+            continue
+        assert_result_field(result, "state_2", response, "cross_reference.resolution", expected["cross_reference"]["resolution"])
+        assert_result_field(result, "state_2", response, "install", expected["install"])
+        if response.kind == "ok":
+            diagnostics = diagnostics_for(response)
+            observed = [
+                diagnostic.get("params", {}).get("declared_name")
+                for diagnostic in diagnostics
+                if isinstance(diagnostic.get("params"), dict)
+            ]
+            # DERIVATION: PROTOCOL.md §4.11 pins unresolved-reference
+            # diagnostics by params.declared_name; the vector records the
+            # expected value as diagnostic_names.
+            expected_name = expected["cross_reference"]["diagnostic_names"]
+            result.add_check("state_2", "diagnostic.declared_name", expected_name, observed, expected_name in observed)
     return result
 
 

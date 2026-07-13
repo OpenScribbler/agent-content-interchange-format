@@ -10,6 +10,7 @@ from .common import (
     assert_diagnostic,
     assert_error,
     assert_ok,
+    assert_relation,
     assert_result_field,
     assert_value,
     evaluate_requires,
@@ -98,8 +99,8 @@ def tv_mcp_d(vector: Vector, session: Any, ctx: Any):
         responses.append(response)
         assert_result_field(result, case, response, "body_hash", exp["body_hash"])
     if _all_ok(responses):
-        result.add_check("variants", "canonical_bytes_identical", exp["canonical_bytes_identical"], [hash_value(r, "canonical_bytes") for r in responses], hash_value(responses[0], "canonical_bytes") == hash_value(responses[1], "canonical_bytes"))
-        result.add_check("variants", "body_hash_identical", exp["body_hash_identical"], [hash_value(r, "body_hash") for r in responses], hash_value(responses[0], "body_hash") == hash_value(responses[1], "body_hash"))
+        assert_relation(result, "variants", "canonical_bytes_identical", exp["canonical_bytes_identical"], [hash_value(r, "canonical_bytes") for r in responses], hash_value(responses[0], "canonical_bytes") == hash_value(responses[1], "canonical_bytes"))
+        assert_relation(result, "variants", "body_hash_identical", exp["body_hash_identical"], [hash_value(r, "body_hash") for r in responses], hash_value(responses[0], "body_hash") == hash_value(responses[1], "body_hash"))
     return result
 
 
@@ -179,7 +180,8 @@ def tv_mcp_k(vector: Vector, session: Any, ctx: Any):
     edits = [send(result, session, ctx, ingest("mcp_config", sidecar=_set_edit(inp["base"], edit)["mcp"])) for edit in inp["edits"]]
     if _all_ok([base, *edits]):
         observed = [hash_value(base, "body_hash"), *[hash_value(edit, "body_hash") for edit in edits]]
-        result.add_check(
+        assert_relation(
+            result,
             "edits",
             "each_edit_moves_body_hash",
             exp["each_edit_moves_body_hash"],
@@ -198,8 +200,8 @@ def tv_mcp_k2(vector: Vector, session: Any, ctx: Any):
     for case in ("variant_a", "variant_b"):
         responses.append(send(result, session, ctx, ingest("mcp_config", sidecar=inp[case]["mcp"])))
     if _all_ok(responses):
-        result.add_check("variants", "canonical_bytes_identical", exp["canonical_bytes_identical"], [hash_value(r, "canonical_bytes") for r in responses], hash_value(responses[0], "canonical_bytes") == hash_value(responses[1], "canonical_bytes"))
-        result.add_check("variants", "body_hash_identical", exp["body_hash_identical"], [hash_value(r, "body_hash") for r in responses], hash_value(responses[0], "body_hash") == hash_value(responses[1], "body_hash"))
+        assert_relation(result, "variants", "canonical_bytes_identical", exp["canonical_bytes_identical"], [hash_value(r, "canonical_bytes") for r in responses], hash_value(responses[0], "canonical_bytes") == hash_value(responses[1], "canonical_bytes"))
+        assert_relation(result, "variants", "body_hash_identical", exp["body_hash_identical"], [hash_value(r, "body_hash") for r in responses], hash_value(responses[0], "body_hash") == hash_value(responses[1], "body_hash"))
     return result
 
 
@@ -213,8 +215,8 @@ def tv_mcp_l(vector: Vector, session: Any, ctx: Any):
     rendered = send(result, session, ctx, render(canonical, inp["render_target"]))
     roundtrip = send(result, session, ctx, ingest("mcp_config", provider_config=provider_config(inp["render_target"], "mcp.rendered", output_value(rendered))))
     if _all_ok([before, rendered, roundtrip]):
-        result.add_check("roundtrip", "roundtrip_canonical_bytes_identical", exp["roundtrip_canonical_bytes_identical"], [hash_value(before, "canonical_bytes"), hash_value(roundtrip, "canonical_bytes")], hash_value(before, "canonical_bytes") == hash_value(roundtrip, "canonical_bytes"))
-        result.add_check("roundtrip", "roundtrip_body_hash_identical", exp["roundtrip_body_hash_identical"], [hash_value(before, "body_hash"), hash_value(roundtrip, "body_hash")], hash_value(before, "body_hash") == hash_value(roundtrip, "body_hash"))
+        assert_relation(result, "roundtrip", "roundtrip_canonical_bytes_identical", exp["roundtrip_canonical_bytes_identical"], [hash_value(before, "canonical_bytes"), hash_value(roundtrip, "canonical_bytes")], hash_value(before, "canonical_bytes") == hash_value(roundtrip, "canonical_bytes"))
+        assert_relation(result, "roundtrip", "roundtrip_body_hash_identical", exp["roundtrip_body_hash_identical"], [hash_value(before, "body_hash"), hash_value(roundtrip, "body_hash")], hash_value(before, "body_hash") == hash_value(roundtrip, "body_hash"))
     return result
 
 

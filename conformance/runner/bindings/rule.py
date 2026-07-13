@@ -11,6 +11,7 @@ from .common import (
     assert_diagnostic,
     assert_error,
     assert_output_contains,
+    assert_relation,
     assert_result_field,
     evaluate_requires,
     field,
@@ -87,14 +88,16 @@ def tv_rule_a(vector: Vector, session: Any, ctx: Any):
     declared_files = _with_frontmatter(source["files"], _entry_file(source), {"activation": {"mode": exp["canonical.rule.activation.mode"]}})
     declared = send(result, session, ctx, _ingest_files(ctx, {"files": declared_files}))
     if _all_ok([base, declared]):
-        result.add_check(
+        assert_relation(
+            result,
             "source",
             "body_hash_unaffected_by_materialization",
             exp["body_hash_unaffected_by_materialization"],
             [hash_value(base, "body_hash"), hash_value(declared, "body_hash")],
             hash_value(base, "body_hash") == hash_value(declared, "body_hash"),
         )
-        result.add_check(
+        assert_relation(
+            result,
             "source",
             "metadata_hash_unaffected_by_materialization",
             exp["metadata_hash_unaffected_by_materialization"],
@@ -208,9 +211,10 @@ def tv_rule_k(vector: Vector, session: Any, ctx: Any):
         observed_canonical = field(canonical, "rule.body")
         if observed_canonical == ABSENT:
             observed_canonical = field(canonical, "body")
-        result.add_check("files", "canonical_body_verbatim", exp["canonical_body_verbatim"], observed_canonical, observed_canonical == body)
+        assert_relation(result, "files", "canonical_body_verbatim", exp["canonical_body_verbatim"], observed_canonical, observed_canonical == body)
         rendered = send(result, session, ctx, render(hash_value(response, "canonical"), "native-rule-format"))
-        result.add_check(
+        assert_relation(
+            result,
             "files",
             "render_back_verbatim",
             exp["render_back_verbatim"],
@@ -233,10 +237,10 @@ def tv_rule_l(vector: Vector, session: Any, ctx: Any):
     edit_2_files = _with_body(base_files, entry_file, inp["edits"][1]["prose"])
     edit_2 = send(result, session, ctx, _ingest_files(ctx, {"files": edit_2_files}))
     if _all_ok([base, edit_1, edit_2]):
-        result.add_check("edit_1", "metadata_hash_moves", exp["edit_1"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_1, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_1, "metadata_hash"))
-        result.add_check("edit_1", "body_hash_moves", exp["edit_1"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_1, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_1, "body_hash"))
-        result.add_check("edit_2", "metadata_hash_moves", exp["edit_2"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_2, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_2, "metadata_hash"))
-        result.add_check("edit_2", "body_hash_moves", exp["edit_2"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_2, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_2, "body_hash"))
+        assert_relation(result, "edit_1", "metadata_hash_moves", exp["edit_1"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_1, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_1, "metadata_hash"))
+        assert_relation(result, "edit_1", "body_hash_moves", exp["edit_1"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_1, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_1, "body_hash"))
+        assert_relation(result, "edit_2", "metadata_hash_moves", exp["edit_2"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_2, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_2, "metadata_hash"))
+        assert_relation(result, "edit_2", "body_hash_moves", exp["edit_2"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_2, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_2, "body_hash"))
     return result
 
 

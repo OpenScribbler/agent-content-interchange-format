@@ -10,6 +10,7 @@ from .common import (
     assert_derived_capability,
     assert_error,
     assert_ok,
+    assert_relation,
     assert_result_field,
     evaluate_requires,
     hash_value,
@@ -166,7 +167,8 @@ def tv_skill_g(vector: Vector, session: Any, ctx: Any):
         if "body_hash" in expected:
             assert_result_field(result, f"case_{idx}", response, "body_hash", expected["body_hash"])
         if "body_hash_equals_case_1" in expected and case_1_response is not None and response.kind == "ok" and case_1_response.kind == "ok":
-            result.add_check(
+            assert_relation(
+                result,
                 f"case_{idx}",
                 "body_hash_equals_case_1",
                 expected["body_hash_equals_case_1"],
@@ -193,14 +195,16 @@ def tv_skill_h(vector: Vector, session: Any, ctx: Any):
     declared_files = _with_frontmatter(source["files"], _entry_file(source), {"activation": exp["canonical.skill.activation"]})
     declared = send(result, session, ctx, _ingest_files(ctx, {"files": declared_files, "entry_file": _entry_file(source)}))
     if _all_ok([base, declared]):
-        result.add_check(
+        assert_relation(
+            result,
             "source",
             "body_hash_unaffected_by_materialization",
             exp["body_hash_unaffected_by_materialization"],
             [hash_value(base, "body_hash"), hash_value(declared, "body_hash")],
             hash_value(base, "body_hash") == hash_value(declared, "body_hash"),
         )
-        result.add_check(
+        assert_relation(
+            result,
             "source",
             "metadata_hash_unaffected_by_materialization",
             exp["metadata_hash_unaffected_by_materialization"],
@@ -228,7 +232,7 @@ def tv_skill_j(vector: Vector, session: Any, ctx: Any):
     assert_result_field(result, "skill", response, "cross_reference", exp["cross_reference"])
     if response.kind == "ok":
         observed = bool(hash_value(response, "reciprocal_entries"))
-        result.add_check("skill", "reciprocal_entry_emitted", exp["reciprocal_entry_emitted"], observed, observed == exp["reciprocal_entry_emitted"])
+        assert_relation(result, "skill", "reciprocal_entry_emitted", exp["reciprocal_entry_emitted"], observed, observed)
     return result
 
 
@@ -245,10 +249,10 @@ def tv_skill_k(vector: Vector, session: Any, ctx: Any):
     edit_2_files[inp["edits"][1]["file"]] = inp["edits"][1]["content"]
     edit_2 = send(result, session, ctx, _ingest_files(ctx, {"files": edit_2_files}))
     if _all_ok([base, edit_1, edit_2]):
-        result.add_check("edit_1", "metadata_hash_moves", exp["edit_1"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_1, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_1, "metadata_hash"))
-        result.add_check("edit_1", "body_hash_moves", exp["edit_1"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_1, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_1, "body_hash"))
-        result.add_check("edit_2", "metadata_hash_moves", exp["edit_2"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_2, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_2, "metadata_hash"))
-        result.add_check("edit_2", "body_hash_moves", exp["edit_2"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_2, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_2, "body_hash"))
+        assert_relation(result, "edit_1", "metadata_hash_moves", exp["edit_1"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_1, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_1, "metadata_hash"))
+        assert_relation(result, "edit_1", "body_hash_moves", exp["edit_1"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_1, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_1, "body_hash"))
+        assert_relation(result, "edit_2", "metadata_hash_moves", exp["edit_2"]["metadata_hash_moves"], [hash_value(base, "metadata_hash"), hash_value(edit_2, "metadata_hash")], hash_value(base, "metadata_hash") != hash_value(edit_2, "metadata_hash"))
+        assert_relation(result, "edit_2", "body_hash_moves", exp["edit_2"]["body_hash_moves"], [hash_value(base, "body_hash"), hash_value(edit_2, "body_hash")], hash_value(base, "body_hash") != hash_value(edit_2, "body_hash"))
     return result
 
 
@@ -281,7 +285,8 @@ def tv_skill_n(vector: Vector, session: Any, ctx: Any):
         assert_result_field(result, case, response, "classification", exp["classification"])
         assert_result_field(result, case, response, "body_hash", exp["body_hash"])
     if _all_ok(responses):
-        result.add_check(
+        assert_relation(
+            result,
             "variants",
             "body_hash_identical_across_variants",
             exp["body_hash_identical_across_variants"],

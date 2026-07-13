@@ -37,6 +37,7 @@ def load_all() -> None:
     importlib.import_module(__name__ + ".agent")
     importlib.import_module(__name__ + ".mcp")
     importlib.import_module(__name__ + ".render")
+    importlib.import_module(__name__ + ".registry")
     _LOADED = True
 
 
@@ -75,51 +76,4 @@ def binding_set_hash() -> str:
     return hashlib.sha256(b"\n".join(pieces)).hexdigest()
 
 
-UNBOUND = {
-    "TV-8",  # protocol-gap: expect.installable has no PROTOCOL §4 result field
-    "TV-L2-d",  # protocol-gap: frontmatter CI action/log result surface is not pinned
-    "TV-L2-f",  # protocol-gap: pack-source conflict diagnostic payload params are not pinned
-    "TV-L3-d",  # protocol-gap: revoked cross-reference install disposition is not exposed by resolve_reference
-    "TV-AGENT-h",  # protocol-gap: render_back expectation does not name a render target
-    "TV-AGENT-j",  # protocol-gap: resolve_reference has no install disposition field
-    "TV-PLATFORM-a",  # protocol-gap: script selection has no PROTOCOL §4 operation/result field
-    "TV-PLATFORM-b",  # protocol-gap: script selection has no PROTOCOL §4 operation/result field
-    "TV-PLATFORM-h",  # protocol-gap: no-match selection has no PROTOCOL §4 operation/result field
-    "TV-PLATFORM-m",  # protocol-gap: render_back expectation does not name a render target
-    "TV-PLATFORM-t",  # protocol-gap: install coverage-gap disposition is not exposed by ingest/render/project
-    "TV-FRESH-a",  # stage-2b
-    "TV-FRESH-b",  # stage-2b
-    "TV-FRESH-c",  # stage-2b
-    "TV-FRESH-d",  # stage-2b
-    "TV-FRESH-e",  # stage-2b
-    "TV-FRESH-f",  # stage-2b
-    "TV-FRESH-g",  # stage-2b
-    "TV-FRESH-h",  # stage-2b
-    "TV-FRESH-i",  # stage-2b
-    "TV-FRESH-j",  # mock-crawl
-    "TV-FRESH-k",  # stage-2b
-    "TV-URI-a",  # stage-2b
-    "TV-URI-b",  # stage-2b
-    "TV-URI-c",  # stage-2b
-    "TV-URI-d",  # stage-2b
-    "TV-URI-e",  # stage-2b
-    "TV-URI-f",  # stage-2b
-    "TV-URI-g",  # stage-2b
-    "TV-URI-h",  # stage-2b
-    "TV-URI-i",  # stage-2b
-    "TV-URI-j",  # stage-2b
-    "TV-URI-k",  # stage-2b
-    "TV-URI-l",  # mock-transport
-    "TV-URI-l2",  # mock-transport
-    "TV-URI-m",  # mock-transport
-    "TV-URI-n",  # mock-transport
-    "TV-URI-o",  # stage-2b
-    "TV-URI-o2",  # stage-2b
-    "TV-URI-p",  # stage-2b
-    "TV-URI-q",  # stage-2b
-    "TV-URI-r",  # stage-2b
-    "TV-URI-s",  # stage-2b
-    "TV-URI-t",  # mock-crawl
-    "TV-URI-u",  # stage-2b
-    "TV-URI-v",  # stage-2b
-}
+UNBOUND = set()

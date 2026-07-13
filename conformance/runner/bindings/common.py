@@ -93,18 +93,24 @@ def evaluate_requires(item_requires: dict[str, Any], consumer_recognizes: list[s
     }
 
 
-def project(item: Any, projection: str) -> dict[str, Any]:
+def project(item: Any, projection: str, **extra: Any) -> dict[str, Any]:
+    request_input = {
+        "item": item,
+        "projection": projection,
+    }
+    request_input.update(extra)
     return {
         "op": "project",
-        "input": {
-            "item": item,
-            "projection": projection,
-        },
+        "input": request_input,
     }
 
 
 def project_derived_capabilities(item: Any) -> dict[str, Any]:
     return project(item, "derived_capabilities")
+
+
+def project_script_selection(item: Any, targets: list[str]) -> dict[str, Any]:
+    return project(item, "script_selection", targets=targets)
 
 
 def render(canonical: Any, target: str, invocation: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -122,6 +128,68 @@ def resolve_reference(item: Any, registry_state: dict[str, Any]) -> dict[str, An
             "registry_state": registry_state,
         },
     }
+
+
+def evaluate_install(item: Any, install_target_os: str | None = None) -> dict[str, Any]:
+    request_input: dict[str, Any] = {"item": item}
+    if install_target_os is not None:
+        request_input["install_target_os"] = install_target_os
+    return {"op": "evaluate_install", "input": request_input}
+
+
+def reconcile_frontmatter(sidecar_value: Any, source_frontmatter: Any, mode: str) -> dict[str, Any]:
+    return {
+        "op": "reconcile_frontmatter",
+        "input": {
+            "sidecar_value": sidecar_value,
+            "source_frontmatter": source_frontmatter,
+            "mode": mode,
+        },
+    }
+
+
+def normalize_uri(uri: str) -> dict[str, Any]:
+    return {"op": "normalize_uri", "input": {"uri": uri}}
+
+
+def fetch_uri(url: str, trust_ca: str, resolve: dict[str, str]) -> dict[str, Any]:
+    return {"op": "fetch_uri", "input": {"url": url, "trust_ca": trust_ca, "resolve": resolve}}
+
+
+def derive_url_name(uri: str, body_classification: str, frontmatter_name: str | None = None) -> dict[str, Any]:
+    request_input: dict[str, Any] = {
+        "uri": uri,
+        "body_classification": body_classification,
+    }
+    if frontmatter_name is not None:
+        request_input["frontmatter_name"] = frontmatter_name
+    return {"op": "derive_url_name", "input": request_input}
+
+
+def evaluate_freshness(
+    record: dict[str, Any],
+    *,
+    consumer_clock: str | None = None,
+    policies: list[str] | None = None,
+    attestation_evaluation: str | None = None,
+    declared_tolerance_seconds: int | None = None,
+    attestation_system: str | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    request_input: dict[str, Any] = {"record": record}
+    if consumer_clock is not None:
+        request_input["consumer_clock"] = consumer_clock
+    if policies is not None:
+        request_input["policies"] = policies
+    if attestation_evaluation is not None:
+        request_input["attestation_evaluation"] = attestation_evaluation
+    if declared_tolerance_seconds is not None:
+        request_input["declared_tolerance_seconds"] = declared_tolerance_seconds
+    if attestation_system is not None:
+        request_input["attestation_system"] = attestation_system
+    if extra:
+        request_input.update(extra)
+    return {"op": "evaluate_freshness", "input": request_input}
 
 
 def field(value: Any, path: str) -> Any:
@@ -198,6 +266,17 @@ def assert_value(
     if response is not None and _blocked_for_result_assertion(result, case, response, field_name, expected):
         return
     result.add_check(case, field_name, expected, observed, observed == expected)
+
+
+def assert_relation(
+    result: VectorResult,
+    case: str,
+    field_name: str,
+    expected: Any,
+    values: Any,
+    relation: bool,
+) -> None:
+    result.add_check(case, field_name, expected, values, relation == bool(expected))
 
 
 def assert_ok(
@@ -293,8 +372,8 @@ def assert_output_excludes(
     if _blocked_for_result_assertion(result, case, response, field_name, expected):
         return
     output = result_field(response, "output")
-    observed = [item for item in expected if isinstance(output, str) and str(item) in output]
-    result.add_check(case, field_name, expected, observed, observed == [])
+    observed = [item for item in expected if not (isinstance(output, str) and str(item) in output)]
+    result.add_check(case, field_name, expected, observed, observed == expected)
 
 
 def assert_diagnostic(
