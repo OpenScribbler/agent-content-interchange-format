@@ -189,15 +189,14 @@ The pipeline MUST be idempotent: `normalize(normalize(u)) == normalize(u)` byte-
 
 ### 10.4 Redirect semantics: canonical resolution, not final-URL
 
-While fetching, the registry follows redirects but records by these rules:
+While fetching, the registry MUST follow the redirect chain to its first non-redirect response (that response supplies the body, hence `body_hash`) and records `source_uri` by these rules:
 
-- A **permanent** redirect (301, 308) is an origin asserting an identity move: record the redirect target.
-- A **temporary** redirect (302, 303, 307) is delivery mechanics: record the **requested** URL; a redirect-injected signed query is never persisted.
-- Every hop MUST be https (`acif.source_uri.redirect_downgrade`).
-- The chain is bounded by `ACIF_SOURCE_URI_MAX_REDIRECTS = 10`; exceeding it, or a loop, is `acif.source_uri.redirect_limit`.
-- At record time, the recorded value MUST NOT re-dereference to a permanent redirect.
+- A **permanent** redirect (301, 308) is an origin asserting an identity move. A **temporary** redirect (302, 303, 307) is delivery mechanics; a redirect-injected signed query is never persisted (§10.3 step 9).
+- **Composition rule:** the registry MUST record the request URL of the **first temporary redirect** in the chain; if the chain contains no temporary redirect, it MUST record the final resolved URL. Equivalently: the recorded value is the requested URL (the crawl-seed) advanced through each consecutive leading permanent redirect and **frozen at the first temporary redirect** — permanent redirects at or after the first temporary hop are delivery mechanics and MUST NOT affect the recorded value. *(Informative: a permanent redirect reached through a temporary hop is an origin assertion about the temporary delivery URL, not about the requested identity; recording it would launder per-crawl delivery churn — regional mirrors, signed-asset hosts — into `source_uri`, and would let a compromised temporary hop (CDN edge, load balancer) choose the recorded host. Under this rule the recorded value can only be the crawl-seed or a URL reached from it through an unbroken permanent prefix. An origin asserting a permanent move onto a host it does not control, or onto a path carrying capability material, remains an origin self-assertion the registry cannot distinguish from a legitimate move — bounded because `source_uri` is never identity (§10.1) and queries are stripped (§10.3 step 9).)*
+- The freeze governs the recorded value only, never traversal: every hop — before and after the freeze point — MUST be https (`acif.source_uri.redirect_downgrade`), counts against `ACIF_SOURCE_URI_MAX_REDIRECTS = 10`, and participates in loop detection; exceeding the bound, or a loop, is `acif.source_uri.redirect_limit`. A reject-class condition on any hop rejects the record even when the recorded value was already frozen.
+- The recorded value MUST NOT be a URL that answered with a permanent redirect during the crawl. *(Informative: under the composition rule this holds by construction — the recorded URL's own response was the final response or a temporary redirect. It is stated as the assertable outcome; no post-crawl re-dereference is defined or required.)*
 
-**Re-crawl stability invariant:** if `body_hash` is unchanged and no permanent redirect was observed, `source_uri` is byte-identical across crawls. *(Informative: this is what makes byte-for-byte conformance vectors authorable and `fetched_at` legible; recording final URLs would churn the field on every load-balancer and signed-asset rotation.)*
+**Re-crawl stability invariant:** if `body_hash` is unchanged and the permanent prefix is empty — equivalently, the recorded value equals the normalized requested URL — `source_uri` is byte-identical across crawls. *(Informative: this is what makes byte-for-byte conformance vectors authorable and `fetched_at` legible; recording final URLs would churn the field on every load-balancer and signed-asset rotation. A non-empty prefix may legitimately move `source_uri` when the origin re-points its permanent chain — an identity event, not per-crawl mechanics, so a `source_uri` change is always attributable to a leading permanent-redirect reconfiguration, never to downstream edge shuffling. The residual flap is an entry hop that toggles 301↔302 across crawls: the prefix then genuinely differs per crawl and `source_uri` flaps with it — a publisher misconfiguration (a stable front returns a stable status code), and `source_status = moved` (§10.6) still fires on the 301 crawls, so the move is not lost.)*
 
 ### 10.5 Direct-file URLs
 
@@ -205,7 +204,7 @@ For items whose body classifies single-file ([ACIF-CORE] §7.2), the path MUST N
 
 ### 10.6 `source_status`
 
-OPTIONAL, set at crawl time: `live | moved | gone | unreachable` — `moved` on an observed permanent redirect, `gone` on a definitive origin 404/410, `unreachable` on transport-level failure. Dead links become a consumer signal instead of silent staleness.
+OPTIONAL, set at crawl time: `live | moved | gone | unreachable` — `moved` on a permanent redirect observed **anywhere in the chain, including hops at or after the first temporary redirect**; `gone` on a definitive origin 404/410; `unreachable` on transport-level failure. `source_status` is deliberately decoupled from the §10.4 composition rule; the two axes carry orthogonal information and neither masks the other. For `old →302→ edge →301→ new`, the record is `source_uri = old` (frozen at the first temporary hop) with `source_status = moved` (a permanent move is present in the resolution) — a migration behind a temporary-fronting CDN stays visible on the status axis instead of churning the provenance axis. Dead links become a consumer signal instead of silent staleness.
 
 ## 11. Freshness
 

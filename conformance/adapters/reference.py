@@ -741,7 +741,7 @@ def handle_fetch_uri(inp: dict[str, Any]) -> dict[str, Any]:
     recorded = requested_record
     seen = {current}
     redirects = 0
-    permanent_seen = False
+    temporary_seen = False
     while True:
         if urlsplit(current).scheme != "https":
             raise SpecError("acif.source_uri.redirect_downgrade")
@@ -757,13 +757,13 @@ def handle_fetch_uri(inp: dict[str, Any]) -> dict[str, Any]:
             if redirects >= MAX_REDIRECTS or next_url in seen:
                 raise SpecError("acif.source_uri.redirect_limit")
             if code in PERMANENT_REDIRECTS:
-                permanent_seen = True
-                # Registry §10.4 does not clarify mixed permanent/temporary
-                # chains; the vectors exercise single-hop semantics, so record
-                # the first permanent target when one appears.
-                recorded = normalize_source_uri(next_url)
-            elif not permanent_seen:
-                recorded = requested_record
+                # Registry §10.4 composition rule: the permanent prefix
+                # advances the recorded value; the first temporary redirect
+                # freezes it for the rest of the chain.
+                if not temporary_seen:
+                    recorded = normalize_source_uri(next_url)
+            else:
+                temporary_seen = True
             redirects += 1
             seen.add(next_url)
             current = next_url

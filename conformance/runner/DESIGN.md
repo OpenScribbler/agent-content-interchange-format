@@ -312,12 +312,16 @@ counts per-surface and is consistent as written).
   which may resolve `::1`); ports are ephemeral and passed in the request;
   one vector's double at a time, torn down after each. TLS negotiation
   itself is not under test and PROTOCOL.md says so.
-  **Coverage note:** these 4 vectors pin single-hop semantics only. Mixed
-  301/302 chains (a genuine composition ambiguity in registry §10.4),
-  record-time re-dereference, mid-chain downgrade, and 303/308
-  representatives are uncovered — filed as suite follow-up work (new
-  lettered vectors plus a §10.4 clarification). A registry-scope claim
-  against the current family must not be over-read.
+  **Coverage note:** these 4 vectors pin single-hop semantics only. The
+  §10.4 composition ambiguity is resolved (permanent-prefix rule, SHAPE
+  Decision #35: record the request URL of the first temporary redirect,
+  else the final resolved URL; the reference adapter implements it), but
+  mixed 301/302 chains, mid-chain downgrade, and 303/308 representatives
+  remain uncovered by vectors — filed as suite follow-up work (new
+  lettered vectors). Record-time re-dereference is no longer separate
+  follow-up: under Decision #35 it is the composition rule's
+  by-construction outcome, not a distinct post-crawl check. A
+  registry-scope claim against the current family must not be over-read.
 - **mock-crawl** (2) — the runner sequences two passes with changed mock
   state and asserts across the pair; cross-pass state lives runner-side
   (§3 statelessness).
