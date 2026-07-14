@@ -4,7 +4,7 @@ import copy
 from typing import Any
 
 from . import binding
-from .common import assert_relation
+from .common import assert_relation, assert_verdict_reason
 from ..protocol import AdapterResponse
 from ..report import VectorResult
 from ..vectors import Vector
@@ -183,10 +183,10 @@ def tv_hook_a(vector: Vector, session: Any, ctx: Any) -> VectorResult:
 @binding("TV-HOOK-b")
 def tv_hook_b(vector: Vector, session: Any, ctx: Any) -> VectorResult:
     result = _result(vector)
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
-    expected = vector.data["expect"]["conformant"]
+    exp = vector.data["expect"]
     response = _send(result, session, ctx, _sidecar_ingest(vector.data["input"]["hook"]))
-    _assert_result_field(result, "hook", response, "conformant", expected)
+    _assert_result_field(result, "hook", response, "conformant", exp["conformant"])
+    assert_verdict_reason(result, "hook", response, exp["reason"], session, exp.get("params"))
     return result
 
 

@@ -686,8 +686,6 @@ def handle_derive_url_name(inp: dict[str, Any]) -> dict[str, Any]:
 
 
 def handle_evaluate_freshness(inp: dict[str, Any]) -> dict[str, Any]:
-    if inp.get("implementation_behavior") == "staleness-from-generated_at":
-        return ok({"conformant": False, "reason": "response-envelope-clock-is-not-a-staleness-input"})
     record = inp.get("record")
     if not isinstance(record, dict):
         raise Unsupported()

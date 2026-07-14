@@ -9,6 +9,7 @@ from .common import (
     assert_diagnostic,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     evaluate_requires,
     hash_value,
     ingest,
@@ -105,11 +106,12 @@ def tv_agent_c(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
     response = send(result, session, ctx, ingest("agent", sidecar=_agent_item(inp["on_agent"]["agent"])))
     assert_result_field(result, "on_agent", response, "conformant", exp["on_agent"]["conformant"])
+    assert_verdict_reason(result, "on_agent", response, exp["on_agent"]["reason"], session, exp["on_agent"].get("params"))
     response = send(result, session, ctx, ingest("rule", sidecar={"rule": inp["on_rule"]["rule"]}))
     assert_result_field(result, "on_rule", response, "conformant", exp["on_rule"]["conformant"])
+    assert_verdict_reason(result, "on_rule", response, exp["on_rule"]["reason"], session, exp["on_rule"].get("params"))
     return result
 
 

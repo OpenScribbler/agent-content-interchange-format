@@ -13,6 +13,26 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 5
+  date: 2026-07-14
+  change_class: c
+  supersedes: 4
+  note: "Decision #36 assertion flip: adapter_protocol 2 — verdict reason values asserted exact-string against the nine minted identifiers across the 23 {conformant: false} sites, plus the Appendix-A verdict param shapes (forbidden_field: field; orphan_key: key), gated on the adapter's DECLARED handshake protocol (protocol-1 adapters stay unasserted forever — never retroactive; syllago Stage 0 evidence unaffected). Catalog reason values are now the minted identifiers; pre-flip free-text strings preserved as informative reason_note annotations. TV-FRESH-k reframed behaviorally (confession input dropped; generated_at ahead of the consumer clock, asserts staleness: stale). New verdict-reason gating selftest check (8th)"
+  vectors: 166
+  binding_set: c0d2accc6bb38f1927def449c0453a05c5817500202e0861ed8ef8f50c7abc2b
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: 6ee229fcee55cce883a6a1b01e30140304eb9043e580a7a13727edcc83f49dc8
+    fresh.yaml: 643cb8ad306dc09d397d85f3d7caaf6a3fc8e055a92f1cf2e783fc2fc5c93fdf
+    hook.yaml: f32c93a57f93d7fc1e4e7b931ef942422f9606a3f5e6a4209e3c6a237707427f
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: edc238855b07542b0db16acdb68a023a884abb3c47a9edbda51f12df7f99c6cd
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: 30528ca8a795520e5a05b9c6cc943c7d6234c26e6535fb13581ef191772eaa7f
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 4
   date: 2026-07-14
   change_class: c

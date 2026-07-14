@@ -12,6 +12,7 @@ from .common import (
     assert_ok,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     assert_value,
     evaluate_requires,
     field,
@@ -130,12 +131,13 @@ def tv_mcp_g(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
     mcp = {"servers": {"demo": {"type": "stdio", "command": "npx"}}, "requires": inp["on_mcp_item"]["requires"]}
     response = send(result, session, ctx, ingest("mcp_config", sidecar=mcp))
     assert_result_field(result, "on_mcp_item", response, "conformant", exp["on_mcp_item"]["conformant"])
+    assert_verdict_reason(result, "on_mcp_item", response, exp["on_mcp_item"]["reason"], session, exp["on_mcp_item"].get("params"))
     response = send(result, session, ctx, ingest("skill", sidecar={"skill": {"requires": inp["on_skill_item"]["requires"]}}))
     assert_result_field(result, "on_skill_item", response, "conformant", exp["on_skill_item"]["conformant"])
+    assert_verdict_reason(result, "on_skill_item", response, exp["on_skill_item"]["reason"], session, exp["on_skill_item"].get("params"))
     return result
 
 

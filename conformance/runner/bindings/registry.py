@@ -12,6 +12,7 @@ from .common import (
     assert_error,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     assert_value,
     derive_url_name,
     evaluate_freshness,
@@ -515,8 +516,10 @@ def tv_fresh_e(vector: Vector, session: Any, ctx: Any):
 @binding("TV-FRESH-f")
 def tv_fresh_f(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
+    exp = vector.data["expect"]
     response = send(result, session, ctx, evaluate_freshness(vector.data["input"]["record"]))
-    assert_result_field(result, "record", response, "conformant", vector.data["expect"]["conformant"])
+    assert_result_field(result, "record", response, "conformant", exp["conformant"])
+    assert_verdict_reason(result, "record", response, exp["reason"], session, exp.get("params"))
     return result
 
 
@@ -595,19 +598,13 @@ def tv_fresh_j(vector: Vector, session: Any, ctx: Any):
 
 @binding("TV-FRESH-k")
 def tv_fresh_k(vector: Vector, session: Any, ctx: Any):
+    # Behavioral: generated_at is ahead of the consumer clock while the
+    # sidecar clock says stale, so any staleness model consulting
+    # generated_at reports fresh and fails here.
     result = result_for(vector)
     inp = vector.data["input"]
-    response = send(
-        result,
-        session,
-        ctx,
-        evaluate_freshness(
-            inp["record"],
-            consumer_clock=inp["consumer_clock"],
-            extra={"implementation_behavior": inp["implementation_behavior"]},
-        ),
-    )
-    assert_result_field(result, "record", response, "conformant", vector.data["expect"]["conformant"])
+    response = send(result, session, ctx, evaluate_freshness(inp["record"], consumer_clock=inp["consumer_clock"]))
+    assert_result_field(result, "record", response, "staleness", vector.data["expect"]["staleness"])
     return result
 
 

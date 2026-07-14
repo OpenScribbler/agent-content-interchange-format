@@ -121,9 +121,9 @@
       - {rule: {requires: {activation_mode: glob}}}
       - {rule: {requires: {handler_types: ["command"]}}}
   expect:
-    case_1: {conformant: false, reason: considered-and-rejected-candidate}
-    case_2: {conformant: false, reason: derivable-key-never-requires}
-    case_3: {conformant: false, reason: foreign-type-key}
+    case_1: {conformant: false, reason: acif.requires.orphan_key, reason_note: considered-and-rejected-candidate, params: {key: file_imports}}
+    case_2: {conformant: false, reason: acif.requires.orphan_key, reason_note: derivable-key-never-requires, params: {key: activation_mode}}
+    case_3: {conformant: false, reason: acif.requires.orphan_key, reason_note: foreign-type-key, params: {key: handler_types}}
 
 - id: TV-RULE-j
   spec: "[ACIF-CORE] §9.5"

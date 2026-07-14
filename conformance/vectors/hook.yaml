@@ -23,7 +23,9 @@
       requires: {handler_types: ["command"]}
   expect:
     conformant: false
-    reason: derivable-key-never-requires
+    reason: acif.requires.orphan_key
+    reason_note: derivable-key-never-requires
+    params: {key: handler_types}
 
 - id: TV-HOOK-c
   spec: "[ACIF-CORE] §9.5"

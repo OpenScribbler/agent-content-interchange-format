@@ -31,8 +31,8 @@
     on_agent: {agent: {requires: {tool_restrictions: true}}}
     on_rule: {rule: {requires: {tool_restrictions: true}}}
   expect:
-    on_agent: {conformant: false, reason: derivable-key-never-requires}
-    on_rule: {conformant: false, reason: foreign-type-key}
+    on_agent: {conformant: false, reason: acif.requires.orphan_key, reason_note: derivable-key-never-requires, params: {key: tool_restrictions}}
+    on_rule: {conformant: false, reason: acif.requires.orphan_key, reason_note: foreign-type-key, params: {key: tool_restrictions}}
 
 - id: TV-AGENT-d
   spec: "[ACIF-AGENT] §9.1"

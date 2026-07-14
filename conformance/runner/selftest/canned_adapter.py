@@ -19,7 +19,7 @@ def main() -> int:
                     "result": {
                         "implementation": "canned",
                         "version": "0",
-                        "adapter_protocol": 1,
+                        "adapter_protocol": 2,
                         "scopes": ["core", "hook"],
                     },
                 }

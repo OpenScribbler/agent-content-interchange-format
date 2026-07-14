@@ -222,7 +222,7 @@ already proves this pattern at small scale. No assertion DSL: a DSL
 interpreter plus 60 shapes encoded in DSL is strictly worse than 60 shapes
 in plain Python.
 
-The vectors-win rule is enforced by four mechanisms, not vigilance:
+The vectors-win rule is enforced by five mechanisms, not vigilance:
 
 1. **Coverage self-check** — every vector ID in every catalog has exactly
    one binding; an unbound vector fails the runner's own test suite. A new
@@ -243,6 +243,11 @@ The vectors-win rule is enforced by four mechanisms, not vigilance:
    pair pinned in PROTOCOL.md Appendix A, and every pinned row must have
    its asserting binding. Payload assertions cannot drift from the
    published pin table in either direction.
+5. **Verdict-reason gating self-check** — a scripted `adapter_protocol: 2`
+   session emitting the minted identifiers (and pinned verdict params)
+   passes, one emitting the pre-flip free-text reasons fails, and a
+   protocol-1 session stays unasserted on `reason` — the
+   never-retroactive freeze is machine-checked, not policy.
 
 Translated bindings — behavioral negatives, invariants, anything whose
 assertion is not a literal from the `expect` block — carry a **derivation
@@ -406,11 +411,12 @@ does not get to dodge assertions per-field); everything else
 protocol, exact-match assertions, unsupported accounting — without
 pretending to be implementation #1.
 
-Runner self-tests, all CI-gating: the four §4 checks (coverage,
-anti-softening, appendix-a payload pins, sabotage), the canned-adapter
-protocol round-trip validated against PROTOCOL.md schemas, the
-scope-table totality check (§8), the suite-manifest head check
-(CHANGE-PROCESS.md), and the report schema check.
+Runner self-tests, all CI-gating: the five §4 checks (coverage,
+anti-softening, appendix-a payload pins, verdict-reason gating,
+sabotage), the canned-adapter protocol round-trip validated against
+PROTOCOL.md schemas, the scope-table totality check (§8), the
+suite-manifest head check (CHANGE-PROCESS.md), and the report schema
+check.
 
 ## 10. Review record
 

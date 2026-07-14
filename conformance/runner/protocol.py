@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import ADAPTER_PROTOCOL, RUNNER_PROTOCOL
+from . import RUNNER_PROTOCOL, SUPPORTED_ADAPTER_PROTOCOLS
 
 MAX_LINE_BYTES = 16 * 1024 * 1024
 SPEC_ERROR_RE = re.compile(r"^acif\.[a-z0-9_]+(\.[a-z0-9_]+)+$")
@@ -123,9 +123,9 @@ class AdapterSession:
             raise ProtocolError("adapter hello failed", response)
         result = response.result or {}
         adapter_protocol = result.get("adapter_protocol")
-        if adapter_protocol != ADAPTER_PROTOCOL:
+        if adapter_protocol not in SUPPORTED_ADAPTER_PROTOCOLS:
             raise ProtocolError(
-                f"unsupported adapter_protocol {adapter_protocol!r}; expected {ADAPTER_PROTOCOL}",
+                f"unsupported adapter_protocol {adapter_protocol!r}; expected one of {SUPPORTED_ADAPTER_PROTOCOLS}",
                 response,
             )
         scopes = result.get("scopes")

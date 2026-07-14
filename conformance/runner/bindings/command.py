@@ -10,6 +10,7 @@ from .common import (
     assert_output_equals,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     assert_value,
     evaluate_requires,
     field,
@@ -222,9 +223,10 @@ def tv_command_i(vector: Vector, session: Any, ctx: Any):
 def tv_command_j(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     for idx, case in enumerate(vector.data["input"]["cases"], start=1):
-        # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
+        expected = vector.data["expect"][f"case_{idx}"]
         response = send(result, session, ctx, ingest("command", sidecar=_command_item(case["command"])))
-        assert_result_field(result, f"case_{idx}", response, "conformant", vector.data["expect"][f"case_{idx}"]["conformant"])
+        assert_result_field(result, f"case_{idx}", response, "conformant", expected["conformant"])
+        assert_verdict_reason(result, f"case_{idx}", response, expected["reason"], session, expected.get("params"))
     return result
 
 

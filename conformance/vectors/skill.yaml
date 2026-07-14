@@ -20,8 +20,8 @@
     foreign: {skill: {requires: {handler_types: ["command"]}}}
     latent_match: {skill: {requires: {tool_restrictions: true}}, frontmatter_passthrough: {allowed_tools: [Read]}}
   expect:
-    foreign: {conformant: false, reason: foreign-type-key}
-    latent_match: {conformant: false, reason: latent-field-presence-does-not-soften}
+    foreign: {conformant: false, reason: acif.requires.orphan_key, reason_note: foreign-type-key, params: {key: handler_types}}
+    latent_match: {conformant: false, reason: acif.requires.orphan_key, reason_note: latent-field-presence-does-not-soften, params: {key: tool_restrictions}}
 
 - id: TV-SKILL-c
   spec: "[ACIF-CORE] §9.5"

@@ -126,10 +126,10 @@
       - {command: {requires: {handler_types: ["command"]}}}
       - {command: {model: "model-a", requires: {disable_model_invocation: true}}}
   expect:
-    case_1: {conformant: false, reason: considered-and-disposed}
-    case_2: {conformant: false, reason: out-of-scope-key}
-    case_3: {conformant: false, reason: foreign-type-key}
-    case_4: {conformant: false, reason: latent-field-presence-does-not-soften}
+    case_1: {conformant: false, reason: acif.requires.orphan_key, reason_note: considered-and-disposed, params: {key: argument_substitution}}
+    case_2: {conformant: false, reason: acif.requires.orphan_key, reason_note: out-of-scope-key, params: {key: builtin_commands}}
+    case_3: {conformant: false, reason: acif.requires.orphan_key, reason_note: foreign-type-key, params: {key: handler_types}}
+    case_4: {conformant: false, reason: acif.requires.orphan_key, reason_note: latent-field-presence-does-not-soften, params: {key: disable_model_invocation}}
 
 - id: TV-COMMAND-k
   spec: "[ACIF-CORE] §9.5"

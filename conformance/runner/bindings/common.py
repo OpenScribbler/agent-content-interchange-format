@@ -376,6 +376,35 @@ def assert_output_excludes(
     result.add_check(case, field_name, expected, observed, observed == expected)
 
 
+def adapter_protocol(session: Any) -> int:
+    hello = getattr(session, "hello", None)
+    value = hello.get("adapter_protocol") if isinstance(hello, dict) else None
+    return value if isinstance(value, int) else 1
+
+
+def assert_verdict_reason(
+    result: VectorResult,
+    case: str,
+    response: AdapterResponse,
+    expected_reason: str,
+    session: Any,
+    params: dict[str, Any] | None = None,
+) -> None:
+    """Assert the minted verdict-reason identifier (PROTOCOL §3), gated on
+    the adapter's DECLARED handshake protocol: adapters declaring
+    adapter_protocol 1 stay unasserted forever — never retroactive. Under
+    protocol 1 the expected literals are still collected so the
+    anti-softening self-check accounts for them."""
+    if adapter_protocol(session) < 2:
+        result.add_check_equivalent(expected_reason)
+        for value in (params or {}).values():
+            result.add_check_equivalent(value)
+        return
+    assert_result_field(result, case, response, "reason", expected_reason)
+    for key, value in (params or {}).items():
+        assert_result_field(result, case, response, f"params.{key}", value)
+
+
 def assert_diagnostic(
     result: VectorResult,
     case: str,

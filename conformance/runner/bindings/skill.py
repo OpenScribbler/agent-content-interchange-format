@@ -13,6 +13,7 @@ from .common import (
     assert_ok,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     evaluate_requires,
     hash_value,
     ingest,
@@ -104,11 +105,12 @@ def tv_skill_b(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
     response = send(result, session, ctx, ingest("skill", sidecar=_skill_item(inp["foreign"]["skill"])))
     assert_result_field(result, "foreign", response, "conformant", exp["foreign"]["conformant"])
+    assert_verdict_reason(result, "foreign", response, exp["foreign"]["reason"], session, exp["foreign"].get("params"))
     response = send(result, session, ctx, ingest("skill", sidecar=inp["latent_match"]))
     assert_result_field(result, "latent_match", response, "conformant", exp["latent_match"]["conformant"])
+    assert_verdict_reason(result, "latent_match", response, exp["latent_match"]["reason"], session, exp["latent_match"].get("params"))
     return result
 
 

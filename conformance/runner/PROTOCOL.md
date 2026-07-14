@@ -1,9 +1,16 @@
 # ACIF Conformance Adapter Protocol
 
-**`adapter_protocol: 1`** — this document is the public contract an
+**`adapter_protocol: 2`** — this document is the public contract an
 adapter is built against. The runner's protocol layer implements this
 document; where they disagree, this document governs and the runner has
 the bug ([DESIGN.md] §1). Requirements language per BCP 14.
+
+The runner accepts adapters declaring `adapter_protocol` 1 or 2. The
+sole difference: under 2, verdict `reason` values (and their Appendix-A
+param shapes) are asserted exact-string against the spec-minted
+identifiers (§3); adapters declaring 1 stay unasserted on `reason`
+forever — the assertion regime is frozen per the adapter's declared
+handshake protocol, never changed retroactively.
 
 An **adapter** is an executable that exposes an implementation under test
 (IUT) to the runner. It is expected to be a dev-only shim linking the
@@ -34,7 +41,7 @@ published for a report used as graduation evidence ([DESIGN.md] §8).
 First request, always:
 
 ```json
-{"op": "hello", "runner_protocol": 1}
+{"op": "hello", "runner_protocol": 2}
 ```
 
 Response:
@@ -43,10 +50,13 @@ Response:
 {"ok": true, "result": {
   "implementation": "<IUT name>",
   "version": "<IUT version string>",
-  "adapter_protocol": 1,
+  "adapter_protocol": 2,
   "scopes": ["core", "hook"]
 }}
 ```
+
+`adapter_protocol` is the adapter's declaration, 1 or 2 (see the header
+note); the runner refuses any other value.
 
 `scopes` is the set of conformance scopes the IUT claims, drawn from the
 closed enum: `core`, `hook`, `skill`, `rule`, `command`, `agent`, `mcp`,
@@ -80,19 +90,21 @@ Rules:
   handler, and adapters SHOULD emit e.g. `"error": "adapter: <detail>"`
   deliberately on internal failure.
 - **Non-conformance verdicts on record-validation forms**: return
-  `{"ok": true, "result": {"conformant": false, "reason": "<text>"}}`.
-  Under `adapter_protocol: 1`, `reason` is never asserted — this is
-  frozen per the adapter's declared handshake protocol, never changed
-  retroactively. The specs mint `reject (verdict)`-classed identifiers
-  for these conditions ([ACIF-CORE] §8.7; Appendix B maps every vector
-  site to its identifier); a future `adapter_protocol` revision asserts
-  `reason` exact-string against them, for adapters declaring that
-  revision only. *(Informative migration guidance, not an
-  `adapter_protocol: 1` conformance criterion: emit the minted
-  identifier as the `reason` value now and the flip is a no-op. The
-  normative source for which identifier a condition takes is the owning
-  spec's condition text, not Appendix B — an adapter never sees vector
-  ids.)* A conforming input judged conformant returns
+  `{"ok": true, "result": {"conformant": false, "reason": "<id>"}}`.
+  Under `adapter_protocol: 2`, `reason` is asserted exact-string against
+  the spec-minted `reject (verdict)`-classed identifier for the
+  condition ([ACIF-CORE] §8.7; Appendix B maps every vector site to its
+  identifier, informatively — the normative source for which identifier
+  a condition takes is the owning spec's condition text; an adapter
+  never sees vector ids). Where Appendix A pins a verdict param shape
+  (`acif.envelope.forbidden_field` → `field`,
+  `acif.requires.orphan_key` → `key`), the result additionally carries
+  `"params": { … }` beside `reason` and those keys are asserted. Under
+  `adapter_protocol: 1`, `reason` is never asserted — frozen per the
+  adapter's declared handshake protocol, never changed retroactively.
+  The catalogs' pre-flip free-text reason strings survive as
+  informative `reason_note` annotations beside each expected `reason`;
+  they are never asserted. A conforming input judged conformant returns
   `{"ok": true, "result": {"conformant": true, …}}` alongside any other
   asserted fields.
 - `unsupported` is **per-request**: it means the adapter cannot serve
@@ -342,27 +354,29 @@ Every identifier here is spec-minted; this table never mints. The
 anti-softening self-check reconciles it against both the catalogs and the
 specs' Error Identifiers sections.
 
-Reserved param shapes (assertion deferred to the `adapter_protocol`
-revision that asserts verdict reasons; pinned now so day-one emitters
-carry the payload and the detail survives the flip):
+Verdict-reason param shapes (asserted for adapters declaring
+`adapter_protocol` ≥ 2, alongside the exact-string `reason` assertion —
+§3; unasserted under protocol 1). These ride the verdict channel
+(`params` beside `reason`), not the §3.1 diagnostics array, so the
+payload-pin self-check above does not govern them:
 
-| Identifier | Required params | Deferred asserting site |
+| Identifier | Required params | Asserting site |
 |---|---|---|
 | `acif.envelope.forbidden_field` | `field` (the offending reserved name) | TV-6 |
 | `acif.requires.orphan_key` | `key` (the offending `requires` key) | the six §9.4 orphan-key vectors (Appendix B) |
 
 ## Appendix B — Verdict-reason identifier map (informative)
 
-Flip mechanics for runner binding authors: every `{conformant: false}`
-vector site, its current catalog reason string, and the spec-minted
-identifier the flip will assert. This table is NOT the normative source
-for adapter authors — an adapter never sees vector ids; it emits from the
-owning spec's condition text ([ACIF-CORE] §5.1–§5.2, §8.7, §9.4;
-[ACIF-REGISTRY] §8.3, §8.5, §11.2). The many-to-one rows are deliberate:
-[ACIF-CORE] §9.4 defines one uniform reject, so six catalog strings map
-to `acif.requires.orphan_key` — at the flip, the catalog strings survive
-as informative annotations (they keep failure output legible) and the
-per-case discrimination lives in each case's input key.
+Every `{conformant: false}` vector site, its pre-flip catalog reason
+string (now the catalog's informative `reason_note` annotation), and the
+spec-minted identifier asserted under `adapter_protocol` ≥ 2. This table
+is NOT the normative source for adapter authors — an adapter never sees
+vector ids; it emits from the owning spec's condition text ([ACIF-CORE]
+§5.1–§5.2, §8.7, §9.4; [ACIF-REGISTRY] §8.3, §8.5, §11.2). The
+many-to-one rows are deliberate: [ACIF-CORE] §9.4 defines one uniform
+reject, so six catalog strings map to `acif.requires.orphan_key` — the
+per-case discrimination lives in each case's input key and the asserted
+`key` param.
 
 | Vector site | Catalog reason string | Minted identifier |
 |---|---|---|
@@ -374,7 +388,7 @@ per-case discrimination lives in each case's input key.
 | TV-L3-b | `missing-provenance-tag` | `acif.registry.provenance_tag_missing` |
 | TV-L3-c | `missing-method-stamp` | `acif.registry.method_stamp_missing` |
 | TV-FRESH-f | `rfc3339-explicit-offset-required` | `acif.registry.timestamp_offset_missing` |
-| TV-FRESH-k | `response-envelope-clock-is-not-a-staleness-input` | *retired at the flip* — reframed as a behavioral `staleness: stale` assertion (the `implementation_behavior` confession input is dropped; no identifier is minted, because no conforming implementation can detect and report its own clock conflation) |
+| TV-FRESH-k | `response-envelope-clock-is-not-a-staleness-input` | *retired at the flip (adapter_protocol 2)* — reframed as a behavioral `staleness: stale` assertion with `generated_at` ahead of the consumer clock (the `implementation_behavior` confession input is dropped; no identifier is minted, because no conforming implementation can detect and report its own clock conflation) |
 | TV-SKILL-b `foreign` | `foreign-type-key` | `acif.requires.orphan_key` |
 | TV-SKILL-b `latent_match` | `latent-field-presence-does-not-soften` | `acif.requires.orphan_key` |
 | TV-RULE-i case_1 | `considered-and-rejected-candidate` | `acif.requires.orphan_key` |

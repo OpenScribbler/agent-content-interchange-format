@@ -80,7 +80,9 @@
       effective_version: "3.0.0"
   expect:
     conformant: false
-    reason: forbidden-field effective_version
+    reason: acif.envelope.forbidden_field
+    reason_note: forbidden-field effective_version
+    params: {field: effective_version}
 
 - id: TV-7
   spec: "[ACIF-PUBLISHER] §5.5"
@@ -142,10 +144,10 @@
       - {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo", version: "1.0"}
       - {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo", license: {spdx: "MIT License"}}
   expect:
-    case_1: {conformant: false, reason: kind-not-in-closed-enum}
-    case_2: {conformant: false, reason: id-not-uuid-v4}
-    case_3: {conformant: false, reason: version-not-semver}
-    case_4: {conformant: false, reason: license-spdx-not-identifier}
+    case_1: {conformant: false, reason: acif.envelope.kind_invalid, reason_note: kind-not-in-closed-enum}
+    case_2: {conformant: false, reason: acif.envelope.id_invalid, reason_note: id-not-uuid-v4}
+    case_3: {conformant: false, reason: acif.envelope.version_invalid, reason_note: version-not-semver}
+    case_4: {conformant: false, reason: acif.envelope.license_spdx_invalid, reason_note: license-spdx-not-identifier}
 
 - id: TV-12
   spec: "[ACIF-CORE] §7.5"
@@ -295,7 +297,8 @@
     projection: {global: {supported: true}}
   expect:
     conformant: false
-    reason: missing-provenance-tag
+    reason: acif.registry.provenance_tag_missing
+    reason_note: missing-provenance-tag
 
 - id: TV-L3-c
   spec: "[ACIF-REGISTRY] §8.3"
@@ -305,7 +308,8 @@
     advisory: {argument_substitution_token: {present: true}}
   expect:
     conformant: false
-    reason: missing-method-stamp
+    reason: acif.registry.method_stamp_missing
+    reason_note: missing-method-stamp
 
 - id: TV-L3-d
   spec: "[ACIF-CORE] §10; [ACIF-REGISTRY] §9"

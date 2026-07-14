@@ -12,6 +12,7 @@ from .common import (
     assert_projection_field,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     assert_value,
     derive_pack_id,
     evaluate_install,
@@ -169,9 +170,10 @@ def tv_5(vector: Vector, session: Any, ctx: Any):
 @binding("TV-6")
 def tv_6(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
+    exp = vector.data["expect"]
     response = send(result, session, ctx, ingest(vector.data["input"]["item_record"].get("kind", "skill"), sidecar=vector.data["input"]["item_record"]))
-    assert_result_field(result, "item_record", response, "conformant", vector.data["expect"]["conformant"])
+    assert_result_field(result, "item_record", response, "conformant", exp["conformant"])
+    assert_verdict_reason(result, "item_record", response, exp["reason"], session, exp.get("params"))
     return result
 
 
@@ -251,10 +253,10 @@ def tv_11(vector: Vector, session: Any, ctx: Any):
     inp = vector.data["input"]
     exp = vector.data["expect"]
     for idx, case in enumerate(inp["cases"], start=1):
-        expected = exp[f"case_{idx}"]["conformant"]
-        # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
+        expected = exp[f"case_{idx}"]
         response = send(result, session, ctx, ingest(case.get("kind", "skill"), sidecar=case))
-        assert_result_field(result, f"case_{idx}", response, "conformant", expected)
+        assert_result_field(result, f"case_{idx}", response, "conformant", expected["conformant"])
+        assert_verdict_reason(result, f"case_{idx}", response, expected["reason"], session, expected.get("params"))
     return result
 
 
@@ -469,18 +471,20 @@ def tv_l3_a(vector: Vector, session: Any, ctx: Any):
 @binding("TV-L3-b")
 def tv_l3_b(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
+    exp = vector.data["expect"]
     response = send(result, session, ctx, project(vector.data["input"]["projection"], "install_scope_capabilities"))
-    assert_result_field(result, "projection", response, "conformant", vector.data["expect"]["conformant"])
+    assert_result_field(result, "projection", response, "conformant", exp["conformant"])
+    assert_verdict_reason(result, "projection", response, exp["reason"], session, exp.get("params"))
     return result
 
 
 @binding("TV-L3-c")
 def tv_l3_c(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
-    # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
+    exp = vector.data["expect"]
     response = send(result, session, ctx, project(vector.data["input"]["advisory"], "advisory"))
-    assert_result_field(result, "advisory", response, "conformant", vector.data["expect"]["conformant"])
+    assert_result_field(result, "advisory", response, "conformant", exp["conformant"])
+    assert_verdict_reason(result, "advisory", response, exp["reason"], session, exp.get("params"))
     return result
 
 

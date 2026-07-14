@@ -13,6 +13,7 @@ from .common import (
     assert_output_contains,
     assert_relation,
     assert_result_field,
+    assert_verdict_reason,
     evaluate_requires,
     field,
     hash_value,
@@ -190,9 +191,10 @@ def tv_rule_h(vector: Vector, session: Any, ctx: Any):
 def tv_rule_i(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     for idx, case in enumerate(vector.data["input"]["cases"], start=1):
-        # PROTOCOL.md §3: reason is informative diagnostic text, never asserted.
+        expected = vector.data["expect"][f"case_{idx}"]
         response = send(result, session, ctx, ingest("rule", sidecar=_rule_item(case["rule"])))
-        assert_result_field(result, f"case_{idx}", response, "conformant", vector.data["expect"][f"case_{idx}"]["conformant"])
+        assert_result_field(result, f"case_{idx}", response, "conformant", expected["conformant"])
+        assert_verdict_reason(result, f"case_{idx}", response, expected["reason"], session, expected.get("params"))
     return result
 
 

@@ -73,7 +73,8 @@
     record: {fetched_at: "2026-05-01T00:00:00"}
   expect:
     conformant: false
-    reason: rfc3339-explicit-offset-required
+    reason: acif.registry.timestamp_offset_missing
+    reason_note: rfc3339-explicit-offset-required
 
 - id: TV-FRESH-g
   spec: "[ACIF-REGISTRY] §11.2"
@@ -126,11 +127,9 @@
 - id: TV-FRESH-k
   spec: "[ACIF-REGISTRY] §11.1"
   harness: static
-  description: third-clock conflation — computing item staleness from generated_at is non-conforming
+  description: third-clock conflation, tested behaviorally — the sidecar clock says stale while generated_at is ahead of the consumer clock, so any implementation computing staleness from generated_at reports fresh and fails
   input:
-    record: {fetched_at: "2026-05-01T00:00:00Z", generated_at: "2026-05-09T00:00:00Z"}
+    record: {fetched_at: "2026-05-01T00:00:00Z", generated_at: "2026-05-11T00:00:00Z"}
     consumer_clock: "2026-05-10T00:00:00Z"
-    implementation_behavior: staleness-from-generated_at
   expect:
-    conformant: false
-    reason: response-envelope-clock-is-not-a-staleness-input
+    staleness: stale

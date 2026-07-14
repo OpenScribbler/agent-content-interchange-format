@@ -86,8 +86,8 @@
     on_mcp_item: {requires: {transport_types: ["stdio"]}}
     on_skill_item: {requires: {transport_types: ["stdio"]}}
   expect:
-    on_mcp_item: {conformant: false, reason: derivable-key-never-requires}
-    on_skill_item: {conformant: false, reason: foreign-type-key}
+    on_mcp_item: {conformant: false, reason: acif.requires.orphan_key, reason_note: derivable-key-never-requires, params: {key: transport_types}}
+    on_skill_item: {conformant: false, reason: acif.requires.orphan_key, reason_note: foreign-type-key, params: {key: transport_types}}
 
 - id: TV-MCP-h
   spec: "[ACIF-MCP] §6.2"

@@ -25,6 +25,7 @@ def main(argv: list[str] | None = None) -> int:
         ("binding coverage", check_binding_coverage),
         ("anti-softening", check_anti_softening),
         ("appendix-a payload pins", check_appendix_payload_pins),
+        ("verdict-reason gating", check_verdict_reason_gating),
         ("protocol round-trip", check_protocol_roundtrip),
         ("scopes totality", check_scopes_totality),
         ("suite manifest", check_suite_manifest),
@@ -120,7 +121,9 @@ def _asserted_literals(value: Any, parent_key: str | None = None) -> set[str]:
     out: set[str] = set()
     if isinstance(value, dict):
         for key, child in value.items():
-            if key == "reason":
+            # reason_note is the catalog's informative annotation (the
+            # pre-flip free-text reason strings); reason itself is asserted.
+            if key == "reason_note":
                 continue
             out.update(_asserted_literals(child, key))
     elif isinstance(value, list):
@@ -161,6 +164,60 @@ class _StubSession:
         )
 
 
+class _VerdictSession:
+    """Scripted session answering each request with the next canned verdict."""
+
+    def __init__(self, protocol: int, results: list[dict[str, Any]]):
+        self.hello = {"adapter_protocol": protocol}
+        self._results = results
+
+    def request(self, request: dict[str, Any]) -> AdapterResponse:
+        result = self._results.pop(0)
+        raw = {"ok": True, "result": result}
+        return AdapterResponse(
+            kind="ok",
+            request_line=encode_request(request),
+            response_line=str(raw),
+            raw=raw,
+            result=result,
+        )
+
+
+def check_verdict_reason_gating() -> None:
+    """PROTOCOL §3: verdict reasons (and their Appendix-A param shapes) are
+    asserted exact-string for adapters declaring adapter_protocol >= 2, and
+    stay unasserted for adapters declaring 1 — never retroactive."""
+    catalogs = load_catalogs()
+    bindings.load_all()
+
+    def run(vid: str, protocol: int, results: list[dict[str, Any]]) -> bool:
+        vector = catalogs.by_id[vid]
+        session = _VerdictSession(protocol, list(results))
+        with tempfile.TemporaryDirectory(prefix="acif-selftest-fixtures-") as tmp:
+            result = bindings.get(vid)(vector, session, _StubContext(tmp))
+        return result.status == "pass" and all(check["pass"] for check in result.checks)
+
+    tv11 = catalogs.by_id["TV-11"]
+    minted = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason"]} for i in range(1, 5)]
+    free_text = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason_note"]} for i in range(1, 5)]
+    if not run("TV-11", 2, minted):
+        raise AssertionError("protocol-2 adapter emitting minted identifiers must pass TV-11")
+    if run("TV-11", 2, free_text):
+        raise AssertionError("protocol-2 adapter emitting free-text reasons must fail TV-11")
+    if not run("TV-11", 1, free_text):
+        raise AssertionError("protocol-1 adapter must stay unasserted on reason")
+
+    tv6 = catalogs.by_id["TV-6"]
+    with_params = [{"conformant": False, "reason": tv6.data["expect"]["reason"], "params": dict(tv6.data["expect"]["params"])}]
+    without_params = [{"conformant": False, "reason": tv6.data["expect"]["reason"]}]
+    if not run("TV-6", 2, with_params):
+        raise AssertionError("protocol-2 adapter carrying the pinned field param must pass TV-6")
+    if run("TV-6", 2, without_params):
+        raise AssertionError("protocol-2 adapter omitting the pinned field param must fail TV-6")
+    if not run("TV-6", 1, without_params):
+        raise AssertionError("protocol-1 adapter must stay unasserted on verdict params")
+
+
 class _StubContext:
     def __init__(self, fixture_root: str):
         self.fixture_root = fixture_root
@@ -176,8 +233,8 @@ def check_protocol_roundtrip() -> None:
     session = AdapterSession(command, cwd=CONFORMANCE_ROOT)
     try:
         hello = session.start()
-        if hello.get("adapter_protocol") != 1:
-            raise AssertionError("canned adapter did not negotiate protocol 1")
+        if hello.get("adapter_protocol") != 2:
+            raise AssertionError("canned adapter did not negotiate protocol 2")
         response = session.request({"op": "ingest", "input": {"kind": "hook", "sidecar": {}}})
         if response.kind != "ok":
             raise AssertionError(f"expected ok response, got {response.kind}")
