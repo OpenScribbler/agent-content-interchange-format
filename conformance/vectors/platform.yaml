@@ -130,6 +130,29 @@
     provenance: declared
     body_hash: "11f1e91480d2fdfd247311cc52240bf0fb2293febeccaeeadafacd74707cb32d"
 
+- id: TV-PLATFORM-i2
+  spec: "[ACIF-HOOK] §7.4, §9"
+  harness: static
+  description: per-OS key map with duplicate executable identity — §7.4 identity-merge to one constrained entry with sorted os union; body_hash pinned on the merged form
+  input:
+    source_mechanism: per-os-key-map
+    source:
+      command: "hooks/base.sh"
+      windows: "hooks/win.cmd"
+      linux: "hooks/unix.sh"
+      osx: "hooks/unix.sh"
+    referenced_files:
+      hooks/base.sh: "#!/bin/sh\necho base\n"
+      hooks/win.cmd: "@echo off\r\necho win\r\n"
+      hooks/unix.sh: "#!/bin/sh\necho unix\n"
+  expect:
+    canonical_scripts:   # canonical order — sorted by each entry's JCS bytes ([ACIF-HOOK] §9.3)
+      - {type: file, path: hooks/unix.sh, os: [darwin, linux]}
+      - {type: file, path: hooks/win.cmd, os: [windows]}
+      - {type: file, path: hooks/base.sh}
+    provenance: declared
+    body_hash: "9cbd1f0d7f47b8175ece2d43150b8df92c0f5c50b4cacf537ac6372313e8aeb3"
+
 - id: TV-PLATFORM-j
   spec: "[ACIF-HOOK] §7.1, §7.4"
   harness: static
@@ -282,10 +305,10 @@
   harness: static
   description: round-trip identity modulo documented-lossy cases; dead default preserved
   input:
-    canonical_scripts:
-      - {type: file, path: hooks/base.sh}                      # unreachable: full coverage below
+    canonical_scripts:                                         # §9.3 canonical order: os-bearing entries serialize {"os":… and sort before {"path":…
       - {type: file, path: hooks/unix.sh, os: [darwin, linux]}
       - {type: file, path: hooks/win.cmd, os: [windows]}
+      - {type: file, path: hooks/base.sh}                      # dead default: full coverage above
     render_target: per-os-key-map-provider
   expect:
     roundtrip_identity: true

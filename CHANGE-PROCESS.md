@@ -91,6 +91,24 @@ the filer — convenes the response:
    the vector/binding/selftest work the decision names.
 4. An explicit **vector-impact inventory** (below).
 
+### Suite-defect repairs (`repair`)
+
+A repair corrects a published vector or binding whose expectation was
+unachievable by any conforming implementation — the suite disagreed with
+the specs it tests. Repairs are neither Class B (they change existing
+vector or binding content, not add rows) nor Class C (they mint no
+vocabulary; the corrected expectation is what the specs already
+required). The evidence standard is a demonstration that a conforming
+implementation fails the vector as published, normally a failing run
+plus the spec-clause derivation of the correct expectation.
+
+A repair's manifest entry uses `change_class: repair` and its note MUST
+name the repaired vectors. Because a repair changes what existing
+vectors assert, consumers of superseded reports SHOULD treat a repair
+entry like a Class C entry for the catalogs it touches: claims about
+the repaired vectors were claims against defective expectations, so
+re-verification of the affected scope is warranted.
+
 ## Suite and report impact
 
 The conformance suite (165 vectors at this writing) is normatively

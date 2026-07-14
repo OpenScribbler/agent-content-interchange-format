@@ -333,9 +333,17 @@ def _hook_from_per_os_map(source: dict[str, Any]) -> dict[str, Any]:
         script = {"type": "file", "path": source["command"]}
         script.update(passthrough)
         scripts.append(script)
+    # [ACIF-HOOK] §7.4 — after the key mapping, constrained entries with
+    # identical executable identity merge into one entry, os set sorted union.
+    constrained: dict[str, dict[str, Any]] = {}
     for key, os_values in (("osx", ["darwin"]), ("linux", ["linux"]), ("windows", ["windows"])):
         if isinstance(source.get(key), str):
-            scripts.append({"type": "file", "path": source[key], "os": os_values})
+            path = source[key]
+            if path in constrained:
+                constrained[path]["os"] = sorted(set(constrained[path]["os"]) | set(os_values))
+            else:
+                constrained[path] = {"type": "file", "path": path, "os": list(os_values)}
+    scripts.extend(constrained.values())
     return {"event": "before_tool_execute", "handlers": [{"type": "command", "scripts": scripts}], "blocking": False}
 
 

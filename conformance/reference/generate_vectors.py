@@ -111,6 +111,20 @@ def compute() -> dict[str, list[str]]:
     ])])
     h_i = sidecar_only_body_hash(block_i, files_i)
 
+    # TV-PLATFORM-i2 — linux + osx keys share one path; §7.4 identity-merge
+    # yields a single constrained entry with the sorted os union.
+    files_i2 = {
+        "hooks/base.sh": b"#!/bin/sh\necho base\n",
+        "hooks/win.cmd": b"@echo off\r\necho win\r\n",
+        "hooks/unix.sh": b"#!/bin/sh\necho unix\n",
+    }
+    block_i2 = hook_block("before_tool_execute", [cmd_handler([
+        {"type": "file", "path": "hooks/base.sh"},
+        {"type": "file", "path": "hooks/unix.sh", "os": ["darwin", "linux"]},
+        {"type": "file", "path": "hooks/win.cmd", "os": ["windows"]},
+    ])])
+    h_i2 = sidecar_only_body_hash(block_i2, files_i2)
+
     files_q = {"hooks/run.sh": b"#!/bin/sh\necho ok\n"}
     block_q_base = hook_block("before_tool_execute", [cmd_handler([
         {"type": "file", "path": "hooks/run.sh", "os": ["linux"]},
@@ -128,7 +142,7 @@ def compute() -> dict[str, list[str]]:
         {"type": "file", "path": "hooks/win.cmd", "os": ["windows"]},
     ])])
     h_q2 = sidecar_only_body_hash(block_q2, files_q2)
-    out["platform.yaml"] = [h_i, h_q_base, h_q_flip, h_q2]
+    out["platform.yaml"] = [h_i, h_i2, h_q_base, h_q_flip, h_q2]
 
     # ── hook.yaml ────────────────────────────────────────────────────────────
     block_g = hook_block("before_tool_execute", [cmd_handler([
@@ -187,7 +201,10 @@ def main() -> int:
                 failures += 1
             continue
         for v in vals:
-            if "<computed>" not in text:
+            # Quoted form only: bare <computed> also appears in catalog
+            # header comments, which must not mask a value/placeholder
+            # count mismatch.
+            if '"<computed>"' not in text:
                 print(f"ERROR: more values than placeholders in {fname}")
                 return 1
             # YAML quoting: single-quote values containing double quotes

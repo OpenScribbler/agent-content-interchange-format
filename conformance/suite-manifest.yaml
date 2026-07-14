@@ -5,10 +5,33 @@
 # first; every suite change MUST append an entry (the runner selftest
 # fails if the head entry drifts from the working tree).
 #
-# change_class: initial | b | c | mixed — what kind of change produced
-# the entry. Class C entries carry their expectation-flip inventory in
-# the SHAPE.md decision row the note names. Prior suite history predates
-# this manifest and lives in git.
+# change_class: initial | b | c | repair | mixed — what kind of change
+# produced the entry. Class C entries carry their expectation-flip
+# inventory in the SHAPE.md decision row the note names. `repair`
+# corrects a published vector or binding whose expectation no conforming
+# implementation could satisfy (CHANGE-PROCESS.md "Suite-defect
+# repairs"); its note names the repaired vectors. Prior suite history
+# predates this manifest and lives in git.
+
+- suite: 2
+  date: 2026-07-13
+  change_class: repair
+  supersedes: 1
+  note: "repairs TV-PLATFORM-l (case_6 label/sentinel translation in binding) and TV-PLATFORM-r (canonical_scripts reordered to §9.3 canonical order; structural dead-default check) — both surfaced by syllago Stage 1 (impl #1); lands with Decision #37 (§7.4 identity-merge ratification) and its companion vector TV-PLATFORM-i2 pinning the merged form's body_hash (additive; no existing expectation flips)"
+  vectors: 166
+  binding_set: 4004d1c91e6753c08df5108e0478c119c2a5ea1664b83ea94304f41923f7109c
+  catalogs:
+    agent.yaml: b0e25aec0185a9d3ab6176b13c497cb6c6a91b0b26b7070567cb9754f9502cf3
+    command.yaml: 11e10b0737e4031e5670b09b96a8c0f2d2eca1b2ed4e120a3f83b6592d59c294
+    core.yaml: 6b69e3df0c32d058c426d6c85fa812c07a80cbaede0a95370078bd19890a65b0
+    fresh.yaml: 1d09c6570b26f9b9f9a1be8af5c3a14d98c03af88863d975f19862f43e4788a9
+    hook.yaml: bb97d51c6e9e65f77970415625fa1cecf122c1bf40d720cf420dd267dd5e1ab7
+    mcp.yaml: 704441c815c7d414968af0f8a9bf49dbb0c256acdd84da5180df69717c611952
+    platform.yaml: edc238855b07542b0db16acdb68a023a884abb3c47a9edbda51f12df7f99c6cd
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: 3aa6ceafe87f355549f74a16fc3c26923c7a930743cce2ef22d39863ac57ab1b
+    skill.yaml: 13817b7083f6aeb172612650bfc8f38e7bd4e60fb892efcd1ae6486ffba22d2d
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
 
 - suite: 1
   date: 2026-07-13

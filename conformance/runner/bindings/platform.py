@@ -222,6 +222,7 @@ def tv_platform_h(vector: Vector, session: Any, ctx: Any):
 
 
 @binding("TV-PLATFORM-i")
+@binding("TV-PLATFORM-i2")
 def tv_platform_i(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
@@ -292,7 +293,12 @@ def tv_platform_l(vector: Vector, session: Any, ctx: Any):
         expected = exp[f"case_{idx}"]
         first_script = _first_script(response)
         observed_os = first_script.get("os", ABSENT) if isinstance(first_script, dict) else ABSENT
-        assert_value(result, f"case_{idx}", "os", expected["os"], observed_os, response)
+        # DERIVATION: [ACIF-HOOK] §7.4 — "any other extension" maps to a
+        # default entry with no `os` field; the vector's `os: absent` is a
+        # catalog label for that omission, translated here to the wire-level
+        # ABSENT sentinel (§7.1 makes a literal `os: "absent"` non-conformant).
+        expected_os = ABSENT if expected["os"] == "absent" else expected["os"]
+        assert_value(result, f"case_{idx}", "os", expected_os, observed_os, response)
         if "diagnostic" in expected:
             assert_diagnostic(result, f"case_{idx}", response, expected["diagnostic"])
         if "note" in expected:
@@ -466,7 +472,8 @@ def tv_platform_r(vector: Vector, session: Any, ctx: Any):
     if rendered.kind == "ok" and roundtrip.kind == "ok":
         observed_scripts = _scripts(roundtrip)
         assert_relation(result, "roundtrip", "roundtrip_identity", exp["roundtrip_identity"], observed_scripts, observed_scripts == inp["canonical_scripts"])
-        dead_default = isinstance(observed_scripts, list) and inp["canonical_scripts"][0] in observed_scripts
+        default_entry = next(entry for entry in inp["canonical_scripts"] if "os" not in entry)
+        dead_default = isinstance(observed_scripts, list) and default_entry in observed_scripts
         assert_relation(result, "roundtrip", "dead_default_preserved", exp["dead_default_preserved"], dead_default, dead_default)
     else:
         assert_result_field(result, "roundtrip", roundtrip, "canonical", canonical)
