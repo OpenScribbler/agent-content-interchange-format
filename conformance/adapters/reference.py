@@ -707,7 +707,11 @@ def handle_evaluate_freshness(inp: dict[str, Any]) -> dict[str, Any]:
     trust_tier = "attested" if attestation_eval == "valid" else "unattested"
     policies = inp.get("policies") if isinstance(inp.get("policies"), list) else ["default"]
     install = "refuse" if stale and "freshness-enforcement-opt-in" in policies else "proceed"
-    warnings = [{"id": "acif.registry.stale", "params": {}}] if stale and "default" in policies else []
+    warnings = (
+        [{"id": "acif.registry.stale", "params": {"expires": expires.isoformat().replace("+00:00", "Z")}}]
+        if stale and "default" in policies
+        else []
+    )
     response_bytes = jcs({"record": record})
     return ok(
         {

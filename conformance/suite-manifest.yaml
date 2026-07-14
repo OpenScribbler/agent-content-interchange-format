@@ -13,6 +13,26 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 4
+  date: 2026-07-14
+  change_class: c
+  supersedes: 3
+  note: "Decision #39 mints acif.registry.stale ([ACIF-REGISTRY] §12; params: expires, the effective E_sidecar as RFC 3339), ratifying shipped syllago and reference-adapter behavior — surfaced by syllago Stage 4 (impl #1, zero suite defects). Payload-pinned in PROTOCOL Appendix A on both asserting vectors, compared as an instant. Inventory (in the decision row): TV-FRESH-a previously passed on ANY non-empty warnings, now requires the minted id + expires; TV-FRESH-h default lane's warn:true replaced by the same warning shape"
+  vectors: 166
+  binding_set: 3bb2059b4405f43fb50a5ce3b11174cf1a1e0e015b558919223ed7d4ccdca491
+  catalogs:
+    agent.yaml: d390d9f9c472ea0e16abfa793e270177393a20f6498d446e1e724a3915031732
+    command.yaml: 11e10b0737e4031e5670b09b96a8c0f2d2eca1b2ed4e120a3f83b6592d59c294
+    core.yaml: 6b69e3df0c32d058c426d6c85fa812c07a80cbaede0a95370078bd19890a65b0
+    fresh.yaml: b01da84d4e1cdbac02cddb8a19ba762cf9879c9d943eea5052ba68b6a786403f
+    hook.yaml: bb97d51c6e9e65f77970415625fa1cecf122c1bf40d720cf420dd267dd5e1ab7
+    mcp.yaml: 704441c815c7d414968af0f8a9bf49dbb0c256acdd84da5180df69717c611952
+    platform.yaml: edc238855b07542b0db16acdb68a023a884abb3c47a9edbda51f12df7f99c6cd
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: 3aa6ceafe87f355549f74a16fc3c26923c7a930743cce2ef22d39863ac57ab1b
+    skill.yaml: 13817b7083f6aeb172612650bfc8f38e7bd4e60fb892efcd1ae6486ffba22d2d
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 3
   date: 2026-07-13
   change_class: mixed

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import datetime as dt
+import re
 from typing import Any
 
 from . import binding
@@ -25,6 +27,54 @@ from ..report import VectorResult
 from ..vectors import Vector
 
 SOURCE_STATUS_VALUES = {"live", "moved", "gone", "unreachable"}
+
+_RFC3339_OFFSET_RE = re.compile(r"(?:Z|[+-]\d\d:\d\d)$")
+
+
+def _rfc3339_instant(value: Any) -> dt.datetime | None:
+    if not isinstance(value, str) or not _RFC3339_OFFSET_RE.search(value):
+        return None
+    try:
+        parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(dt.timezone.utc)
+
+
+def _assert_stale_warning(result: VectorResult, case: str, response: Any, expected: dict[str, Any]) -> None:
+    """Assert the minted acif.registry.stale warning with its Appendix-A
+    pinned expires param. expires is compared as an RFC 3339 instant, not
+    byte-wise — the pinned value is a timestamp, and TV-FRESH-h's E_sidecar
+    is computed, so serialization (Z vs +00:00, fractional seconds) is the
+    adapter's to choose (PROTOCOL Appendix A)."""
+    if response.kind == "unsupported":
+        result.set_status("unsupported", f"{case}: adapter returned unsupported")
+        return
+    if response.kind == "harness-error":
+        return
+    warnings = hash_value(response, "warnings")
+    entries = [w for w in warnings if isinstance(w, dict)] if isinstance(warnings, list) else []
+    matches = [w for w in entries if w.get("id") == expected["id"]]
+    observed: Any = warnings
+    passed = bool(matches)
+    if matches:
+        params = matches[0].get("params")
+        observed = params
+        expected_instant = _rfc3339_instant(expected["params"]["expires"])
+        observed_instant = _rfc3339_instant(params.get("expires")) if isinstance(params, dict) else None
+        passed = observed_instant is not None and observed_instant == expected_instant
+    if passed:
+        unexpected = [
+            w.get("id")
+            for w in entries
+            if isinstance(w.get("id"), str) and w["id"].startswith("acif.registry.") and w["id"] != expected["id"]
+        ]
+        if unexpected:
+            passed = False
+            observed = {"warnings": warnings, "unexpected_same_family": unexpected}
+    result.add_check(case, "diagnostic", expected, observed, passed)
 
 
 def _all_ok(responses: list[Any]) -> bool:
@@ -398,6 +448,7 @@ def tv_fresh_a(vector: Vector, session: Any, ctx: Any):
         observed_policy = exp["default_policy"] if warn_not_refuse else {"warnings": warnings, "install": hash_value(response, "install")}
         result.add_check("record", "default_policy", exp["default_policy"], observed_policy, observed_policy == exp["default_policy"])
     result.add_check_equivalent(exp["default_policy"])
+    _assert_stale_warning(result, "record", response, exp["warning"])
     assert_absent(result, "record", response, "combined_scalar", exp["combined_scalar_present"])
     return result
 
@@ -498,9 +549,8 @@ def tv_fresh_h(vector: Vector, session: Any, ctx: Any):
         assert_result_field(result, policy, response, "install", expected["install"])
         if "state_flag" in expected:
             assert_result_field(result, policy, response, "staleness", expected["state_flag"])
-        if expected.get("warn") is True and response.kind == "ok":
-            warnings = hash_value(response, "warnings")
-            assert_relation(result, policy, "warn", expected["warn"], warnings, bool(warnings))
+        if "warning" in expected:
+            _assert_stale_warning(result, policy, response, expected["warning"])
     return result
 
 

@@ -13,6 +13,7 @@
     staleness: stale
     trust_tier: attested
     default_policy: warn-not-refuse
+    warning: {id: acif.registry.stale, params: {expires: "2026-05-04T00:00:00Z"}}
     combined_scalar_present: false
 
 - id: TV-FRESH-b
@@ -94,7 +95,7 @@
     consumer_clock: "2026-05-10T00:00:00Z"
     policies: [default, freshness-enforcement-opt-in]
   expect:
-    default: {warn: true, state_flag: stale, install: proceed}
+    default: {warning: {id: acif.registry.stale, params: {expires: "2026-05-04T00:00:00Z"}}, state_flag: stale, install: proceed}
     opt_in: {install: refuse}
 
 - id: TV-FRESH-i

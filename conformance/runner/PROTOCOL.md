@@ -205,7 +205,9 @@ Staleness and trust-tier computation ([ACIF-REGISTRY] §11).
 `input`: `record`, `consumer_clock`, optional `policies`,
 `attestation_evaluation`, `declared_tolerance_seconds` →
 `result`: `staleness`, `trust_tier`, `warnings` (array of §3.1
-diagnostics), `response_hash` (lowercase hex SHA-256 of the served item
+diagnostics; a stale evaluation on the default lane carries
+`acif.registry.stale` with its Appendix-A-pinned `expires` param),
+`response_hash` (lowercase hex SHA-256 of the served item
 response bytes — the [ACIF-REGISTRY] §11.3 byte-identity probe; IUTs that
 do not serve item responses answer `unsupported` for request forms that
 require it).
@@ -320,6 +322,8 @@ Payload-pinned (a vector asserts params content):
 | `acif.publisher.pack_source_conflict` | `sources` (conflicting manifest filenames), `values` (conflicting values, same order) | TV-L2-f |
 | `acif.rule.activation_degraded` | `mode_lost` (the canonical mode the render loses), `effective_behavior` (the target's effective loading behavior) | TV-RULE-m |
 | `acif.registry.reference_unresolved` | `declared_name` (the declared reference string as written) | TV-AGENT-j |
+| `acif.registry.stale` | `expires` (the effective `E_sidecar` as an RFC 3339 timestamp; compared as an instant, not byte-wise — any valid serialization of the instant passes) | TV-FRESH-a |
+| `acif.registry.stale` | `expires` (as above; here `E_sidecar` is the computed default window, `fetched_at + 72h`) | TV-FRESH-h |
 
 Identifier-only (vectors assert presence of the id; `params` MAY be empty
 and is not asserted): `acif.command.placeholder_named_arg_collapsed`,
