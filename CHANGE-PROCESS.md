@@ -193,9 +193,14 @@ ACIF's normative appendices are the source of truth for canonical
 vocabulary and mapping tables. Every derived copy — capmon's
 `docs/spec/canonical-keys.yaml` today, any registry's vocabulary
 projection tomorrow — is downstream: **if a derived copy disagrees with
-the appendices, the derived copy has a bug.** Each derived consumer owns
-its own drift check (for capmon: a CI diff of its copy against the
-appendices, failing capmon's CI, never ACIF's). Outbound propagation is
+the appendices, the derived copy has a bug.** The machine-readable
+comparison target is `conformance/capability-vocabulary.yaml` — the
+published projection of the L1 specs' Capability Dispositions sections,
+kept current by the runner selftest's capability-vocabulary sync check
+(spec-prose parsing happens once, at the authority; downstream checks
+never parse markdown). Each derived consumer owns its own drift check
+(for capmon: a CI diff of its copy against that export, failing capmon's
+CI, never ACIF's). Outbound propagation is
 deliberately out of scope here: ACIF changes vocabulary through this
 process and does not chase its copies; the drift checks are how copies
 learn they are behind.

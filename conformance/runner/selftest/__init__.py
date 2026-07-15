@@ -29,6 +29,7 @@ def main(argv: list[str] | None = None) -> int:
         ("protocol round-trip", check_protocol_roundtrip),
         ("scopes totality", check_scopes_totality),
         ("suite manifest", check_suite_manifest),
+        ("capability-vocabulary sync", check_capability_vocabulary),
         ("sabotage", check_sabotage),
     ]
     failures: list[str] = []
@@ -278,6 +279,95 @@ def check_suite_manifest() -> None:
             "manifest head (suite %s) drifted from the working tree — append a manifest entry per CHANGE-PROCESS.md: %s"
             % (head["suite"], "; ".join(drift))
         )
+
+
+VOCABULARY_SPEC_DIRS = {
+    "skill": "skill-interchange",
+    "rule": "rule-interchange",
+    "command": "command-interchange",
+    "agent": "agent-interchange",
+    "hook": "hooks-interchange",
+    "mcp_config": "mcp-interchange",
+}
+BACKTICKED_KEY_RE = re.compile(r"`([a-z][a-z0-9_]*)`")
+DERIVABLE_ROW_RE = re.compile(r"^\|\s*`([a-z][a-z0-9_]*)`\s*\|")
+
+
+def check_capability_vocabulary() -> None:
+    """capability-vocabulary.yaml must match each spec's Capability
+    Dispositions section: DERIVABLE key sets exactly equal the §x.1
+    tables; every out_of_scope_at_l1 key appears backticked inside an
+    OUT-OF-SCOPE-AT-L1 subsection. Spec-prose parsing happens here, at
+    the authority, so downstream copies diff against the yaml only."""
+    vocab_path = CONFORMANCE_ROOT / "capability-vocabulary.yaml"
+    document = yaml.safe_load(vocab_path.read_text(encoding="utf-8"))
+    vocabulary = document.get("vocabulary") if isinstance(document, dict) else None
+    if not isinstance(vocabulary, dict):
+        raise AssertionError("capability-vocabulary.yaml missing vocabulary mapping")
+    if set(vocabulary) != set(VOCABULARY_SPEC_DIRS):
+        raise AssertionError(
+            "vocabulary types %s != expected %s"
+            % (sorted(vocabulary), sorted(VOCABULARY_SPEC_DIRS))
+        )
+    errors: list[str] = []
+    specs_root = CONFORMANCE_ROOT.parent / "specs"
+    for kind, entry in vocabulary.items():
+        spec_text = (specs_root / VOCABULARY_SPEC_DIRS[kind] / "spec.md").read_text(encoding="utf-8")
+        section = _dispositions_section(spec_text)
+        if section is None:
+            errors.append(f"{kind}: no Capability Dispositions section found")
+            continue
+        table_keys = _derivable_table_keys(section)
+        declared = entry.get("derivable") or []
+        if len(set(declared)) != len(declared):
+            errors.append(f"{kind}: duplicate derivable keys")
+        if set(declared) != set(table_keys):
+            errors.append(
+                f"{kind}: derivable drift — yaml {sorted(declared)} != spec table {sorted(table_keys)}"
+            )
+        out_text = _out_of_scope_text(section)
+        for key in entry.get("out_of_scope_at_l1") or []:
+            if f"`{key}`" not in out_text:
+                errors.append(f"{kind}: out-of-scope key `{key}` not named in the spec's OUT-OF-SCOPE-AT-L1 subsection")
+    if errors:
+        raise AssertionError("; ".join(errors))
+
+
+def _dispositions_section(spec_text: str) -> str | None:
+    lines = spec_text.splitlines()
+    start = None
+    for idx, line in enumerate(lines):
+        if start is None:
+            if re.match(r"^## \d+\. Capability Dispositions", line):
+                start = idx
+        elif line.startswith("## "):
+            return "\n".join(lines[start:idx])
+    return "\n".join(lines[start:]) if start is not None else None
+
+
+def _derivable_table_keys(section: str) -> list[str]:
+    keys: list[str] = []
+    in_derivable = False
+    for line in section.splitlines():
+        if line.startswith("### "):
+            in_derivable = "DERIVABLE keys" in line
+            continue
+        if in_derivable:
+            match = DERIVABLE_ROW_RE.match(line)
+            if match and match.group(1) != "key":
+                keys.append(match.group(1))
+    return keys
+
+
+def _out_of_scope_text(section: str) -> str:
+    chunks: list[str] = []
+    collecting = False
+    for line in section.splitlines():
+        if line.startswith("### "):
+            collecting = "OUT-OF-SCOPE-AT-L1" in line
+        if collecting:
+            chunks.append(line)
+    return "\n".join(chunks)
 
 
 def check_sabotage() -> None:

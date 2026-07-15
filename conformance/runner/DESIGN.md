@@ -419,8 +419,11 @@ Runner self-tests, all CI-gating: the five §4 checks (coverage,
 anti-softening, appendix-a payload pins, verdict-reason gating,
 sabotage), the canned-adapter protocol round-trip validated against
 PROTOCOL.md schemas, the scope-table totality check (§8), the
-suite-manifest head check (CHANGE-PROCESS.md), and the report schema
-check.
+suite-manifest head check (CHANGE-PROCESS.md), the
+capability-vocabulary sync check (`capability-vocabulary.yaml` against
+the L1 specs' Capability Dispositions sections — the published export
+downstream copies diff against, per CHANGE-PROCESS.md), and the report
+schema check.
 
 ## 10. Review record
 
