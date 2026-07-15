@@ -1,4 +1,4 @@
-.claude/projects/
+.claude/
 .develop/
 .vscode/
 __pycache__/
@@ -7,3 +7,10 @@ __pycache__/
 .dolt/
 *.db
 .beads-credential-key
+
+# Local working history — stripped from the published history (2026-07-14),
+# kept on disk. research/repo-survey/ stays tracked (cited by SHAPE.md).
+/.beads/
+/panel/
+/research/*
+!/research/repo-survey/

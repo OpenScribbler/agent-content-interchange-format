@@ -44,7 +44,10 @@ static runs and compared exact-string in the differential.
   --adapter-a <syllago shim> --adapter-b "bun …/bin/acif-adapter.ts"
   --seed 20260714 --count 200 --report differential-report.json`
 - **Runner:** 0.1.0-stage1, runner_protocol 2, at spec-repo commit
-  `a117daf` (the commit introducing the differential mode; suite 5).
+  `7bca940` (the commit introducing the differential mode; suite 5).
+  (Hash re-pinned 2026-07-14: the repo's history was rewritten before
+  publication to remove local working-history paths; file contents at
+  the cited commit are unchanged.)
 - **Environment:** one machine (WSL2 Linux), Python 3.14.3, bun 1.3.5,
   go 1.23.4; all env probes ok.
 - **Result: clean.** 200 trials: **171 agree, 0 disagree**, 29
