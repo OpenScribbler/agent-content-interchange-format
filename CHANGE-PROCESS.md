@@ -202,7 +202,14 @@ never parse markdown). Its companion `conformance/diagnostic-ids.yaml`
 is the parallel projection of the L1 specs' Error Identifiers sections,
 grouped by disposition class and kept current by the diagnostic-ids sync
 check; downstream derives the Class B totality-net set from it as the
-reject-class ids ending `_unmappable`. Each derived consumer owns its own drift check
+reject-class ids ending `_unmappable` (a suffix normatively reserved for
+totality nets — see the export's header). The third projection,
+`conformance/source-mechanisms.yaml`, publishes the closed
+source-mechanism token sets of the normative mapping tables ([ACIF-RULE]
+Appendix A.2; [ACIF-HOOK] §7.4) with their aliases and
+recognition-requiring markings, kept current by the source-mechanisms
+sync check — the static membership oracle a class-B candidate validator
+diffs a flagged token against. Each derived consumer owns its own drift check
 (for capmon: a CI diff of its copy against that export, failing capmon's
 CI, never ACIF's). Outbound propagation is
 deliberately out of scope here: ACIF changes vocabulary through this

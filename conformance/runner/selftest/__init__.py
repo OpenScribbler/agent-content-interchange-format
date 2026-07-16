@@ -31,6 +31,7 @@ def main(argv: list[str] | None = None) -> int:
         ("suite manifest", check_suite_manifest),
         ("capability-vocabulary sync", check_capability_vocabulary),
         ("diagnostic-ids sync", check_diagnostic_ids),
+        ("source-mechanisms sync", check_source_mechanisms),
         ("sabotage", check_sabotage),
     ]
     failures: list[str] = []
@@ -437,6 +438,73 @@ def _error_id_rows(section: str) -> dict[str, set[str]]:
         if match:
             by_class.setdefault(match.group(2), set()).add(match.group(1))
     return by_class
+
+
+SOURCE_MECHANISM_SECTIONS = {
+    "rule": ("rule-interchange", r"^### A\.2 "),
+    "hook": ("hooks-interchange", r"^### 7\.4 "),
+}
+TOKEN_ROW_RE = re.compile(r"^\|\s*`([a-z][a-z0-9_-]*)`(?:\s*\(alias\s*`([a-z][a-z0-9_-]*)`\))?\s*\|")
+
+
+def check_source_mechanisms() -> None:
+    """source-mechanisms.yaml must match the token column of [ACIF-RULE]
+    Appendix A.2 and [ACIF-HOOK] §7.4 — token set, alias map, and
+    recognition-requiring markings, bidirectionally. Spec-prose parsing
+    happens here, at the authority, so downstream copies diff against the
+    yaml only."""
+    path = CONFORMANCE_ROOT / "source-mechanisms.yaml"
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    mechanisms = document.get("source_mechanisms") if isinstance(document, dict) else None
+    if not isinstance(mechanisms, dict):
+        raise AssertionError("source-mechanisms.yaml missing source_mechanisms mapping")
+    if set(mechanisms) != set(SOURCE_MECHANISM_SECTIONS):
+        raise AssertionError(
+            "source-mechanism types %s != expected %s"
+            % (sorted(mechanisms), sorted(SOURCE_MECHANISM_SECTIONS))
+        )
+    errors: list[str] = []
+    specs_root = CONFORMANCE_ROOT.parent / "specs"
+    for kind, (spec_dir, heading_re) in SOURCE_MECHANISM_SECTIONS.items():
+        entry = mechanisms[kind]
+        spec_text = (specs_root / spec_dir / "spec.md").read_text(encoding="utf-8")
+        section = _spec_section(spec_text, heading_re)
+        if section is None:
+            errors.append(f"{kind}: no token-table section found")
+            continue
+        spec_tokens: dict[str, bool] = {}
+        spec_aliases: dict[str, str] = {}
+        for line in section.splitlines():
+            match = TOKEN_ROW_RE.match(line.strip())
+            if not match:
+                continue
+            spec_tokens[match.group(1)] = "recognition-requiring" in line.lower()
+            if match.group(2):
+                spec_aliases[match.group(2)] = match.group(1)
+        if kind == "hook" and "Every mechanism row is **recognition-requiring**" in section:
+            spec_tokens = {token: True for token in spec_tokens}
+        declared = {row["token"]: bool(row["recognition_requiring"]) for row in entry.get("tokens") or []}
+        if len(declared) != len(entry.get("tokens") or []):
+            errors.append(f"{kind}: duplicate tokens")
+        if declared != spec_tokens:
+            errors.append(f"{kind}: token drift — yaml {sorted(declared.items())} != spec table {sorted(spec_tokens.items())}")
+        if (entry.get("aliases") or {}) != spec_aliases:
+            errors.append(f"{kind}: alias drift — yaml {entry.get('aliases')} != spec table {spec_aliases}")
+    if errors:
+        raise AssertionError("; ".join(errors))
+
+
+def _spec_section(spec_text: str, heading_re: str) -> str | None:
+    lines = spec_text.splitlines()
+    pattern = re.compile(heading_re)
+    start = None
+    for idx, line in enumerate(lines):
+        if start is None:
+            if pattern.match(line):
+                start = idx
+        elif line.startswith(("## ", "### ")):
+            return "\n".join(lines[start:idx])
+    return "\n".join(lines[start:]) if start is not None else None
 
 
 def check_sabotage() -> None:

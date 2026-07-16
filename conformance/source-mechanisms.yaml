@@ -1,0 +1,70 @@
+# ACIF source-mechanism token export (machine-readable).
+#
+# The published, machine-readable projection of the source-mechanism token
+# vocabulary: the closed sets of tokens under which a pre-abstracted provider
+# configuration names its source mechanism ([ACIF-RULE] Appendix A.2;
+# [ACIF-HOOK] §7.4). The normative source is the owning spec's token column;
+# this file is a derived artifact whose currency is selftest-enforced (the
+# source-mechanisms sync check fails if it drifts from those tables).
+# Downstream conforming consumers — capmon's class-B candidate validator, any
+# registry's recognizer — diff against THIS file, never against spec prose
+# (CHANGE-PROCESS.md, "Source-of-truth rule").
+#
+# THE MEMBERSHIP ORACLE (the reason this export exists). A curator-flagged
+# "unmapped mechanism" candidate whose token IS a member of a set below is a
+# false candidate: the mechanism is already mapped, and the correct machine
+# verdict is rejecting the candidate, not a Class B filing. A token outside
+# the set is a genuine candidate. Membership alone is NOT mapped-ness for a
+# recognition-requiring token: whether a given INSTANCE of such a mechanism
+# is mapped is decided by the owning spec's shape predicate over the
+# instance's normalized fields, which no static export can evaluate (the
+# differential-witness principle, adr/0001-differential-witness-principle.md,
+# governs how much trust a canonicalizer readback carries there).
+#
+#   recognition_requiring: false — the token maps by name alone; mapped-ness
+#     is statically decidable from this file.
+#   recognition_requiring: true — the mapping is decided by a shape predicate
+#     over the instance; static membership says "the mechanism is known",
+#     never "this instance is mapped".
+#
+# aliases maps each accepted alternate spelling to its member token.
+#
+# This export is a deterministic projection of spec tables: it carries NO
+# crawl date and NO observational provenance — determinism is what downstream
+# drift checks diff against. Changing this file's content is a Class B change
+# when a token row is added mapping to existing vocabulary, Class C when new
+# vocabulary is minted (CHANGE-PROCESS.md). Tokens beginning `unknown-` are
+# reserved for negative test fixtures and are never minted.
+
+source_mechanisms:
+  rule:
+    spec: ACIF-RULE
+    section: "Appendix A.2"
+    tokens:
+      - token: always_on
+        recognition_requiring: false
+      - token: glob
+        recognition_requiring: false
+      - token: frontmatter_globs
+        recognition_requiring: false
+      - token: model_decision
+        recognition_requiring: false
+      - token: manual
+        recognition_requiring: false
+      - token: slash_command
+        recognition_requiring: false
+      - token: legacy
+        recognition_requiring: true
+    aliases: {}
+  hook:
+    spec: ACIF-HOOK
+    section: "§7.4"
+    tokens:
+      - token: per-os-key-map
+        recognition_requiring: true
+      - token: dual-shell-fields
+        recognition_requiring: true
+      - token: filename-extension-convention
+        recognition_requiring: true
+    aliases:
+      per-os-key-map-provider: per-os-key-map
