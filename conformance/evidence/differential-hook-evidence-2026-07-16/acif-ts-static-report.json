@@ -1,0 +1,3296 @@
+{
+  "adapter": {
+    "adapter_protocol": 2,
+    "claimed_scopes": [
+      "core",
+      "hook"
+    ],
+    "hello": {
+      "adapter_protocol": 2,
+      "implementation": "acif-ts",
+      "scopes": [
+        "core",
+        "hook"
+      ],
+      "version": "0.1.0"
+    },
+    "hello_error": null,
+    "invocation": "bun /home/hhewett/.local/src/acif-ts/bin/acif-adapter.ts"
+  },
+  "binding_set_hash": "10ac14ad6ed1d62e1a6777c5a64bd65e9bdc29f7f7a81d5880b81b3cf5e6694c",
+  "catalog_hashes": {
+    "agent.yaml": "9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62",
+    "command.yaml": "f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f",
+    "core.yaml": "6ee229fcee55cce883a6a1b01e30140304eb9043e580a7a13727edcc83f49dc8",
+    "fresh.yaml": "643cb8ad306dc09d397d85f3d7caaf6a3fc8e055a92f1cf2e783fc2fc5c93fdf",
+    "hook.yaml": "f32c93a57f93d7fc1e4e7b931ef942422f9606a3f5e6a4209e3c6a237707427f",
+    "mcp.yaml": "3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0",
+    "platform.yaml": "d0cea92f04d4def754e6dcf3809335580692eb4e6d0585d64a234b4ae1c46a74",
+    "render.yaml": "8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147",
+    "rule.yaml": "e473be422f5634a33d7c614a700fd95cbfae47354ba3e1719ded274c05dda44d",
+    "skill.yaml": "74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc",
+    "uri.yaml": "050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c"
+  },
+  "env_probes": {
+    "byte_preserving_names": {
+      "detail": "2 distinct byte entries",
+      "ok": true
+    },
+    "case_sensitive": {
+      "detail": "2 entries",
+      "ok": true
+    },
+    "mock_http_tls": {
+      "detail": "openssl CLI: /home/linuxbrew/.linuxbrew/bin/openssl",
+      "ok": true
+    },
+    "symlink_creation": {
+      "detail": "created",
+      "ok": true
+    }
+  },
+  "runner": {
+    "runner_protocol": 2,
+    "version": "0.1.0-stage1"
+  },
+  "scopes": {
+    "requested": [],
+    "selected": [
+      "core",
+      "hook"
+    ],
+    "summary": {
+      "core": {
+        "blocking": [],
+        "status": "pass"
+      },
+      "hook": {
+        "blocking": [],
+        "status": "pass"
+      }
+    }
+  },
+  "vectors": [
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "contexts[0]",
+          "expected": "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+          "field": "body_hash",
+          "observed": "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+          "pass": true
+        },
+        {
+          "case": "contexts[1]",
+          "expected": "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+          "field": "body_hash",
+          "observed": "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+          "pass": true
+        },
+        {
+          "case": "contexts[2]",
+          "expected": "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+          "field": "body_hash",
+          "observed": "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+          "pass": true
+        },
+        {
+          "case": "contexts",
+          "expected": true,
+          "field": "body_hash_identical_across_contexts",
+          "observed": [
+            "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+            "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe",
+            "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-1",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-qm00mae8\",\"entry_file\":\"SKILL.md\",\"context\":{}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-_ckgogin\",\"entry_file\":\"SKILL.md\",\"context\":{\"pack_id\":\"11111111-1111-4111-8111-111111111111\"}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-oqtlvd0d\",\"entry_file\":\"SKILL.md\",\"context\":{\"pack_id\":\"22222222-2222-4222-8222-222222222222\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "contexts[0]",
+          "expected": "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316",
+          "field": "metadata_hash",
+          "observed": "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316",
+          "pass": true
+        },
+        {
+          "case": "contexts[1]",
+          "expected": "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316",
+          "field": "metadata_hash",
+          "observed": "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316",
+          "pass": true
+        },
+        {
+          "case": "contexts",
+          "expected": true,
+          "field": "metadata_hash_identical_across_contexts",
+          "observed": [
+            "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316",
+            "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-2",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"kind\":\"skill\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Demo Skill\"},\"context\":{\"inferred_pack_id\":\"33333333-3333-5333-8333-333333333333\"}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"kind\":\"skill\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Demo Skill\"},\"context\":{\"inferred_pack_id\":\"44444444-4444-5444-8444-444444444444\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "pack",
+          "expected": "d932cd6d-1c14-527d-b2e7-185c717b7a0d",
+          "field": "inferred_pack_id",
+          "observed": "d932cd6d-1c14-527d-b2e7-185c717b7a0d",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-3",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"derive_pack_id\",\"input\":{\"namespace\":\"93516344-00e5-419b-a230-6e8b1d02f87d\",\"repository_url\":\"https://github.com/obra/superpowers\",\"display_name\":\"superpowers\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "pack",
+          "expected": "11111111-1111-4111-8111-111111111111",
+          "field": "member_of",
+          "observed": "11111111-1111-4111-8111-111111111111",
+          "pass": true
+        },
+        {
+          "case": "pack",
+          "expected": "declared",
+          "field": "pack_resolution",
+          "observed": "declared",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-4",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"resolve_pack\",\"input\":{\"item\":{\"publisher_section\":{\"pack_id\":\"11111111-1111-4111-8111-111111111111\"},\"registry_section\":{\"inferred_pack_id\":\"22222222-2222-5222-8222-222222222222\"}},\"known_packs\":[{\"id\":\"11111111-1111-4111-8111-111111111111\"},{\"id\":\"22222222-2222-5222-8222-222222222222\"}]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "pack",
+          "expected": "unresolved",
+          "field": "pack_resolution",
+          "observed": "unresolved",
+          "pass": true
+        },
+        {
+          "case": "pack",
+          "expected": "refuse-unless-operator-opt-in",
+          "field": "install",
+          "observed": "refuse-unless-operator-opt-in",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-5",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"resolve_pack\",\"input\":{\"item\":{\"publisher_section\":{\"pack_id\":\"99999999-9999-4999-8999-999999999999\"}},\"known_packs\":[]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "item_record",
+          "expected": false,
+          "field": "conformant",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "item_record",
+          "expected": "acif.envelope.forbidden_field",
+          "field": "reason",
+          "observed": "acif.envelope.forbidden_field",
+          "pass": true
+        },
+        {
+          "case": "item_record",
+          "expected": "effective_version",
+          "field": "params.field",
+          "observed": "effective_version",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-6",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"kind\":\"skill\",\"effective_version\":\"3.0.0\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "item",
+          "expected": "2.0.0",
+          "field": "publisher_section.version",
+          "observed": "2.0.0",
+          "pass": true
+        },
+        {
+          "case": "item",
+          "expected": "5.1.0",
+          "field": "no_item_field_equals",
+          "observed": [],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-7",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"version\":\"2.0.0\"},\"context\":{\"pack\":{\"version\":\"5.1.0\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "item",
+          "expected": true,
+          "field": "conformant",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "item",
+          "expected": true,
+          "field": "installable",
+          "observed": true,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-8",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"rule\",\"sidecar\":{\"publisher_section\":{\"kind\":\"rule\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Demo\"},\"registry_section\":{}},\"context\":{\"validation_surface\":\"publisher_packless_item\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "publisher_section",
+          "expected": "{\"display_name\":\"Review PR\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"kind\":\"command\",\"version\":\"1.2.0\"}",
+          "field": "canonical_bytes",
+          "observed": "{\"display_name\":\"Review PR\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"kind\":\"command\",\"version\":\"1.2.0\"}",
+          "pass": true
+        },
+        {
+          "case": "publisher_section",
+          "expected": "ceb0cf9212c530e85444020aeb3cbae8865fdc16d91ee63fe6f5cb374d67b5c6",
+          "field": "metadata_hash",
+          "observed": "ceb0cf9212c530e85444020aeb3cbae8865fdc16d91ee63fe6f5cb374d67b5c6",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-9",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"command\",\"sidecar\":{\"kind\":\"command\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Review PR\",\"version\":\"1.2.0\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "pack_after",
+          "expected": true,
+          "field": "id_unchanged",
+          "observed": [
+            "11111111-1111-4111-8111-111111111111",
+            "11111111-1111-4111-8111-111111111111"
+          ],
+          "pass": true
+        },
+        {
+          "case": "referencing_item",
+          "expected": true,
+          "field": "reference_resolves_after_rename",
+          "observed": "11111111-1111-4111-8111-111111111111",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-10",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"resolve_pack\",\"input\":{\"item\":{\"publisher_section\":{\"pack_id\":\"11111111-1111-4111-8111-111111111111\"}},\"known_packs\":[{\"id\":\"11111111-1111-4111-8111-111111111111\",\"display_name\":\"new-name\"}]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "case_1",
+          "expected": false,
+          "field": "conformant",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "case_1",
+          "expected": "acif.envelope.kind_invalid",
+          "field": "reason",
+          "observed": "acif.envelope.kind_invalid",
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": false,
+          "field": "conformant",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": "acif.envelope.id_invalid",
+          "field": "reason",
+          "observed": "acif.envelope.id_invalid",
+          "pass": true
+        },
+        {
+          "case": "case_3",
+          "expected": false,
+          "field": "conformant",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "case_3",
+          "expected": "acif.envelope.version_invalid",
+          "field": "reason",
+          "observed": "acif.envelope.version_invalid",
+          "pass": true
+        },
+        {
+          "case": "case_4",
+          "expected": false,
+          "field": "conformant",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "case_4",
+          "expected": "acif.envelope.license_spdx_invalid",
+          "field": "reason",
+          "observed": "acif.envelope.license_spdx_invalid",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-11",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"Skill\",\"sidecar\":{\"kind\":\"Skill\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Demo\"}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"kind\":\"skill\",\"id\":\"not-a-uuid\",\"display_name\":\"Demo\"}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"kind\":\"skill\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Demo\",\"version\":\"1.0\"}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"sidecar\":{\"kind\":\"skill\",\"id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"display_name\":\"Demo\",\"license\":{\"spdx\":\"MIT License\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "base",
+          "expected": "581e9b6b2dbd5a5947758f8ecdf67896c2a1225936ab5bd744a3973460b85169",
+          "field": "body_hash",
+          "observed": "581e9b6b2dbd5a5947758f8ecdf67896c2a1225936ab5bd744a3973460b85169",
+          "pass": true
+        },
+        {
+          "case": "with_root_sidecar",
+          "expected": true,
+          "field": "body_hash_equals_base",
+          "observed": [
+            "581e9b6b2dbd5a5947758f8ecdf67896c2a1225936ab5bd744a3973460b85169",
+            "581e9b6b2dbd5a5947758f8ecdf67896c2a1225936ab5bd744a3973460b85169"
+          ],
+          "pass": true
+        },
+        {
+          "case": "subdir_sidecar_edited",
+          "expected": "b4e9079283b7852f98fc2a9f9719699a1c5e3b48101695f8f7567314d3a2eae4",
+          "field": "body_hash",
+          "observed": "b4e9079283b7852f98fc2a9f9719699a1c5e3b48101695f8f7567314d3a2eae4",
+          "pass": true
+        },
+        {
+          "case": "subdir_sidecar_edited",
+          "expected": false,
+          "field": "body_hash_equals_base",
+          "observed": [
+            "581e9b6b2dbd5a5947758f8ecdf67896c2a1225936ab5bd744a3973460b85169",
+            "b4e9079283b7852f98fc2a9f9719699a1c5e3b48101695f8f7567314d3a2eae4"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-12",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-9fttty06\",\"entry_file\":\"SKILL.md\"}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-1ug525x7\",\"entry_file\":\"SKILL.md\"}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-svmxv248\",\"entry_file\":\"SKILL.md\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "symlink",
+          "expected": "acif.body.symlink",
+          "field": "error",
+          "observed": "acif.body.symlink",
+          "pass": true
+        },
+        {
+          "case": "path_collision",
+          "expected": "acif.body.path_collision",
+          "field": "error",
+          "observed": "acif.body.path_collision",
+          "pass": true
+        },
+        {
+          "case": "empty",
+          "expected": "acif.body.empty",
+          "field": "error",
+          "observed": "acif.body.empty",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-13",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-ag149em5\",\"entry_file\":\"SKILL.md\"}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-vk3672ay\",\"entry_file\":\"caf\u00e9.md\"}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"skill\",\"body_root\":\"/tmp/acif-fixture-r4pvorgp\",\"entry_file\":\"SKILL.md\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L2-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L2-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L2-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L2-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L2-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L2-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L3-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L3-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L3-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "core.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-L3-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "variants[0]",
+          "expected": true,
+          "field": "conformant",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "variants[1]",
+          "expected": true,
+          "field": "conformant",
+          "observed": true,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-a",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}],\"requires\":{}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}]}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "hook",
+          "expected": false,
+          "field": "conformant",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "hook",
+          "expected": "acif.requires.orphan_key",
+          "field": "reason",
+          "observed": "acif.requires.orphan_key",
+          "pass": true
+        },
+        {
+          "case": "hook",
+          "expected": "handler_types",
+          "field": "params.key",
+          "observed": "handler_types",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-b",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}],\"requires\":{\"handler_types\":[\"command\"]}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "requires",
+          "expected": "unknown",
+          "field": "evaluation",
+          "observed": "unknown",
+          "pass": true
+        },
+        {
+          "case": "requires",
+          "expected": "refuse-unless-operator-opt-in",
+          "field": "install",
+          "observed": "refuse-unless-operator-opt-in",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-c",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"evaluate_requires\",\"input\":{\"item_requires\":{\"gpu_access\":true},\"consumer_recognizes\":[]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "conforming",
+          "expected": true,
+          "field": "derived_capabilities.handler_types",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "empty_handlers",
+          "expected": "acif.hook.handlers_missing",
+          "field": "error",
+          "observed": "acif.hook.handlers_missing",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-d",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}]}}}",
+        "{\"op\":\"project\",\"input\":{\"item\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}],\"async\":false}],\"blocking\":false},\"projection\":\"derived_capabilities\"}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[]}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "with_matcher",
+          "expected": true,
+          "field": "derived_capabilities.matcher_patterns",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "without_matcher",
+          "expected": false,
+          "field": "derived_capabilities.matcher_patterns",
+          "observed": false,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-e",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"project\",\"input\":{\"item\":{\"event\":\"before_tool_execute\",\"matcher\":\"file_write|file_edit\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]},\"projection\":\"derived_capabilities\"}}",
+        "{\"op\":\"project\",\"input\":{\"item\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]},\"projection\":\"derived_capabilities\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "async_true",
+          "expected": true,
+          "field": "derived_capabilities.async_execution",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "async_absent",
+          "expected": false,
+          "field": "derived_capabilities.async_execution",
+          "observed": false,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-f",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"project\",\"input\":{\"item\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"async\":true,\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}]},\"projection\":\"derived_capabilities\"}}",
+        "{\"op\":\"project\",\"input\":{\"item\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}]},\"projection\":\"derived_capabilities\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "provider_native_variants[0]",
+          "expected": "before_tool_execute",
+          "field": "all_variants_canonicalize_to",
+          "observed": "before_tool_execute",
+          "pass": true
+        },
+        {
+          "case": "provider_native_variants[0]",
+          "expected": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "field": "body_hash",
+          "observed": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "pass": true
+        },
+        {
+          "case": "provider_native_variants[1]",
+          "expected": "before_tool_execute",
+          "field": "all_variants_canonicalize_to",
+          "observed": "before_tool_execute",
+          "pass": true
+        },
+        {
+          "case": "provider_native_variants[1]",
+          "expected": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "field": "body_hash",
+          "observed": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "pass": true
+        },
+        {
+          "case": "provider_native_variants[2]",
+          "expected": "before_tool_execute",
+          "field": "all_variants_canonicalize_to",
+          "observed": "before_tool_execute",
+          "pass": true
+        },
+        {
+          "case": "provider_native_variants[2]",
+          "expected": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "field": "body_hash",
+          "observed": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "pass": true
+        },
+        {
+          "case": "canonical",
+          "expected": "before_tool_execute",
+          "field": "all_variants_canonicalize_to",
+          "observed": "before_tool_execute",
+          "pass": true
+        },
+        {
+          "case": "canonical",
+          "expected": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "field": "body_hash",
+          "observed": "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+          "pass": true
+        },
+        {
+          "case": "recognized_variants",
+          "expected": true,
+          "field": "body_hash_identical_across_variants",
+          "observed": [
+            "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+            "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+            "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629",
+            "9c8ab2d7f2465728140264d725011daad97054aceaaedfa9dd0a03d68d06b629"
+          ],
+          "pass": true
+        },
+        {
+          "case": "unrecognized",
+          "expected": "acif.hook.event_unrecognized",
+          "field": "error",
+          "observed": "acif.hook.event_unrecognized",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-g",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"provider_config\":{\"provider\":\"claude-code\",\"path\":\"hooks.json\",\"content\":{\"event\":\"PreToolUse\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"provider_config\":{\"provider\":\"gemini-cli\",\"path\":\"hooks.json\",\"content\":{\"event\":\"BeforeTool\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"provider_config\":{\"provider\":\"opencode\",\"path\":\"hooks.json\",\"content\":{\"event\":\"tool.execute.before\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"provider_config\":{\"provider\":\"unknown-provider\",\"path\":\"hooks.json\",\"content\":{\"event\":\"onToolStart\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\nexit 0\\n\"}]}]}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "absent_type",
+          "expected": "command",
+          "field": "canonical_handler_type",
+          "observed": "command",
+          "pass": true
+        },
+        {
+          "case": "absent_type",
+          "expected": true,
+          "field": "body_hash_equals_explicit_command_variant",
+          "observed": [
+            "ad327dd4bf4fc3aeda21f08285a9430d8b319dc00063f69efe5b8f68378ab60a",
+            "ad327dd4bf4fc3aeda21f08285a9430d8b319dc00063f69efe5b8f68378ab60a"
+          ],
+          "pass": true
+        },
+        {
+          "case": "unrecognized_type",
+          "expected": "acif.hook.handler_type_unrecognized",
+          "field": "error",
+          "observed": "acif.hook.handler_type_unrecognized",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-h",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}]}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\"}],\"type\":\"command\"}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"webhook2\"}]}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "hook",
+          "expected": "acif.hook.script_file_missing",
+          "field": "error",
+          "observed": "acif.hook.script_file_missing",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-i",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\"}]}]},\"body_root\":\"/tmp/acif-fixture-wil4j2pp\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "hook.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "absolute",
+          "expected": "acif.hook.script_path_invalid",
+          "field": "error",
+          "observed": "acif.hook.script_path_invalid",
+          "pass": true
+        },
+        {
+          "case": "traversal",
+          "expected": "acif.hook.script_path_invalid",
+          "field": "error",
+          "observed": "acif.hook.script_path_invalid",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-HOOK-j",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"/etc/hooks/run.sh\"}]}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"sidecar\":{\"event\":\"session_start\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"../outside/run.sh\"}]}]}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": {
+            "darwin": "hooks/run.sh",
+            "linux": "hooks/run.sh",
+            "windows": "hooks/run.sh"
+          },
+          "field": "selection",
+          "observed": {
+            "darwin": "hooks/run.sh",
+            "linux": "hooks/run.sh",
+            "windows": "hooks/run.sh"
+          },
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-a",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"project\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\"}]}],\"blocking\":false}},\"projection\":\"script_selection\",\"targets\":[\"darwin\",\"linux\",\"windows\"]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": {
+            "linux": "hooks/run.sh",
+            "windows": "hooks/run.cmd"
+          },
+          "field": "selection",
+          "observed": {
+            "linux": "hooks/run.sh",
+            "windows": "hooks/run.cmd"
+          },
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-b",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"project\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\"},{\"type\":\"file\",\"path\":\"hooks/run.cmd\",\"os\":[\"windows\"]}]}],\"blocking\":false}},\"projection\":\"script_selection\",\"targets\":[\"windows\",\"linux\"]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "variant_1",
+          "expected": "acif.hook.script_os_empty",
+          "field": "error",
+          "observed": "acif.hook.script_os_empty",
+          "pass": true
+        },
+        {
+          "case": "variant_2",
+          "expected": "acif.hook.script_arch_empty",
+          "field": "error",
+          "observed": "acif.hook.script_arch_empty",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-c",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-6jnbabyd\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[]}]}],\"blocking\":false}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-inh4810s\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"arch\":[]}]}],\"blocking\":false}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "variant_1",
+          "expected": "acif.hook.script_os_invalid",
+          "field": "error",
+          "observed": "acif.hook.script_os_invalid",
+          "pass": true
+        },
+        {
+          "case": "variant_2",
+          "expected": "acif.hook.script_os_invalid",
+          "field": "error",
+          "observed": "acif.hook.script_os_invalid",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-d",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-pihwe2dy\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[\"linux\",\"freebsd\"]}]}],\"blocking\":false}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-bsanlxgs\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[\"Linux\"]}]}],\"blocking\":false}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": "acif.hook.script_default_ambiguous",
+          "field": "error",
+          "observed": "acif.hook.script_default_ambiguous",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-e",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-f959mgkq\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\"},{\"type\":\"file\",\"path\":\"hooks/run.ps1\"}]}],\"blocking\":false}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": "acif.hook.script_platform_ambiguous",
+          "field": "error",
+          "observed": "acif.hook.script_platform_ambiguous",
+          "pass": true
+        },
+        {
+          "case": "scripts",
+          "expected": {
+            "id": "acif.hook.script_platform_ambiguous",
+            "params": {
+              "entries": [
+                0,
+                1
+              ],
+              "os": "linux"
+            }
+          },
+          "field": "diagnostic",
+          "observed": {
+            "entries": [
+              0,
+              1
+            ],
+            "os": "linux"
+          },
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-f",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-bum15qjy\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]},{\"type\":\"file\",\"path\":\"hooks/lin.sh\",\"os\":[\"linux\"]}]}],\"blocking\":false}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": true,
+          "field": "accept",
+          "observed": true,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-g",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-_hhakjqt\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]},{\"type\":\"file\",\"path\":\"hooks/win.cmd\",\"os\":[\"windows\"]}]}],\"blocking\":false}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": true,
+          "field": "accept",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "scripts",
+          "expected": true,
+          "field": "projection.os_divergent",
+          "observed": true,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-g2",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-jifce22j\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/benign.sh\"},{\"type\":\"file\",\"path\":\"hooks/other.cmd\",\"os\":[\"windows\"]}]}],\"blocking\":false}}}",
+        "{\"op\":\"project\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/benign.sh\"},{\"type\":\"file\",\"path\":\"hooks/other.cmd\",\"os\":[\"windows\"]}]}],\"blocking\":false}},\"projection\":\"os_coverage\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "scripts",
+          "expected": {
+            "windows": "none"
+          },
+          "field": "selection",
+          "observed": {
+            "windows": "none"
+          },
+          "pass": true
+        },
+        {
+          "case": "scripts",
+          "expected": "acif.hook.script_no_platform_match",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.script_no_platform_match",
+              "message": "No script entry matches the target OS 'windows'. Remedy: Please provide a default script entry or include 'windows' in one of the script's 'os' tag sets.",
+              "params": {
+                "os": "windows"
+              }
+            }
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-h",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"project\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]}]}],\"blocking\":false}},\"projection\":\"script_selection\",\"targets\":[\"windows\"]}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": [
+            {
+              "os": [
+                "darwin"
+              ],
+              "path": "hooks/mac.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "linux"
+              ],
+              "path": "hooks/lin.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "field": "canonical_scripts",
+          "observed": [
+            {
+              "os": [
+                "darwin"
+              ],
+              "path": "hooks/mac.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "linux"
+              ],
+              "path": "hooks/lin.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "declared",
+          "field": "provenance",
+          "observed": "declared",
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "11f1e91480d2fdfd247311cc52240bf0fb2293febeccaeeadafacd74707cb32d",
+          "field": "body_hash",
+          "observed": "11f1e91480d2fdfd247311cc52240bf0fb2293febeccaeeadafacd74707cb32d",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-i",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-h17k5f6c\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":{\"command\":\"hooks/base.sh\",\"windows\":\"hooks/win.cmd\",\"linux\":\"hooks/lin.sh\",\"osx\":\"hooks/mac.sh\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": [
+            {
+              "os": [
+                "darwin",
+                "linux"
+              ],
+              "path": "hooks/unix.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "field": "canonical_scripts",
+          "observed": [
+            {
+              "os": [
+                "darwin",
+                "linux"
+              ],
+              "path": "hooks/unix.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "declared",
+          "field": "provenance",
+          "observed": "declared",
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "9cbd1f0d7f47b8175ece2d43150b8df92c0f5c50b4cacf537ac6372313e8aeb3",
+          "field": "body_hash",
+          "observed": "9cbd1f0d7f47b8175ece2d43150b8df92c0f5c50b4cacf537ac6372313e8aeb3",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-i2",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-ydk6t103\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":{\"command\":\"hooks/base.sh\",\"windows\":\"hooks/win.cmd\",\"linux\":\"hooks/unix.sh\",\"osx\":\"hooks/unix.sh\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": "darwin",
+          "field": "canonical_contains_os_value",
+          "observed": "darwin",
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "osx",
+          "field": "canonical_never_contains",
+          "observed": [
+            "darwin"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-j",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-crq25rtm\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":{\"osx\":\"hooks/mac.sh\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": [
+            {
+              "os": [
+                "darwin",
+                "linux"
+              ],
+              "path": "hooks/run.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/run.ps1",
+              "type": "file"
+            }
+          ],
+          "field": "canonical_scripts",
+          "observed": [
+            {
+              "os": [
+                "darwin",
+                "linux"
+              ],
+              "path": "hooks/run.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/run.ps1",
+              "type": "file"
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "acif.hook.platform_shell_os_proxy",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_shell_os_proxy",
+              "message": "Inferred OS constraints from dual-shell fields 'bash' and 'powershell'."
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "inferred-from-convention",
+          "field": "provenance",
+          "observed": "inferred-from-convention",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-k",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-3spn9xjn\",\"provider_config\":{\"provider\":\"dual-shell-fields\",\"path\":\"hooks.json\",\"content\":{\"bash\":\"hooks/run.sh\",\"powershell\":\"hooks/run.ps1\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "case_1",
+          "expected": [
+            "windows"
+          ],
+          "field": "os",
+          "observed": [
+            "windows"
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_1",
+          "expected": "acif.hook.platform_filename_inferred",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_filename_inferred",
+              "message": "Successfully inferred OS constraints (windows) from filename extension for path 'hooks/a.ps1'.",
+              "params": {
+                "path": "hooks/a.ps1"
+              }
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": [
+            "windows"
+          ],
+          "field": "os",
+          "observed": [
+            "windows"
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": "acif.hook.platform_filename_inferred",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_filename_inferred",
+              "message": "Successfully inferred OS constraints (windows) from filename extension for path 'hooks/b.cmd'.",
+              "params": {
+                "path": "hooks/b.cmd"
+              }
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_3",
+          "expected": [
+            "windows"
+          ],
+          "field": "os",
+          "observed": [
+            "windows"
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_3",
+          "expected": "acif.hook.platform_filename_inferred",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_filename_inferred",
+              "message": "Successfully inferred OS constraints (windows) from filename extension for path 'hooks/c.bat'.",
+              "params": {
+                "path": "hooks/c.bat"
+              }
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_4",
+          "expected": [
+            "darwin",
+            "linux"
+          ],
+          "field": "os",
+          "observed": [
+            "darwin",
+            "linux"
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_4",
+          "expected": "acif.hook.platform_filename_inferred",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_filename_inferred",
+              "message": "Successfully inferred OS constraints (darwin, linux) from filename extension for path 'hooks/d.sh'.",
+              "params": {
+                "path": "hooks/d.sh"
+              }
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_5",
+          "expected": [
+            "darwin",
+            "linux"
+          ],
+          "field": "os",
+          "observed": [
+            "darwin",
+            "linux"
+          ],
+          "pass": true
+        },
+        {
+          "case": "case_6",
+          "expected": "<absent>",
+          "field": "os",
+          "observed": "<absent>",
+          "pass": true
+        },
+        {
+          "case": "case_6",
+          "expected": "acif.hook.platform_filename_uninferable",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_filename_uninferable",
+              "message": "Could not infer OS constraints from filename extension for path 'hooks/e.xyz'. Defaulting to unconstrained.",
+              "params": {
+                "path": "hooks/e.xyz"
+              }
+            }
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-l",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-ntcqu6kr\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"file\":\"hooks/a.ps1\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-j7s6_o4e\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"file\":\"hooks/b.cmd\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-7j50jz2_\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"file\":\"hooks/c.bat\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-sby5wvh9\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"file\":\"hooks/d.sh\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-kdosywls\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"file\":\"hooks/pwsh-shebang\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-ykk8upnz\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"file\":\"hooks/e.xyz\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": [
+            {
+              "path": "hooks/run",
+              "type": "file"
+            }
+          ],
+          "field": "canonical_scripts",
+          "observed": [
+            {
+              "path": "hooks/run",
+              "type": "file"
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": true,
+          "field": "no_os_synthesized",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "shell",
+          "field": "passthrough_carried",
+          "observed": "shell",
+          "pass": true
+        },
+        {
+          "case": "render",
+          "expected": "structured-encoded-never-spliced",
+          "field": "render_back",
+          "observed": [
+            "shell"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-m",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-1vm457i8\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":{\"command\":\"hooks/run\",\"shell\":\"pwsh\\\", \\\"rm -rf /tmp\\\"\"}}}}",
+        "{\"op\":\"render\",\"input\":{\"canonical\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run\",\"shell\":\"pwsh\\\", \\\"rm -rf /tmp\\\"\"}],\"async\":false}],\"blocking\":false},\"target\":\"per-os-key-map-provider\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": "acif.hook.platform_unmappable",
+          "field": "error",
+          "observed": "acif.hook.platform_unmappable",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-n",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-09pifjxy\",\"provider_config\":{\"provider\":\"unknown-per-os-table\",\"path\":\"hooks.json\",\"content\":{\"platforms\":{\"win32\":\"hooks/w.cmd\"}}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "render",
+          "expected": "hooks/run.sh",
+          "field": "emitted",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "render",
+          "expected": [
+            "hooks/run.cmd"
+          ],
+          "field": "dropped",
+          "observed": [
+            "hooks/run.cmd"
+          ],
+          "pass": true
+        },
+        {
+          "case": "render",
+          "expected": "acif.hook.platform_override_dropped",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.platform_override_dropped",
+              "message": "Platform overrides dropped during rendering to a no-mechanism target."
+            }
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-o",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"render\",\"input\":{\"canonical\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\"},{\"type\":\"file\",\"path\":\"hooks/run.cmd\",\"os\":[\"windows\"]}]}],\"blocking\":false}},\"target\":\"no-mechanism-provider\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "case_1",
+          "expected": "hooks/unix.sh",
+          "field": "emitted",
+          "observed": true,
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": "acif.hook.no_default_for_degraded_render",
+          "field": "error",
+          "observed": "acif.hook.no_default_for_degraded_render",
+          "pass": true
+        },
+        {
+          "case": "case_3",
+          "expected": "acif.hook.no_default_for_degraded_render",
+          "field": "error",
+          "observed": "acif.hook.no_default_for_degraded_render",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-p",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"render\",\"input\":{\"canonical\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]}]}],\"blocking\":false}},\"target\":\"no-mechanism-provider\",\"invocation\":{\"target_os\":\"linux\"}}}",
+        "{\"op\":\"render\",\"input\":{\"canonical\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]}]}],\"blocking\":false}},\"target\":\"no-mechanism-provider\"}}",
+        "{\"op\":\"render\",\"input\":{\"canonical\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]}]}],\"blocking\":false}},\"target\":\"no-mechanism-provider\",\"invocation\":{\"target_os\":\"windows\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "base",
+          "expected": "194225ce5a7ec641253e47b6abd7f07b22fdf8ac4845cba159bef8ffe7f8783f",
+          "field": "body_hash",
+          "observed": "194225ce5a7ec641253e47b6abd7f07b22fdf8ac4845cba159bef8ffe7f8783f",
+          "pass": true
+        },
+        {
+          "case": "os_flipped",
+          "expected": "f5c964cdeddb304e801431f21c2c6c29f0e1e51cf99c63af78d2be58057c7dfc",
+          "field": "body_hash",
+          "observed": "f5c964cdeddb304e801431f21c2c6c29f0e1e51cf99c63af78d2be58057c7dfc",
+          "pass": true
+        },
+        {
+          "case": "edits",
+          "expected": true,
+          "field": "each_edit_moves_body_hash",
+          "observed": [
+            "194225ce5a7ec641253e47b6abd7f07b22fdf8ac4845cba159bef8ffe7f8783f",
+            "f5c964cdeddb304e801431f21c2c6c29f0e1e51cf99c63af78d2be58057c7dfc",
+            "db6dba272f3a041de0c5df297cbfc4e8be7391ddbf82cadc72e2b69e251f16da"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-q",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-y7pgplfj\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[\"linux\"]}]}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-3ewmc26n\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[\"windows\"]}]}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-5rfkduyg\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[\"linux\"],\"shell\":\"powershell\"}]}]}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "variant_a",
+          "expected": "bdee51e032051d9fc88d39f9196e47b4742d51fe4673cb020ba82c47903bee3a",
+          "field": "body_hash",
+          "observed": "bdee51e032051d9fc88d39f9196e47b4742d51fe4673cb020ba82c47903bee3a",
+          "pass": true
+        },
+        {
+          "case": "variant_b",
+          "expected": "bdee51e032051d9fc88d39f9196e47b4742d51fe4673cb020ba82c47903bee3a",
+          "field": "body_hash",
+          "observed": "bdee51e032051d9fc88d39f9196e47b4742d51fe4673cb020ba82c47903bee3a",
+          "pass": true
+        },
+        {
+          "case": "variants",
+          "expected": true,
+          "field": "canonical_bytes_identical",
+          "observed": [
+            "{\"blocking\":false,\"event\":\"before_tool_execute\",\"handlers\":[{\"async\":false,\"scripts\":[{\"content\":\"#!/bin/sh\\necho hi\\n\",\"os\":[\"darwin\",\"linux\"],\"type\":\"inline\"},{\"os\":[\"windows\"],\"path\":\"hooks/win.cmd\",\"type\":\"file\"}],\"type\":\"command\"}]}",
+            "{\"blocking\":false,\"event\":\"before_tool_execute\",\"handlers\":[{\"async\":false,\"scripts\":[{\"content\":\"#!/bin/sh\\necho hi\\n\",\"os\":[\"darwin\",\"linux\"],\"type\":\"inline\"},{\"os\":[\"windows\"],\"path\":\"hooks/win.cmd\",\"type\":\"file\"}],\"type\":\"command\"}]}"
+          ],
+          "pass": true
+        },
+        {
+          "case": "variants",
+          "expected": true,
+          "field": "body_hash_identical",
+          "observed": [
+            "bdee51e032051d9fc88d39f9196e47b4742d51fe4673cb020ba82c47903bee3a",
+            "bdee51e032051d9fc88d39f9196e47b4742d51fe4673cb020ba82c47903bee3a"
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-q2",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-zqgj49fl\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"inline\",\"content\":\"#!/bin/sh\\necho hi\\n\",\"os\":[\"darwin\",\"linux\"]},{\"type\":\"file\",\"path\":\"hooks/win.cmd\",\"os\":[\"windows\"]}]}]}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-ndy1qoer\",\"sidecar\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/win.cmd\",\"os\":[\"windows\"]},{\"type\":\"inline\",\"content\":\"#!/bin/sh\\r\\necho hi\\r\\n\",\"os\":[\"linux\",\"darwin\"]}]}]}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "roundtrip",
+          "expected": true,
+          "field": "roundtrip_identity",
+          "observed": [
+            {
+              "os": [
+                "darwin",
+                "linux"
+              ],
+              "path": "hooks/unix.sh",
+              "type": "file"
+            },
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "roundtrip",
+          "expected": true,
+          "field": "dead_default_preserved",
+          "observed": true,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-r",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"render\",\"input\":{\"canonical\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]},{\"type\":\"file\",\"path\":\"hooks/win.cmd\",\"os\":[\"windows\"]},{\"type\":\"file\",\"path\":\"hooks/base.sh\"}]}],\"blocking\":false}},\"target\":\"per-os-key-map-provider\"}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"provider_config\":{\"provider\":\"per-os-key-map-provider\",\"path\":\"hooks.rendered\",\"content\":\"{\\\"command\\\":\\\"hooks/base.sh\\\",\\\"linux\\\":\\\"hooks/unix.sh\\\",\\\"osx\\\":\\\"hooks/unix.sh\\\",\\\"windows\\\":\\\"hooks/win.cmd\\\"}\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "portable",
+          "expected": [
+            "darwin",
+            "linux",
+            "windows"
+          ],
+          "field": "projection.os",
+          "observed": [
+            "darwin",
+            "linux",
+            "windows"
+          ],
+          "pass": true
+        },
+        {
+          "case": "portable",
+          "expected": false,
+          "field": "projection.os_divergent",
+          "observed": false,
+          "pass": true
+        },
+        {
+          "case": "divergent",
+          "expected": [
+            "darwin",
+            "linux",
+            "windows"
+          ],
+          "field": "projection.os",
+          "observed": [
+            "darwin",
+            "linux",
+            "windows"
+          ],
+          "pass": true
+        },
+        {
+          "case": "divergent",
+          "expected": true,
+          "field": "projection.os_divergent",
+          "observed": true,
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-s",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"project\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/run.sh\",\"os\":[\"darwin\",\"linux\",\"windows\"]}]}],\"blocking\":false}},\"projection\":\"os_coverage\"}}",
+        "{\"op\":\"project\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/mac.sh\",\"os\":[\"darwin\"]},{\"type\":\"file\",\"path\":\"hooks/lin.sh\",\"os\":[\"linux\"]},{\"type\":\"file\",\"path\":\"hooks/win.cmd\",\"os\":[\"windows\"]}]}],\"blocking\":false}},\"projection\":\"os_coverage\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "case_1",
+          "expected": "refuse-unless-operator-opt-in",
+          "field": "install",
+          "observed": "refuse-unless-operator-opt-in",
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": "proceed",
+          "field": "install",
+          "observed": "proceed",
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": "acif.hook.script_no_platform_match",
+          "field": "diagnostic",
+          "observed": [
+            {
+              "id": "acif.hook.script_no_platform_match",
+              "message": "No script entry matches the target OS 'windows'. Remedy: Please provide a default script entry or include 'windows' in one of the script's 'os' tag sets.",
+              "params": {
+                "os": "windows"
+              }
+            }
+          ],
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-t",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"evaluate_install\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]}]}],\"blocking\":true}},\"install_target_os\":\"windows\"}}",
+        "{\"op\":\"evaluate_install\",\"input\":{\"item\":{\"hook\":{\"event\":\"before_tool_execute\",\"handlers\":[{\"type\":\"command\",\"scripts\":[{\"type\":\"file\",\"path\":\"hooks/unix.sh\",\"os\":[\"darwin\",\"linux\"]}]}],\"blocking\":false}},\"install_target_os\":\"windows\"}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "case_1",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        },
+        {
+          "case": "case_2",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        },
+        {
+          "case": "case_3",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        },
+        {
+          "case": "case_4",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        },
+        {
+          "case": "case_5",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        },
+        {
+          "case": "case_6",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        },
+        {
+          "case": "case_7",
+          "expected": "acif.hook.platform_mechanism_malformed",
+          "field": "error",
+          "observed": "acif.hook.platform_mechanism_malformed",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-u",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-6iuu9sql\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":{\"windows\":123,\"command\":\"hooks/base.sh\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-9wo2t86m\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":{\"timeout\":5,\"windows\":\"hooks/win.cmd\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-_g2s4j5b\",\"provider_config\":{\"provider\":\"dual-shell-fields\",\"path\":\"hooks.json\",\"content\":{\"bash\":\"hooks/run.sh\",\"fish\":\"hooks/run.fish\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-35p_1mor\",\"provider_config\":{\"provider\":\"dual-shell-fields\",\"path\":\"hooks.json\",\"content\":{}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-phmdy0rt\",\"provider_config\":{\"provider\":\"filename-extension-convention\",\"path\":\"hooks.json\",\"content\":{\"path\":\"hooks/x.sh\"}}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-t6_qsjq9\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\"}}}",
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-ed8b7kl7\",\"provider_config\":{\"provider\":\"per-os-key-map\",\"path\":\"hooks.json\",\"content\":\"{not json\"}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "platform.yaml",
+      "expected_vs_observed": [
+        {
+          "case": "source",
+          "expected": [
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "field": "canonical_scripts",
+          "observed": [
+            {
+              "os": [
+                "windows"
+              ],
+              "path": "hooks/win.cmd",
+              "type": "file"
+            },
+            {
+              "path": "hooks/base.sh",
+              "type": "file"
+            }
+          ],
+          "pass": true
+        },
+        {
+          "case": "source",
+          "expected": "declared",
+          "field": "provenance",
+          "observed": "declared",
+          "pass": true
+        }
+      ],
+      "fixture_paths": [],
+      "id": "TV-PLATFORM-v",
+      "message": "",
+      "request_lines": [
+        "{\"op\":\"ingest\",\"input\":{\"kind\":\"hook\",\"body_root\":\"/tmp/acif-fixture-57ssm_0e\",\"provider_config\":{\"provider\":\"per-os-key-map-provider\",\"path\":\"hooks.json\",\"content\":{\"command\":\"hooks/base.sh\",\"windows\":\"hooks/win.cmd\"}}}}"
+      ],
+      "status": "pass",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-l",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-m",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "skill.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-SKILL-n",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-l",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-m",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-n",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "rule.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RULE-o",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-l",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "command.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-COMMAND-m",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "agent.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-AGENT-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-k2",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-l",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "mcp.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-MCP-m",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "render.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RENDER-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "render.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RENDER-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "render.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RENDER-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "render.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-RENDER-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-l",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-l2",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-l3",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-m",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-m2",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-n",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-w",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-x",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-y",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-z",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-o",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-o2",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-p",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-q",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-r",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-s",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-t",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-u",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "uri.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-URI-v",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-a",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-b",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-c",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-d",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-e",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-f",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-g",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-h",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-i",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-j",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    },
+    {
+      "catalog": "fresh.yaml",
+      "expected_vs_observed": [],
+      "fixture_paths": [],
+      "id": "TV-FRESH-k",
+      "message": "not required by selected claimed scopes",
+      "request_lines": [],
+      "status": "out-of-scope",
+      "vacuous": false
+    }
+  ]
+}
