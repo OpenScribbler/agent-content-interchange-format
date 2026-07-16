@@ -13,12 +13,27 @@ spawned; the same seed and count reproduce the same run byte-for-byte
 (modulo fixture paths).
 
 Family discipline:
-- required families (body, sidecar, envelope, pack_id) mirror request
-  forms the core-scope static vectors already force both adapters to
-  serve; an `unsupported` there breaks the run.
+- required families (body, sidecar, envelope, pack_id, and the four
+  hook_* families) mirror request forms the static vectors already force
+  both adapters to serve; an `unsupported` there breaks the run. The
+  hook_* families became required when both implementations declared the
+  hook scope (acif-5lk).
 - the normalize_uri family is informative until both implementations
   claim registry scope: either side answering `unsupported` marks the
   trial uncomparable, never a disagreement.
+
+Hook-family equivalence discipline ([ACIF-HOOK]):
+- hook_sidecar / hook_body generate only inputs whose answer the spec
+  pins: §7.2-disjoint os partitions, §7.1 rejects (empty/invalid os,
+  ambiguity), §8.2 absent-type materialization, §9 preimage inputs.
+- hook_provider_event exercises the Appendix A.1 provider event-name
+  mappings (including the copilot-cli `errorOccurred` multi-match, whose
+  §8.1 lexicographic tiebreak is pinned) and unrecognized spellings.
+- hook_mechanism exercises the §7.4 shape predicates. The canonical
+  EVENT of a mechanism-only ingest is deliberately NOT compared: the
+  synthesized-envelope event is an identified spec-precision gap, so the
+  family compares `canonical.handlers`, provenance, and diagnostic ids
+  instead of whole canonical bytes.
 """
 
 from __future__ import annotations
@@ -47,13 +62,20 @@ FORBIDDEN_FIELDS = [
     "resolved_version",
 ]
 
-REQUIRED_FAMILIES = {"body", "sidecar", "envelope", "pack_id"}
+REQUIRED_FAMILIES = {
+    "body", "sidecar", "envelope", "pack_id",
+    "hook_sidecar", "hook_provider_event", "hook_mechanism", "hook_body",
+}
 FAMILY_WEIGHTS = [
     ("body", 35),
     ("sidecar", 25),
     ("envelope", 20),
     ("pack_id", 10),
     ("normalize_uri", 10),
+    ("hook_sidecar", 15),
+    ("hook_provider_event", 10),
+    ("hook_mechanism", 15),
+    ("hook_body", 10),
 ]
 
 _WORDS = [
@@ -82,6 +104,54 @@ _SEMVER_VALID = ["1.2.3", "0.1.0", "10.20.30", "1.0.0-rc.1", "2.3.4-alpha.7", "1
 _SEMVER_INVALID = ["1.0", "v1.0.0", "1.0.0.0", "01.2.3", "1.2", "1.2.3 "]
 
 _KIND_INVALID = ["Skill", "SKILL", "skills", "plugin", "mcp", "Rule"]
+
+# Canonical hook event names ([ACIF-HOOK] Appendix A.1, representative
+# subset). Any canonical name is a conforming sidecar `event` value.
+_HOOK_EVENTS = [
+    "before_tool_execute", "after_tool_execute", "before_prompt",
+    "agent_stop", "session_start", "session_end", "before_compact",
+    "notification", "subagent_start", "subagent_stop", "error_occurred",
+    "permission_request", "file_changed", "before_model", "turn_start",
+]
+
+# (provider tag, provider-native spelling, canonical) rows transcribed
+# from Appendix A.1. The canonical member is documentation for the reader
+# only — trials never compare against it (the pair is its own oracle).
+_HOOK_EVENT_ALIASES = [
+    ("claude-code", "PreToolUse", "before_tool_execute"),
+    ("gemini-cli", "BeforeTool", "before_tool_execute"),
+    ("opencode", "tool.execute.before", "before_tool_execute"),
+    ("cursor", "PostToolUse", "after_tool_execute"),
+    ("kiro", "postToolUse", "after_tool_execute"),
+    ("pi", "tool_result", "after_tool_execute"),
+    ("claude-code", "UserPromptSubmit", "before_prompt"),
+    ("windsurf", "pre_user_prompt", "before_prompt"),
+    ("factory-droid", "Stop", "agent_stop"),
+    ("opencode", "session.idle", "agent_stop"),
+    ("kiro", "agentSpawn", "session_start"),
+    ("windsurf", "session_start", "session_start"),
+    ("pi", "session_shutdown", "session_end"),
+    ("gemini-cli", "PreCompress", "before_compact"),
+    ("vs-code-copilot", "SubagentStart", "subagent_start"),
+    ("copilot-cli", "subagentStop", "subagent_stop"),
+    ("opencode", "session.error", "error_occurred"),
+    # copilot-cli errorOccurred is a multi-match (error_occurred and
+    # tool_use_failure); §8.1 pins the lexicographically smaller name.
+    ("copilot-cli", "errorOccurred", "error_occurred"),
+    ("opencode", "permission.asked", "permission_request"),
+    ("cursor", "afterFileEdit", "file_changed"),
+    ("kiro", "File Save", "file_changed"),
+    ("gemini-cli", "BeforeModel", "before_model"),
+    ("pi", "turn_start", "turn_start"),
+]
+
+_HOOK_OS_ENUM = ["darwin", "linux", "windows"]
+_HOOK_ARCHES = ["arm64", "x86_64"]
+
+_HOOK_SCRIPT_PATHS = [
+    "hooks/run.sh", "hooks/win.cmd", "hooks/base.sh", "hooks/check.ps1",
+    "scripts/deep/audit.sh", "hooks/café.sh", "hooks/a b.sh",
+]
 
 _URI_POOL = [
     "https://example.com/skills/demo",
@@ -218,12 +288,227 @@ def _gen_normalize_uri(rng: random.Random) -> dict[str, Any]:
     }
 
 
+def _inline_script(rng: random.Random) -> dict[str, Any]:
+    content = "#!/bin/sh\n" + _rand_text(rng, max_lines=3)
+    if rng.random() < 0.25:
+        # [ACIF-HOOK] TV-PLATFORM-q′ pins line-ending-variant convergence.
+        content = content.replace("\n", "\r\n")
+    return {"type": "inline", "content": content}
+
+
+def _disjoint_os_sets(rng: random.Random, n: int) -> list[list[str]]:
+    """Random pairwise-disjoint non-empty subsets of the §7.1 OS enum."""
+    members = list(_HOOK_OS_ENUM)
+    rng.shuffle(members)
+    sets: list[list[str]] = []
+    for _ in range(n):
+        if not members:
+            break
+        take = rng.randrange(1, len(members) + 1)
+        sets.append(members[:take])
+        members = members[take:]
+    return sets
+
+
+def _gen_hook_sidecar(rng: random.Random) -> dict[str, Any]:
+    hook: dict[str, Any] = {"event": rng.choice(_HOOK_EVENTS)}
+    if rng.random() < 0.4:
+        hook["blocking"] = rng.random() < 0.5
+
+    if rng.random() < 0.25:
+        # One spec-pinned §7.1/§7.2 reject per trial — exactly one
+        # violation, so the diagnostic identity is unambiguous.
+        kind = rng.choice(["os_empty", "os_invalid", "default_ambiguous", "platform_ambiguous"])
+        if kind == "os_empty":
+            entry = _inline_script(rng)
+            entry["os"] = []
+            scripts = [entry]
+        elif kind == "os_invalid":
+            entry = _inline_script(rng)
+            entry["os"] = [rng.choice(["freebsd", "Linux", "macos", "win32"])]
+            scripts = [entry]
+        elif kind == "default_ambiguous":
+            scripts = [_inline_script(rng), _inline_script(rng)]
+        else:
+            member = rng.choice(_HOOK_OS_ENUM)
+            first, second = _inline_script(rng), _inline_script(rng)
+            first["os"] = [member]
+            second["os"] = [member]
+            scripts = [first, second]
+        hook["handlers"] = [{"type": "command", "scripts": scripts}]
+        return {
+            "family": "hook_sidecar",
+            "input": {"kind": "hook", "sidecar": hook},
+            "compare": ["conformant", "body_hash", "canonical_bytes"],
+        }
+
+    def conforming_handler() -> dict[str, Any]:
+        scripts: list[dict[str, Any]] = []
+        for os_set in _disjoint_os_sets(rng, rng.randrange(0, 3)):
+            entry = _inline_script(rng)
+            shuffled = list(os_set)
+            rng.shuffle(shuffled)
+            entry["os"] = shuffled
+            if rng.random() < 0.2:
+                arches = list(_HOOK_ARCHES)
+                rng.shuffle(arches)
+                entry["arch"] = arches[: rng.randrange(1, len(arches) + 1)]
+            scripts.append(entry)
+        if not scripts or rng.random() < 0.6:
+            scripts.append(_inline_script(rng))  # at most one default entry
+        rng.shuffle(scripts)
+        handler: dict[str, Any] = {"scripts": scripts}
+        if rng.random() < 0.75:
+            handler["type"] = "command"  # absent type pins to command (§8.2)
+        if rng.random() < 0.3:
+            handler["async"] = rng.random() < 0.5
+        if rng.random() < 0.2:
+            handler["timeout"] = rng.randrange(5, 300)
+        return handler
+
+    handlers = [conforming_handler()]
+    if rng.random() < 0.25:
+        handlers.append(conforming_handler())  # order is significant and preserved
+    hook["handlers"] = handlers
+    return {
+        "family": "hook_sidecar",
+        "input": {"kind": "hook", "sidecar": hook},
+        "compare": ["conformant", "body_hash", "canonical_bytes"],
+    }
+
+
+def _gen_hook_provider_event(rng: random.Random) -> dict[str, Any]:
+    if rng.random() < 0.15:
+        provider = "unknown-provider"
+        native = rng.choice(["onToolStart", "beforeEverything", "toolWillRun"])
+    else:
+        provider, native, _ = rng.choice(_HOOK_EVENT_ALIASES)
+    content = {
+        "event": native,
+        "handlers": [{"type": "command", "scripts": [_inline_script(rng)]}],
+    }
+    return {
+        "family": "hook_provider_event",
+        "input": {
+            "kind": "hook",
+            "provider_config": {"provider": provider, "path": "hooks.json", "content": content},
+        },
+        # No `conformant` on provider_config forms: PROTOCOL §4.1 scopes
+        # the verdict fields to record-validation forms and makes every
+        # result field optional, so presence asymmetry on this form is
+        # adapter plumbing, not a semantic disagreement (syllago emits
+        # `conformant: true` here; acif-ts omits it — both conforming).
+        "compare": ["body_hash", "canonical_bytes"],
+    }
+
+
+def _gen_hook_mechanism(rng: random.Random) -> dict[str, Any]:
+    token = rng.choice([
+        "per-os-key-map", "per-os-key-map",
+        "dual-shell-fields", "filename-extension-convention", "unknown",
+    ])
+    provider = token
+    content: dict[str, Any] = {}
+    if token == "per-os-key-map":
+        if rng.random() < 0.4:
+            provider = "per-os-key-map-provider"  # accepted §7.4 alias
+        keys = [k for k in ["windows", "linux", "osx"] if rng.random() < 0.6]
+        for key in keys:
+            content[key] = rng.choice(_HOOK_SCRIPT_PATHS)
+        if rng.random() < 0.25 and len(keys) >= 2:
+            content[keys[1]] = content[keys[0]]  # §7.4 executable-identity merge
+        has_base = rng.random() < 0.7
+        if has_base:
+            content["command"] = rng.choice(_HOOK_SCRIPT_PATHS)
+        roll = rng.random()
+        if roll < 0.15:
+            content[rng.choice(keys) if keys else "command"] = rng.randrange(100)  # malformed
+        elif roll < 0.3:
+            content["timeout"] = "30"  # passthrough; malformed iff no base command
+        if not content:
+            content["command"] = rng.choice(_HOOK_SCRIPT_PATHS)
+    elif token == "dual-shell-fields":
+        roll = rng.random()
+        if roll < 0.15:
+            pass  # empty object → malformed
+        elif roll < 0.3:
+            content["bash"] = rng.choice(_HOOK_SCRIPT_PATHS)
+            content["python"] = "x.py"  # closed-set violation → malformed
+        else:
+            for key in rng.sample(["bash", "powershell"], rng.randrange(1, 3)):
+                content[key] = rng.choice(_HOOK_SCRIPT_PATHS)
+    elif token == "filename-extension-convention":
+        roll = rng.random()
+        if roll < 0.15:
+            content["notfile"] = "hooks/run.sh"  # missing `file` → malformed
+        elif roll < 0.25:
+            content["file"] = 7  # non-string → malformed
+        else:
+            content["file"] = rng.choice([
+                "hooks/run.sh", "hooks/run.ps1", "hooks/run.cmd",
+                "hooks/run.bat", "hooks/run", "hooks/run.xyz",
+            ])
+    else:
+        provider = "unknown-" + rng.choice(["gadget", "mech", "layout"])  # totality net
+        content["command"] = rng.choice(_HOOK_SCRIPT_PATHS)
+    return {
+        "family": "hook_mechanism",
+        "input": {
+            "kind": "hook",
+            "provider_config": {"provider": provider, "path": "hooks.json", "content": content},
+        },
+        # No canonical_bytes here: the synthesized-envelope event of a
+        # mechanism-only ingest is an identified spec-precision gap. No
+        # `conformant` either — same provider_config field-optionality
+        # rationale as hook_provider_event.
+        "compare": ["canonical.handlers", "provenance", "diagnostics_ids"],
+    }
+
+
+def _gen_hook_body(rng: random.Random) -> dict[str, Any]:
+    pool = list(_HOOK_SCRIPT_PATHS)
+    rng.shuffle(pool)
+    scripts: list[dict[str, Any]] = []
+    for os_set in _disjoint_os_sets(rng, rng.randrange(0, 3)):
+        shuffled = list(os_set)
+        rng.shuffle(shuffled)
+        scripts.append({"type": "file", "path": pool.pop(), "os": shuffled})
+    if not scripts or rng.random() < 0.7:
+        scripts.append({"type": "file", "path": pool.pop()})  # single default entry
+
+    hook: dict[str, Any] = {
+        "event": rng.choice(_HOOK_EVENTS),
+        "handlers": [{"type": "command", "scripts": scripts}],
+    }
+    files: dict[str, str] = {
+        entry["path"]: "#!/bin/sh\n" + _rand_text(rng) for entry in scripts
+    }
+    if rng.random() < 0.25:
+        hook["auxiliary_files"] = [{"path": "assets/shared-utils.sh"}]
+        files["assets/shared-utils.sh"] = "#!/bin/sh\n" + _rand_text(rng)
+    if rng.random() < 0.3:
+        files["docs/notes.md"] = _rand_text(rng)  # unreferenced: outside the §9.2 manifest
+    if rng.random() < 0.15 and files:
+        # Drop one referenced file: both sides must reject identically.
+        referenced = sorted(p for p in files if p != "docs/notes.md")
+        files.pop(rng.choice(referenced))
+    return {
+        "family": "hook_body",
+        "input": {"kind": "hook", "hook": hook, "files": files},
+        "compare": ["conformant", "body_hash", "canonical_bytes"],
+    }
+
+
 _GENERATORS = {
     "body": _gen_body,
     "sidecar": _gen_sidecar,
     "envelope": _gen_envelope,
     "pack_id": _gen_pack_id,
     "normalize_uri": _gen_normalize_uri,
+    "hook_sidecar": _gen_hook_sidecar,
+    "hook_provider_event": _gen_hook_provider_event,
+    "hook_mechanism": _gen_hook_mechanism,
+    "hook_body": _gen_hook_body,
 }
 
 
@@ -248,8 +533,13 @@ def _build_request(trial: dict[str, Any], ctx: FixtureContext) -> dict[str, Any]
             "op": "ingest",
             "input": {"kind": inp["kind"], "body_root": root, "entry_file": inp["entry_file"]},
         }
-    if family in {"sidecar", "envelope"}:
+    if family in {"sidecar", "envelope", "hook_sidecar"}:
         return {"op": "ingest", "input": {"kind": inp["kind"], "sidecar": inp["sidecar"]}}
+    if family in {"hook_provider_event", "hook_mechanism"}:
+        return {"op": "ingest", "input": {"kind": inp["kind"], "provider_config": inp["provider_config"]}}
+    if family == "hook_body":
+        root = ctx.materialize(inp["files"])
+        return {"op": "ingest", "input": {"kind": "hook", "sidecar": inp["hook"], "body_root": root}}
     if family == "pack_id":
         return {"op": "derive_pack_id", "input": dict(inp)}
     if family == "normalize_uri":
@@ -274,7 +564,16 @@ def _observe(response: Any, fields: list[str]) -> dict[str, Any]:
         return {"class": "unsupported"}
     if response.kind == "spec-error":
         return {"class": "error", "error": response.error}
-    observed = {f: _lookup(response.result or {}, f) for f in fields}
+    result = response.result or {}
+    observed: dict[str, Any] = {}
+    for f in fields:
+        if f == "diagnostics_ids":
+            # Order- and prose-insensitive diagnostic identity: absent
+            # and empty diagnostics compare equal.
+            diags = result.get("diagnostics") or []
+            observed[f] = sorted({d["id"] for d in diags if isinstance(d, dict) and isinstance(d.get("id"), str)})
+        else:
+            observed[f] = _lookup(result, f)
     return {"class": "ok", "fields": observed}
 
 
