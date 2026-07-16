@@ -173,3 +173,43 @@
     emitted: rule-body
     diagnostic: acif.rule.activation_degraded
     diagnostic_names: {mode_lost: manual, effective_behavior: always-on}
+
+- id: TV-RULE-n
+  spec: "[ACIF-RULE] Appendix A.2"
+  harness: static
+  description: legacy interior mapping — always-branch glob discard, glob branch, typed field participation
+  input:
+    cases:
+      - {source_sub_mode: legacy, always_apply: true, globs: ["*.ts"]}
+      - {source_sub_mode: legacy, always_apply: true}
+      - {source_sub_mode: legacy, globs: ["src/**"]}
+      - {source_sub_mode: legacy, always_apply: "true", globs: ["src/**"]}
+      - {source_sub_mode: legacy, always_apply: false, globs: "src/**"}
+  expect:
+    # case_1/case_2: always_apply true wins; globs are NOT carried into
+    # canonical form on the always branch (Appendix A.2 interior rule 1).
+    case_1: {mode: always, globs: absent}
+    case_2: {mode: always, globs: absent}
+    case_3: {mode: glob, globs: ["src/**"]}
+    # case_4: non-boolean always_apply participates as absent -> glob branch.
+    case_4: {mode: glob, globs: ["src/**"]}
+    # case_5: non-array globs participates as absent -> deterministic residual.
+    case_5: {mode: model_decision, globs: absent}
+
+- id: TV-RULE-o
+  spec: "[ACIF-RULE] §10, §13"
+  harness: static
+  description: provider-configuration envelope faults reject activation_mode_missing, never the totality net
+  input:
+    cases:
+      - {envelope: content-absent}
+      - {envelope: content-non-object, content: "not an object"}
+      - {envelope: sub-mode-absent, content: {globs: ["*.md"]}}
+      - {envelope: sub-mode-non-string, content: {source_sub_mode: 7}}
+  expect:
+    # assert_error is exact-match: expecting activation_mode_missing is
+    # simultaneously the required absence of activation_mode_unmappable.
+    case_1: {error: acif.rule.activation_mode_missing}
+    case_2: {error: acif.rule.activation_mode_missing}
+    case_3: {error: acif.rule.activation_mode_missing}
+    case_4: {error: acif.rule.activation_mode_missing}

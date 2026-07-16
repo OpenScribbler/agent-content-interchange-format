@@ -20,6 +20,11 @@
 # There is no separate hand-maintained bucket to drift. In ACIF 0.1 the set is
 # { acif.rule.activation_mode_unmappable, acif.hook.platform_unmappable }.
 #
+# SUFFIX RESERVATION (normative): the `_unmappable` suffix is RESERVED for
+# totality-net diagnostics. A reject id MUST NOT use it for any other
+# condition, and every totality-net diagnostic MUST use it — the derivation
+# above is sound in both directions only under this reservation.
+#
 # Disposition classes (the leading token of each table row's Class column):
 #   reject      canonicalization fails ([ACIF-CORE] §8.7)
 #   diagnostic  accompanies successful processing (MUST-emit or INFORMATIVE)
@@ -79,6 +84,7 @@ diagnostics:
       - acif.hook.script_file_missing
       - acif.hook.script_path_invalid
       - acif.hook.platform_unmappable
+      - acif.hook.platform_mechanism_malformed
     refuse:
       - acif.hook.no_default_for_degraded_render
     diagnostic:

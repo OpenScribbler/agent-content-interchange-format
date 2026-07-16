@@ -11,6 +11,7 @@ from .common import (
     assert_diagnostic,
     assert_error,
     assert_output_contains,
+    assert_present_absent,
     assert_relation,
     assert_result_field,
     assert_verdict_reason,
@@ -269,4 +270,33 @@ def tv_rule_m(vector: Vector, session: Any, ctx: Any):
     )
     assert_output_contains(result, "render", response, "emitted", exp["emitted"])
     assert_diagnostic(result, "render", response, exp["diagnostic"], exp["diagnostic_names"])
+    return result
+
+
+@binding("TV-RULE-n")
+def tv_rule_n(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    exp = vector.data["expect"]
+    for idx, case in enumerate(vector.data["input"]["cases"], start=1):
+        response = send(result, session, ctx, ingest("rule", provider_config=provider_config("rule-activation-source", "rule", case)))
+        expected = exp[f"case_{idx}"]
+        assert_result_field(result, f"case_{idx}", response, "canonical.rule.activation.mode", expected["mode"])
+        # DERIVATION: [ACIF-RULE] Appendix A.2 legacy interior rule 1 (from
+        # vector spec) — the always branch discards globs from canonical form.
+        if expected["globs"] == "absent":
+            assert_present_absent(result, f"case_{idx}", response, "canonical.rule.activation.globs", "absent")
+        else:
+            assert_result_field(result, f"case_{idx}", response, "canonical.rule.activation.globs", expected["globs"])
+    return result
+
+
+@binding("TV-RULE-o")
+def tv_rule_o(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    for idx, case in enumerate(vector.data["input"]["cases"], start=1):
+        config: dict[str, Any] = {"provider": "rule-activation-source", "path": "rule"}
+        if case["envelope"] != "content-absent":
+            config["content"] = case["content"]
+        response = send(result, session, ctx, ingest("rule", provider_config=config))
+        assert_error(result, f"case_{idx}", response, vector.data["expect"][f"case_{idx}"]["error"])
     return result

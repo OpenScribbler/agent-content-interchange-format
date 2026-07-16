@@ -36,6 +36,10 @@ Terms defined in [ACIF-CORE] §2 are used without redefinition. Additionally:
 
 **provider sub-mode** — a provider-native activation declaration mechanism, as enumerated in the Appendix A.2 mapping table.
 
+**source-mechanism token** — the closed identifier naming an Appendix A.2 mapping row in a pre-abstracted provider configuration (§10).
+
+**recognition** — the ingestion-context step that decides which sub-mode a raw provider declaration uses and produces its normalized content; distinct from mapping, which is the canonicalizer's obligation (§10).
+
 ## 4. Requirements Language
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as shown here.
@@ -131,12 +135,18 @@ Any `requires.<key>` on a rule item is non-conformant ([ACIF-CORE] §9.4) — in
 
 ## 10. Canonicalization Mapping
 
-Canonicalization rewrites provider sub-modes to the canonical enum per the total mapping table in Appendix A.2 before any hash is computed ([ACIF-CORE] §8.2). Two rows warrant normative emphasis:
+Canonicalization rewrites provider sub-modes to the canonical enum per the total mapping table in Appendix A.2 before any hash is computed ([ACIF-CORE] §8.2).
+
+**The two-stage contract.** A provider activation declaration reaches the canonicalizer pre-abstracted: the ingestion context ([ACIF-CORE] §2) supplies a **source-mechanism token** naming an Appendix A.2 row, together with the declaration's normalized fields. *Recognition* — deciding which sub-mode a raw provider declaration uses — is performed by the ingestion context and is outside the canonicalizer's scope; *mapping* — this section and Appendix A.2 — begins at the token boundary.
+
+**Envelope.** A pre-abstracted provider configuration whose content is absent, not an object, or carries no `source_sub_mode` string is a present activation declaration without a mode claim: it MUST be rejected with `acif.rule.activation_mode_missing` (the §6.2 condition read at the provider-configuration locus), never with the totality net.
+
+Two mapping rows warrant normative emphasis:
 
 - **Documented collapse:** `frontmatter_globs` and `glob` sub-modes both canonicalize to `mode: glob` — the declaration mechanism differs, the activation semantics are identical. Round-trip through this collapse is documented-lossy on declaration mechanism only.
-- **Deterministic legacy residual:** a source form carrying only an always-apply boolean set false and no globs canonicalizes to `mode: model_decision`. `manual` is reachable only from source formats that carry the distinction explicitly and from ACIF-native authoring.
+- **Deterministic legacy residual:** a `legacy` source form carrying an always-apply boolean set false and no globs canonicalizes to `mode: model_decision` (the full `legacy` interior mapping is pinned in Appendix A.2). `manual` is reachable only from source formats that carry the distinction explicitly and from ACIF-native authoring.
 
-Any provider activation mechanism with no mapping row rejects with `acif.rule.activation_mode_unmappable` (the totality net).
+A source-mechanism token that is not a member of the Appendix A.2 token set rejects with `acif.rule.activation_mode_unmappable` (the totality net). Implementations MUST NOT emit `acif.rule.activation_mode_unmappable` for any input whose token is a member.
 
 ## 11. Render-Back Requirements
 
@@ -167,9 +177,9 @@ The highest-priority moderation bucket for rules is `mode: always` — the empir
 
 | Identifier | Class | Condition |
 |---|---|---|
-| `acif.rule.activation_mode_missing` | reject | `activation` block present in source without `mode` (§6.2) |
+| `acif.rule.activation_mode_missing` | reject | `activation` block present in source without `mode` (§6.2); or a pre-abstracted provider configuration whose content is absent, not an object, or carries no `source_sub_mode` string (§10) |
 | `acif.rule.activation_mode_invalid` | reject | `mode` value outside the closed enum, or inexact byte form (§6.2) |
-| `acif.rule.activation_mode_unmappable` | reject | Provider activation mechanism with no Appendix A.2 mapping row (§10) |
+| `acif.rule.activation_mode_unmappable` | reject | Source-mechanism token outside the Appendix A.2 token set (§10); MUST NOT be emitted for a member token |
 | `acif.rule.glob_mode_without_globs` | reject | `mode: glob` with `globs` absent or empty (§6.2) |
 | `acif.rule.globs_without_glob_mode` | reject | `globs` present with `mode` ≠ `glob` (§6.2) |
 | `acif.rule.activation_degraded` | diagnostic (MUST-emit, render) | Canonical mode lost at render to a no-declaration-surface target (§11) |
@@ -224,7 +234,11 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 
 ### A.2 Total canonicalization mapping (provider sub-modes → canonical)
 
-| Provider sub-mode | Canonical | Notes |
+**Source-mechanism tokens** form the closed set `{always_on, glob, frontmatter_globs, model_decision, manual, slash_command, legacy}`, matched by exact byte comparison ([ACIF-CORE] §8.3). Tokens are ACIF-owned recognizer vocabulary; which providers carry a given sub-mode is observational snapshot data (the ownership rule at the head of this appendix). The token set is machine-projectable: it is published as `conformance/source-mechanisms.yaml` and kept current by the runner selftest's source-mechanisms sync check (CHANGE-PROCESS.md, source-of-truth rule). Tokens beginning `unknown-` are RESERVED for negative test fixtures and are never minted.
+
+Every token except `legacy` maps by name alone. `legacy` is **recognition-requiring**: its mapping is decided by a shape predicate over the instance's normalized fields (below), never by the token alone; a conforming canonicalizer MUST evaluate the predicate.
+
+| Token | Canonical | Notes |
 |---|---|---|
 | `always_on` | `always` | — |
 | `glob` | `glob` | — |
@@ -232,17 +246,23 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 | `model_decision` | `model_decision` | — |
 | `manual` | `manual` | — |
 | `slash_command` | `manual` | Slash invocation is explicit user invocation |
-| *(legacy residual)* always-apply boolean false + no globs | `model_decision` | Deterministic residual: source formats that cannot express `manual` vs `model_decision` resolve here (§10) |
-| *(absent)* no activation declaration | `always` | The §7 materialized default — matches all surveyed providers' no-frontmatter behavior |
-| Any other mechanism | — | MUST reject `acif.rule.activation_mode_unmappable` (totality net) |
+| `legacy` | interior mapping below | Recognition-requiring; the instance carries `always_apply` and `globs` fields |
+| *(absent)* no activation declaration | `always` | Not a token — the §7 materialized default; matches all surveyed providers' no-frontmatter behavior |
+| *(any other token)* | — | MUST reject `acif.rule.activation_mode_unmappable` (totality net, §10) |
 
-*(Informative)* Six provider sub-modes were observed across a ten-provider survey; at least one surveyed source format carries all four canonical values distinctly, which is what makes the four-value enum witnessable from provider sources rather than speculative.
+**The `legacy` interior mapping.** A `legacy` instance's normalized content carries `always_apply` and `globs`. Field participation is typed and total: `always_apply` participates as true only when it is the JSON boolean `true`; `globs` participates only when it is a non-empty JSON array; any other value of either field is treated as absent for this precedence. The mapping is decided in this order:
+
+1. `always_apply` participating as true → `mode: always`. `globs`, if present, are NOT carried into canonical form on this branch: the declared always-apply overrides the glob list, and canonical `mode: always` cannot carry `globs` (§6.2).
+2. Otherwise, `globs` participating → `mode: glob`, with the globs carried.
+3. Otherwise → `mode: model_decision` (the deterministic residual, §10).
+
+*(Informative)* Six provider sub-modes were observed across a ten-provider survey; at least one surveyed source format carries all four canonical values distinctly, which is what makes the four-value enum witnessable from provider sources rather than speculative. The `legacy` interior mapping ratifies shipped canonicalizer behavior: the residual branch was pinned at spec promotion, and branches 1–2 were pinned 2026-07-16 (SHAPE.md Decision #40) with differential evidence that the pinned table equals the shipping canonicalizer's output on all three branches; no canonical bytes move and no vector expectation flips.
 
 ## Appendix B — Conformance Test-Vector Families (Normative)
 
 The vectors in these families, published in the `conformance/` directory, are normatively authoritative over prose. Family definition:
 
-**TV-RULE-\***: (a) activation-default materialization — activation absent in source → canonical form carries `mode: always`; neither `body_hash` nor `metadata_hash` is affected by the materialization ([ACIF-CORE] §7.8); (b) mode required-when-present → `acif.rule.activation_mode_missing`; (c) invalid values — `mode: sometimes` AND `mode: " always"` (exact byte membership) → `acif.rule.activation_mode_invalid`; (d) mapping-table totality — `frontmatter_globs` source → `glob`; explicit `manual` source → `manual`; slash-command source → `manual`; legacy always-apply-false + no globs → `model_decision`; unmapped mechanism → `acif.rule.activation_mode_unmappable`; (e) glob consistency — `mode: glob` without `globs` and with `globs: []` → `acif.rule.glob_mode_without_globs`; `globs` with `mode: always` → `acif.rule.globs_without_glob_mode`; (f) `D_K` activation_mode — `always` → derivable-false; `glob`/`model_decision`/`manual` → derivable-true; activation-absent → derivable-false via materialization (positive-set form); (g) projection shape — `{derivable, mode, globs: {present, count, sample ≤16, truncated}}`; (h) empty `requires` conformant; (i) orphan-key reject, three distinct reject reasons — `requires.file_imports`, `requires.activation_mode`, `requires.handler_types`; (j) unknown-key three-valued evaluation; (k) prose-opacity round-trip — body containing `@`-import syntax canonicalizes and renders back byte-verbatim; `body_hash` stable; (l) hash boundary — re-targeting a *declared* `mode` with body bytes unchanged moves `metadata_hash` and MUST NOT move `body_hash`; editing prose moves `body_hash` and MUST NOT move `metadata_hash`; (m) render degradation — rendering `manual` to a no-declaration-surface target → MUST emit `acif.rule.activation_degraded`.
+**TV-RULE-\***: (a) activation-default materialization — activation absent in source → canonical form carries `mode: always`; neither `body_hash` nor `metadata_hash` is affected by the materialization ([ACIF-CORE] §7.8); (b) mode required-when-present → `acif.rule.activation_mode_missing`; (c) invalid values — `mode: sometimes` AND `mode: " always"` (exact byte membership) → `acif.rule.activation_mode_invalid`; (d) mapping-table totality — `frontmatter_globs` source → `glob`; explicit `manual` source → `manual`; slash-command source → `manual`; legacy always-apply-false + no globs → `model_decision`; unmapped mechanism → `acif.rule.activation_mode_unmappable`; (e) glob consistency — `mode: glob` without `globs` and with `globs: []` → `acif.rule.glob_mode_without_globs`; `globs` with `mode: always` → `acif.rule.globs_without_glob_mode`; (f) `D_K` activation_mode — `always` → derivable-false; `glob`/`model_decision`/`manual` → derivable-true; activation-absent → derivable-false via materialization (positive-set form); (g) projection shape — `{derivable, mode, globs: {present, count, sample ≤16, truncated}}`; (h) empty `requires` conformant; (i) orphan-key reject, three distinct reject reasons — `requires.file_imports`, `requires.activation_mode`, `requires.handler_types`; (j) unknown-key three-valued evaluation; (k) prose-opacity round-trip — body containing `@`-import syntax canonicalizes and renders back byte-verbatim; `body_hash` stable; (l) hash boundary — re-targeting a *declared* `mode` with body bytes unchanged moves `metadata_hash` and MUST NOT move `body_hash`; editing prose moves `body_hash` and MUST NOT move `metadata_hash`; (m) render degradation — rendering `manual` to a no-declaration-surface target → MUST emit `acif.rule.activation_degraded`; (n) **`legacy` interior mapping** — `always_apply: true` with globs present and with globs absent → `mode: always`, no `globs` key in canonical form, no reject; `always_apply` false or absent + non-empty `globs` → `mode: glob` carrying the globs; non-boolean `always_apply` (e.g. `"true"`) and non-array `globs` (e.g. a string) participate as absent; (o) **provider-configuration envelope faults** — content absent, content not an object, and `source_sub_mode` absent or non-string each → `acif.rule.activation_mode_missing`, with the vector asserting the **absence** of `acif.rule.activation_mode_unmappable`.
 
 Individual vector IDs are assigned in the conformance suite.
 
@@ -255,3 +275,5 @@ Preserved positions recorded for future revision: spec-purist's ADMIT dissent on
 Newly minted at spec-promotion time (not present in the design record; flagged for review): `acif.rule.activation_degraded` and the §11 degradation rule (the design record pinned canonicalization-direction totality but no render-direction diagnostic; the gate-loss hazard motivates the MUST-emit, paralleling [ACIF-HOOK] §12.1); the §6.2 pins that `globs: []` rejects as `glob_mode_without_globs` and that glob elements are non-empty opaque strings with no dialect validation; the §8.2 hash-boundary statement ([ACIF-CORE] §7.8 model); and the TV-RULE (l)/(m) vectors. These items were ratified back into the design record (SHAPE.md, Spec-Promotion Ratifications section) at promotion time.
 
 Amended after the second independent review (2026-07-11): the §8.1 entry-file statement that rules pin no canonical filename.
+
+Amended 2026-07-16 (SHAPE.md Decision #40, Gate B spec-purist review): the Appendix A.2 source-mechanism token vocabulary (closed set, ownership, export naming, `unknown-` reservation), the §10 two-stage recognition/mapping contract, the full `legacy` interior mapping with typed field participation and the always-branch glob discard (ratifying shipped canonicalizer behavior; no expectation flips, no canonical bytes move), the §10 envelope rule routing modeless provider configurations to `acif.rule.activation_mode_missing` rather than the totality net, and the TV-RULE (n)/(o) vectors.

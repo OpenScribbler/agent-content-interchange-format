@@ -505,3 +505,38 @@ def tv_platform_t(vector: Vector, session: Any, ctx: Any):
         if "diagnostic" in expected:
             assert_diagnostic(result, f"case_{idx}", response, expected["diagnostic"])
     return result
+
+
+@binding("TV-PLATFORM-u")
+def tv_platform_u(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    exp = vector.data["expect"]
+    for idx, case in enumerate(vector.data["input"]["cases"], start=1):
+        envelope = case.get("envelope")
+        if envelope is None:
+            request = _ingest_provider(ctx, case["source_mechanism"], case["source"])
+        else:
+            root = ctx.materialize({})
+            config: dict[str, Any] = {"provider": case["source_mechanism"], "path": "hooks.json"}
+            if envelope == "content-undecodable":
+                config["content"] = case["source_string"]
+            request = ingest("hook", body_root=root, provider_config=config)
+        response = send(result, session, ctx, request)
+        assert_error(result, f"case_{idx}", response, exp[f"case_{idx}"]["error"])
+    return result
+
+
+@binding("TV-PLATFORM-v")
+def tv_platform_v(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    response = send(
+        result,
+        session,
+        ctx,
+        _ingest_provider(ctx, inp["source_mechanism"], inp["source"], files=inp["referenced_files"]),
+    )
+    assert_value(result, "source", "canonical_scripts", exp["canonical_scripts"], _scripts(response), response)
+    assert_result_field(result, "source", response, "provenance", exp["provenance"])
+    return result

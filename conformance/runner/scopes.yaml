@@ -48,6 +48,8 @@ hook:
   - TV-PLATFORM-r
   - TV-PLATFORM-s
   - TV-PLATFORM-t
+  - TV-PLATFORM-u
+  - TV-PLATFORM-v
 skill:
   - TV-SKILL-a
   - TV-SKILL-b
@@ -77,6 +79,8 @@ rule:
   - TV-RULE-k
   - TV-RULE-l
   - TV-RULE-m
+  - TV-RULE-n
+  - TV-RULE-o
 command:
   - TV-COMMAND-a
   - TV-COMMAND-b

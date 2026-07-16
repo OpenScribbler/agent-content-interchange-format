@@ -343,3 +343,52 @@
   expect:
     case_1: {install: refuse-unless-operator-opt-in}
     case_2: {install: proceed, diagnostic: acif.hook.script_no_platform_match}
+
+- id: TV-PLATFORM-u
+  spec: "[ACIF-HOOK] §7.4, §14"
+  harness: static
+  description: malformed-mechanism split — shape-predicate and envelope violations reject platform_mechanism_malformed, never platform_unmappable
+  input:
+    cases:
+      - {source_mechanism: per-os-key-map, source: {windows: 123, command: "hooks/base.sh"}}
+      - {source_mechanism: per-os-key-map, source: {timeout: 5, windows: "hooks/win.cmd"}}
+      - {source_mechanism: dual-shell-fields, source: {bash: "hooks/run.sh", fish: "hooks/run.fish"}}
+      - {source_mechanism: dual-shell-fields, source: {}}
+      - {source_mechanism: filename-extension-convention, source: {path: "hooks/x.sh"}}
+      - {source_mechanism: per-os-key-map, envelope: content-absent}
+      - {source_mechanism: per-os-key-map, envelope: content-undecodable, source_string: "{not json"}
+  expect:
+    # assert_error is exact-match: expecting platform_mechanism_malformed is
+    # simultaneously the required absence of platform_unmappable
+    # ([ACIF-HOOK] §7.4 evaluation steps 1 and 4 vs step 3).
+    # case_1: non-string entrypoint under a per-OS key.
+    case_1: {error: acif.hook.platform_mechanism_malformed}
+    # case_2: passthrough key without a base command to carry it.
+    case_2: {error: acif.hook.platform_mechanism_malformed}
+    # case_3: unrecognized key in the closed dual-shell key set.
+    case_3: {error: acif.hook.platform_mechanism_malformed}
+    # case_4: empty object fails the non-empty-subset predicate.
+    case_4: {error: acif.hook.platform_mechanism_malformed}
+    # case_5: required file field missing.
+    case_5: {error: acif.hook.platform_mechanism_malformed}
+    # case_6/case_7: envelope faults (step 1) — absent / undecodable content.
+    case_6: {error: acif.hook.platform_mechanism_malformed}
+    case_7: {error: acif.hook.platform_mechanism_malformed}
+
+- id: TV-PLATFORM-v
+  spec: "[ACIF-HOOK] §7.4"
+  harness: static
+  description: alias membership — per-os-key-map-provider ingests identically to per-os-key-map and never trips the totality net
+  input:
+    source_mechanism: per-os-key-map-provider
+    source:
+      command: "hooks/base.sh"
+      windows: "hooks/win.cmd"
+    referenced_files:
+      hooks/base.sh: "#!/bin/sh\necho base\n"
+      hooks/win.cmd: "@echo off\r\necho win\r\n"
+  expect:
+    canonical_scripts:
+      - {type: file, path: hooks/win.cmd, os: [windows]}
+      - {type: file, path: hooks/base.sh}
+    provenance: declared
