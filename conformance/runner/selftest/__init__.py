@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
         ("scopes totality", check_scopes_totality),
         ("suite manifest", check_suite_manifest),
         ("capability-vocabulary sync", check_capability_vocabulary),
+        ("diagnostic-ids sync", check_diagnostic_ids),
         ("sabotage", check_sabotage),
     ]
     failures: list[str] = []
@@ -368,6 +369,74 @@ def _out_of_scope_text(section: str) -> str:
         if collecting:
             chunks.append(line)
     return "\n".join(chunks)
+
+
+DIAGNOSTIC_CLASSES = ("reject", "diagnostic", "refuse")
+ERROR_ID_ROW_RE = re.compile(r"^\|\s*`(acif\.[a-z0-9_.]+)`\s*\|\s*([a-z]+)")
+
+
+def check_diagnostic_ids() -> None:
+    """diagnostic-ids.yaml must match each L1 spec's Error Identifiers table:
+    every identifier, grouped by its Class-column disposition token
+    (reject|diagnostic|refuse), bidirectionally. Spec-prose parsing happens
+    here, at the authority, so downstream copies diff against the yaml only.
+    A type that mints no identifiers (agent) has all-empty buckets."""
+    path = CONFORMANCE_ROOT / "diagnostic-ids.yaml"
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    diagnostics = document.get("diagnostics") if isinstance(document, dict) else None
+    if not isinstance(diagnostics, dict):
+        raise AssertionError("diagnostic-ids.yaml missing diagnostics mapping")
+    if set(diagnostics) != set(VOCABULARY_SPEC_DIRS):
+        raise AssertionError(
+            "diagnostic types %s != expected %s"
+            % (sorted(diagnostics), sorted(VOCABULARY_SPEC_DIRS))
+        )
+    errors: list[str] = []
+    specs_root = CONFORMANCE_ROOT.parent / "specs"
+    for kind, entry in diagnostics.items():
+        extra = set(entry) - {"spec", "section"} - set(DIAGNOSTIC_CLASSES)
+        if extra:
+            errors.append(f"{kind}: unrecognized key(s) {sorted(extra)}")
+        spec_text = (specs_root / VOCABULARY_SPEC_DIRS[kind] / "spec.md").read_text(encoding="utf-8")
+        section = _error_identifiers_section(spec_text)
+        if section is None:
+            errors.append(f"{kind}: no Error Identifiers section found")
+            continue
+        spec_by_class = _error_id_rows(section)
+        unknown = set(spec_by_class) - set(DIAGNOSTIC_CLASSES)
+        if unknown:
+            errors.append(f"{kind}: spec table has unrecognized class token(s) {sorted(unknown)}")
+        for cls in DIAGNOSTIC_CLASSES:
+            declared = entry.get(cls) or []
+            if len(set(declared)) != len(declared):
+                errors.append(f"{kind}: duplicate {cls} ids")
+            if set(declared) != spec_by_class.get(cls, set()):
+                errors.append(
+                    f"{kind}: {cls} drift — yaml {sorted(declared)} != spec table {sorted(spec_by_class.get(cls, set()))}"
+                )
+    if errors:
+        raise AssertionError("; ".join(errors))
+
+
+def _error_identifiers_section(spec_text: str) -> str | None:
+    lines = spec_text.splitlines()
+    start = None
+    for idx, line in enumerate(lines):
+        if start is None:
+            if re.match(r"^## \d+\. Error Identifiers", line):
+                start = idx
+        elif line.startswith("## "):
+            return "\n".join(lines[start:idx])
+    return "\n".join(lines[start:]) if start is not None else None
+
+
+def _error_id_rows(section: str) -> dict[str, set[str]]:
+    by_class: dict[str, set[str]] = {}
+    for line in section.splitlines():
+        match = ERROR_ID_ROW_RE.match(line.strip())
+        if match:
+            by_class.setdefault(match.group(2), set()).add(match.group(1))
+    return by_class
 
 
 def check_sabotage() -> None:

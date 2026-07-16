@@ -1,0 +1,99 @@
+# ACIF diagnostic-id export (machine-readable).
+#
+# The published, machine-readable projection of each L1 spec's Error
+# Identifiers section: every diagnostic identifier a content type mints,
+# grouped by the disposition class in the table's Class column. The normative
+# source is the owning spec's Error Identifiers section (cited per type below);
+# this file is a derived artifact whose currency is selftest-enforced (the
+# diagnostic-ids sync check fails if it drifts from those spec tables).
+# Downstream conforming consumers — capmon's acif-change class-B validator,
+# any registry's diagnostic projection — diff against THIS file, never against
+# spec prose (CHANGE-PROCESS.md, "Vocabulary source of truth").
+#
+# TOTALITY-NET SET (the reason this export exists). A Class B change is a
+# provider mechanism with no Appendix A mapping row — surfaced by a
+# totality-net reject diagnostic — as distinct from a Class C bad value, whose
+# reject diagnostic names a value fault (`_missing`, `_invalid`, …). The
+# totality-net set is DERIVED, not hand-listed: it is exactly the reject-class
+# ids whose local name ends in `_unmappable`. Downstream computes:
+#     totality_net = { id in <type>.reject : id endswith "_unmappable" }
+# There is no separate hand-maintained bucket to drift. In ACIF 0.1 the set is
+# { acif.rule.activation_mode_unmappable, acif.hook.platform_unmappable }.
+#
+# Disposition classes (the leading token of each table row's Class column):
+#   reject      canonicalization fails ([ACIF-CORE] §8.7)
+#   diagnostic  accompanies successful processing (MUST-emit or INFORMATIVE)
+#   refuse      render declines to produce output
+# A type lists a class key only where it mints ids of that class; reject and
+# diagnostic are always present (empty where none), refuse only where used.
+#
+# Changing this file's content is a Class C vocabulary change
+# (CHANGE-PROCESS.md) — it moves only when the owning spec's Error Identifiers
+# table moves.
+
+diagnostics:
+  skill:
+    spec: ACIF-SKILL
+    section: "§14"
+    reject:
+      - acif.skill.activation_type_missing
+      - acif.skill.activation_type_invalid
+      - acif.skill.hook_ref_forbidden
+      - acif.skill.hook_ref_id_missing
+    diagnostic: []
+  rule:
+    spec: ACIF-RULE
+    section: "§13"
+    reject:
+      - acif.rule.activation_mode_missing
+      - acif.rule.activation_mode_invalid
+      - acif.rule.activation_mode_unmappable
+      - acif.rule.glob_mode_without_globs
+      - acif.rule.globs_without_glob_mode
+    diagnostic:
+      - acif.rule.activation_degraded
+  command:
+    spec: ACIF-COMMAND
+    section: "§13"
+    reject: []
+    diagnostic:
+      - acif.command.placeholder_named_arg_collapsed
+      - acif.command.placeholder_untranslated
+  agent:
+    spec: ACIF-AGENT
+    section: "§12"
+    reject: []
+    diagnostic: []
+  hook:
+    spec: ACIF-HOOK
+    section: "§14"
+    reject:
+      - acif.hook.event_unrecognized
+      - acif.hook.handlers_missing
+      - acif.hook.handler_type_unrecognized
+      - acif.hook.script_os_invalid
+      - acif.hook.script_os_empty
+      - acif.hook.script_arch_empty
+      - acif.hook.script_default_ambiguous
+      - acif.hook.script_platform_ambiguous
+      - acif.hook.script_file_missing
+      - acif.hook.script_path_invalid
+      - acif.hook.platform_unmappable
+    refuse:
+      - acif.hook.no_default_for_degraded_render
+    diagnostic:
+      - acif.hook.platform_override_dropped
+      - acif.hook.platform_shell_os_proxy
+      - acif.hook.platform_filename_uninferable
+      - acif.hook.platform_filename_inferred
+      - acif.hook.script_no_platform_match
+  mcp_config:
+    spec: ACIF-MCP
+    section: "§12"
+    reject:
+      - acif.mcp.servers_missing
+      - acif.mcp.transport_type_invalid
+      - acif.mcp.transport_default_ambiguous
+      - acif.mcp.transport_default_undetermined
+    diagnostic:
+      - acif.mcp.server_name_unconventional

@@ -198,7 +198,11 @@ comparison target is `conformance/capability-vocabulary.yaml` — the
 published projection of the L1 specs' Capability Dispositions sections,
 kept current by the runner selftest's capability-vocabulary sync check
 (spec-prose parsing happens once, at the authority; downstream checks
-never parse markdown). Each derived consumer owns its own drift check
+never parse markdown). Its companion `conformance/diagnostic-ids.yaml`
+is the parallel projection of the L1 specs' Error Identifiers sections,
+grouped by disposition class and kept current by the diagnostic-ids sync
+check; downstream derives the Class B totality-net set from it as the
+reject-class ids ending `_unmappable`. Each derived consumer owns its own drift check
 (for capmon: a CI diff of its copy against that export, failing capmon's
 CI, never ACIF's). Outbound propagation is
 deliberately out of scope here: ACIF changes vocabulary through this
