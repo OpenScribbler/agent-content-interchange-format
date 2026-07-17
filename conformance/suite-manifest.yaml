@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 7
+  date: 2026-07-16
+  change_class: mixed
+  supersedes: 6
+  note: "Decision #41 (acif-hbz / Gate C): install-entry-points mint — new [ACIF-INSTALL] L5 document (install-target matrix, scope/layout enums, path-template grammar, shared-file merge contract, acif.install.* identifiers), conformance/install-entry-points.yaml export + selftest sync check, PROTOCOL op 4.14 resolve_install_targets + install scope, TV-INSTALL-a..f (additive). Expectation-flip inventory: EMPTY (new catalog; no existing vector touches install resolution). Plus Decision #42 (acif-mz7, Class-B-flavored): [ACIF-HOOK] §7.4 synthesized-envelope pin + case-insensitive extension comparison (both ratify shipped, suite-implied behavior; TV-PLATFORM-w additive; no expectation flips)."
+  vectors: 177
+  binding_set: b77ea08f5051dc293176c017b6b5cdd655f2030f5174e181a341f9f2f981bbba
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: 6ee229fcee55cce883a6a1b01e30140304eb9043e580a7a13727edcc83f49dc8
+    fresh.yaml: 643cb8ad306dc09d397d85f3d7caaf6a3fc8e055a92f1cf2e783fc2fc5c93fdf
+    hook.yaml: f32c93a57f93d7fc1e4e7b931ef942422f9606a3f5e6a4209e3c6a237707427f
+    install.yaml: 1e545973ef21337adf0cdc1a6795c55f82edaa28543e6777140a92ce57a3fbf3
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: e473be422f5634a33d7c614a700fd95cbfae47354ba3e1719ded274c05dda44d
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 6
   date: 2026-07-16
   change_class: c

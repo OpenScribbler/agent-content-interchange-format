@@ -392,3 +392,17 @@
       - {type: file, path: hooks/win.cmd, os: [windows]}
       - {type: file, path: hooks/base.sh}
     provenance: declared
+
+- id: TV-PLATFORM-w
+  spec: "[ACIF-HOOK] §7.4"
+  harness: static
+  description: extension comparison is case-insensitive; path bytes are never folded
+  input:
+    cases:
+      - {file: hooks/A.PS1}
+      - {file: hooks/b.SH}
+      - {file: hooks/c.Cmd}
+  expect:
+    case_1: {os: [windows], path: hooks/A.PS1, diagnostic: acif.hook.platform_filename_inferred}
+    case_2: {os: [darwin, linux], path: hooks/b.SH, diagnostic: acif.hook.platform_filename_inferred}
+    case_3: {os: [windows], path: hooks/c.Cmd, diagnostic: acif.hook.platform_filename_inferred}

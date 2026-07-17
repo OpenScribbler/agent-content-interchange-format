@@ -1,0 +1,121 @@
+# ACIF conformance vectors — TV-INSTALL-* ([ACIF-INSTALL] §6–§11, Appendix B)
+# Entry-point resolution over the install-target matrix. Matrix-pinned
+# vectors resolve against the published conformance/install-entry-points.yaml
+# rows; grammar and disposition vectors supply a fully-formed `entry`
+# override per PROTOCOL §4.14. Normative.
+
+- id: TV-INSTALL-a
+  spec: "[ACIF-INSTALL] §6, §8.3"
+  harness: static
+  description: multiplicity and write-target selection — copilot-cli agent resolves three rows, order preserved, first current row per scope is the write target
+  input:
+    provider: copilot-cli
+    content_type: agent
+    content_name: reviewer
+    home_dir: /home/u
+    project_root: /proj
+  expect:
+    targets:
+      - {scope: user, path: /home/u/.github/agents/reviewer.md, layout: single_file, status: current, write_target: true}
+      - {scope: project, path: /proj/.copilot/agents/reviewer.md, layout: single_file, status: current, write_target: true}
+      - {scope: project, path: /proj/.github/agents/reviewer.md, layout: single_file, status: current, write_target: false}
+
+- id: TV-INSTALL-b
+  spec: "[ACIF-INSTALL] §9"
+  harness: static
+  description: layout coverage — all three layouts across all six content types (six-coequal witness)
+  input:
+    cases:
+      - {provider: claude-code, content_type: agent, content_name: helper, home_dir: /h, project_root: /p, scope: user}
+      - {provider: factory-droid, content_type: command, content_name: deploy, home_dir: /h, project_root: /p, scope: project}
+      - {provider: claude-code, content_type: hook, content_name: guard, home_dir: /h, project_root: /p, scope: user}
+      - {provider: kiro, content_type: mcp_config, content_name: search, home_dir: /h, project_root: /p, scope: project}
+      - {provider: cursor, content_type: rule, content_name: style, home_dir: /h, project_root: /p, scope: project}
+      - {provider: gemini-cli, content_type: skill, content_name: review, home_dir: /h, project_root: /p, scope: user}
+  expect:
+    case_1:
+      targets:
+        - {scope: user, path: /h/.claude/agents/helper.md, layout: single_file, status: current, write_target: true}
+    case_2:
+      targets:
+        - {scope: project, path: /p/.factory/commands/deploy.md, layout: single_file, status: current, write_target: true}
+    case_3:
+      targets:
+        - {scope: user, path: /h/.claude/settings.json, layout: merged_into_shared_file, status: current, write_target: true}
+    case_4:
+      targets:
+        - {scope: project, path: /p/.kiro/settings/mcp.json, layout: merged_into_shared_file, status: current, write_target: true}
+    case_5:
+      targets:
+        - {scope: project, path: /p/.cursor/rules/style.mdc, layout: single_file, status: current, write_target: true}
+        - {scope: project, path: /p/.cursorrules, layout: merged_into_shared_file, status: current, write_target: false}
+    case_6:
+      targets:
+        - {scope: user, path: /h/.gemini/skills/review/, layout: directory_of_files, status: current, write_target: true}
+        - {scope: user, path: /h/.agents/skills/review/, layout: directory_of_files, status: current, write_target: false}
+
+- id: TV-INSTALL-c
+  spec: "[ACIF-INSTALL] §8.2, §13"
+  harness: static
+  description: content-name validity predicate — separator, backslash, dot-segment, and empty names reject before path formation
+  input:
+    variants:
+      - {provider: claude-code, content_type: command, content_name: "a/b", home_dir: /h, project_root: /p}
+      - {provider: claude-code, content_type: command, content_name: "a\\b", home_dir: /h, project_root: /p}
+      - {provider: claude-code, content_type: command, content_name: "..", home_dir: /h, project_root: /p}
+      - {provider: claude-code, content_type: command, content_name: "", home_dir: /h, project_root: /p}
+  expect:
+    error: acif.install.content_name_invalid
+
+- id: TV-INSTALL-d
+  spec: "[ACIF-INSTALL] §8.1"
+  harness: static
+  description: placeholder totality — a row token outside the closed grammar refuses the write direction
+  input:
+    provider: claude-code
+    content_type: command
+    content_name: deploy
+    home_dir: /h
+    project_root: /p
+    entry: {scope: user, path_template: "~/.claude/commands/<unknown-variant>/<content-name>.md", layout: single_file, status: current}
+  expect:
+    error: acif.install.placeholder_unrecognized
+
+- id: TV-INSTALL-e
+  spec: "[ACIF-INSTALL] §11, §12"
+  harness: static
+  description: disposition lanes — no_entry_point and scope_unavailable refuse with pinned params; supersession warns and proceeds
+  input:
+    cases:
+      - {provider: windsurf, content_type: hook, content_name: guard, home_dir: /h, project_root: /p}
+      - {provider: kiro, content_type: rule, content_name: style, home_dir: /h, project_root: /p, scope: user}
+      - {provider: claude-code, content_type: command, content_name: deploy, home_dir: /h, project_root: /p,
+         entry: {scope: user, path_template: "~/.claude/commands/<content-name>.md", layout: single_file, status: superseded}}
+  expect:
+    case_1: {error: acif.install.no_entry_point}
+    case_2: {error: acif.install.scope_unavailable, params: {available_scopes: [project]}}
+    case_3:
+      targets:
+        - {scope: user, path: /h/.claude/commands/deploy.md, layout: single_file, status: superseded, write_target: false}
+      diagnostic: acif.install.entry_point_superseded
+
+- id: TV-INSTALL-f
+  spec: "[ACIF-INSTALL] §8.3"
+  harness: static
+  description: anchor resolution — home-anchored, project-anchored, and absolute managed templates resolve against invocation-supplied roots
+  input:
+    cases:
+      - {provider: pi, content_type: hook, content_name: tracer, home_dir: /home/dev, project_root: /work/repo, scope: user}
+      - {provider: pi, content_type: hook, content_name: tracer, home_dir: /home/dev, project_root: /work/repo, scope: project}
+      - {provider: claude-code, content_type: agent, content_name: auditor, home_dir: /home/dev, project_root: /work/repo,
+         entry: {scope: managed, path_template: "/etc/acme/agents/<content-name>.md", layout: single_file, status: current}}
+  expect:
+    case_1:
+      targets:
+        - {scope: user, path: /home/dev/.pi/agent/extensions/tracer.ts, layout: single_file, status: current, write_target: true}
+    case_2:
+      targets:
+        - {scope: project, path: /work/repo/.pi/extensions/tracer.ts, layout: single_file, status: current, write_target: true}
+    case_3:
+      targets:
+        - {scope: managed, path: /etc/acme/agents/auditor.md, layout: single_file, status: current, write_target: true}

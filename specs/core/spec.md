@@ -27,6 +27,7 @@ The six content types are co-equal: every cross-cutting mechanism in this docume
 | L2 | [ACIF-PUBLISHER] | The two-section published record, `publisher_section`, frontmatter CI reconciliation, pack records |
 | L3 | [ACIF-REGISTRY] | `registry_section`, registry-computed projections, freshness, `source_uri` |
 | L4 | [ACIF-RENDER] | Deterministic canonical→provider render-back framework |
+| L5 | [ACIF-INSTALL] | Provider install-target matrix and the install-tool contract |
 
 Dependency direction: every other ACIF document depends normatively on this one. This document depends on no other ACIF document.
 

@@ -53,6 +53,7 @@ are co-equal and are the units that should be portable.
 | L2 | [`specs/publisher-spec/`](specs/publisher-spec/spec.md) — **[ACIF-PUBLISHER]** | Two-section published record, `publisher_section` + `metadata_hash`, frontmatter reconciliation, pack model + inference algorithm |
 | L3 | [`specs/registry-spec/`](specs/registry-spec/spec.md) — **[ACIF-REGISTRY]** | `registry_section` schema, change-signal surfaces, projections, `source_uri` pipeline, freshness model |
 | L4 | [`specs/render-back/`](specs/render-back/spec.md) — **[ACIF-RENDER]** | Deterministic render function, fidelity classes, degradation diagnostics, round-trip bounds |
+| L5 | [`specs/install-targets/`](specs/install-targets/spec.md) — **[ACIF-INSTALL]** | Provider install-target matrix, path-template grammar, scope/layout enums, shared-file merge contract |
 
 Each layer is independently adoptable; every document declares its
 dependencies and conformance classes explicitly.
@@ -101,6 +102,7 @@ specs/
   publisher-spec/        # [ACIF-PUBLISHER] (L2)
   registry-spec/         # [ACIF-REGISTRY]  (L3)
   render-back/           # [ACIF-RENDER]    (L4)
+  install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
 SHAPE.md                 # historical design record (Decisions #1–#34)
 panel/                   # panel consensus records behind the decisions

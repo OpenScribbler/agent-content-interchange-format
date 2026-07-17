@@ -139,7 +139,7 @@ install_scope_capabilities:
   managed: {supported: false, source: publisher_claim}
 ```
 
-`source` ∈ `{canonical, publisher_claim, install_context}` — derived from the canonical body, asserted by the publisher unverified, or determined by the install mechanism. Without the tag, consumers cannot distinguish a derived scope from a claim; emitting an entry without `source` is non-conformant (`acif.registry.provenance_tag_missing`). Provider-matrix facts (e.g., hierarchical loading) do not belong here — none of the three tags can honestly source one; they live in §8.4.
+`source` ∈ `{canonical, publisher_claim, install_context}` — derived from the canonical body, asserted by the publisher unverified, or determined by the install mechanism. Without the tag, consumers cannot distinguish a derived scope from a claim; emitting an entry without `source` is non-conformant (`acif.registry.provenance_tag_missing`). Provider-matrix facts (e.g., hierarchical loading) do not belong here — none of the three tags can honestly source one; they live in §8.4. An entry tagged `source: install_context` derives from the install-target matrix ([ACIF-INSTALL] Appendix A.2, whose §7 pins the total mapping between the two scope vocabularies); where such an entry and the matrix disagree, the matrix governs and the entry has a bug.
 
 ## 9. Cross-Reference Resolution
 

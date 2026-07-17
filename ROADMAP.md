@@ -111,3 +111,27 @@ An OPTIONAL, informative `registry_section` field mirroring the external attesta
 **Binding obligations if it lands:** OPTIONAL and informative only, carrying an explicit "may be stale; MUST NOT be a staleness input" disclaimer (parallel to `publisher_metadata`); spec-purist's absence semantics govern (absent = drops out of any consumer computation — never "expired," never a freshness extension); Decision #34's no-blending rule is unaffected. Revisit alongside the content-revocation feed (Decision #33 roadmap) — a revocation signal addresses the freeze-surface concern more directly than any expiry heuristic.
 
 **What it would take to revisit:** Offline/air-gapped consumers with attestation-based policies materialize as a real deployment class.
+
+### Install-target OS row dimension
+
+Entry-point rows ([ACIF-INSTALL] Appendix A.2) carry no per-OS dimension: every 0.1 row resolves on every OS through the `~`/project anchor rules.
+
+**Why deferred:** exactly one surveyed location needs it — cline's MCP settings file lives under the host editor's per-OS application-data root (`%APPDATA%` / `~/Library/Application Support` / `~/.config`), which no 0.1 template can carry. One witness is not enough to shape a dimension; the row was omitted instead ([ACIF-INSTALL] A.2's informative note names it).
+
+**What it would take to revisit:** a second provider ships an OS-divergent location, or an install tool needs cline's MCP row badly enough to justify the dimension. The shape is pre-named in [ACIF-INSTALL] §8.3: an `os` row field over the closed [ACIF-HOOK] §7.1 enum.
+
+### Byte-level shared-file merge pinning
+
+[ACIF-INSTALL] §10 pins the behavioral merge contract (structured encoding, preservation, idempotence, un-merge) but not byte-level per-format merge rules — exact anchor delimiters for markdown monoliths, member ordering on insert.
+
+**Why deferred:** two conforming tools producing byte-different-but-contract-satisfying shared files is tolerable; pinning bytes per target format is a large surface with no current cross-tool interop demand.
+
+**What it would take to revisit:** two install tools need to hand off management of the same shared file, or a verification tool needs byte-reproducible merged files.
+
+### Version-conditional install-target rows
+
+Each (provider, content type) publishes one row set, pinned to current released behavior; the informative `as_of` names the survey basis ([ACIF-INSTALL] Appendix A.1).
+
+**Why deferred:** version-conditional rows (per-provider-version applicability ranges) add a dimension the row-data amendment lane makes mostly unnecessary — a moved path is amended on observation and the old row retained as `superseded`.
+
+**What it would take to revisit:** a provider maintains two live release channels with different locations, so "current released behavior" stops being singular.

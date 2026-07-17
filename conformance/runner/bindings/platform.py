@@ -540,3 +540,24 @@ def tv_platform_v(vector: Vector, session: Any, ctx: Any):
     assert_value(result, "source", "canonical_scripts", exp["canonical_scripts"], _scripts(response), response)
     assert_result_field(result, "source", response, "provenance", exp["provenance"])
     return result
+
+
+@binding("TV-PLATFORM-w")
+def tv_platform_w(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for idx, case in enumerate(inp["cases"], start=1):
+        file = case["file"]
+        content = _default_file_content(file)
+        response = send(result, session, ctx, _ingest_provider(ctx, "filename-extension-convention", case, files={file: content}))
+        expected = exp[f"case_{idx}"]
+        first_script = _first_script(response)
+        observed_os = first_script.get("os", ABSENT) if isinstance(first_script, dict) else ABSENT
+        assert_value(result, f"case_{idx}", "os", expected["os"], observed_os, response)
+        # DERIVATION: [ACIF-HOOK] §7.4 — folding applies to the extension
+        # comparison only; the canonical path carries the source bytes.
+        observed_path = first_script.get("path", ABSENT) if isinstance(first_script, dict) else ABSENT
+        assert_value(result, f"case_{idx}", "path", expected["path"], observed_path, response)
+        assert_diagnostic(result, f"case_{idx}", response, expected["diagnostic"])
+    return result

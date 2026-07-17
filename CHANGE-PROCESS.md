@@ -72,6 +72,36 @@ without a vector is legal but unpinned — prose the suite cannot yet
 contradict, and invisible to report-currency comparison until its
 vector lands.
 
+### Row-data amendments — install-target rows (land on observation)
+
+A correction to the install-target matrix ([ACIF-INSTALL] Appendix A.2):
+a provider moved, added, or retired a location, so a published row no
+longer corresponds to the provider's living behavior. These are neither
+Class A (they touch a normative ACIF appendix and its export) nor
+Class B (they may supersede an existing row, which Class B's
+additive-only rule forbids) nor Class C (they mint no vocabulary — the
+grammar, scope, and layout enums are untouched).
+
+The lane exists because install paths are vendor-controlled facts with
+no totality net: a moved directory fires no diagnostic on any content —
+nothing in an item's bytes goes wrong when a provider relocates its
+config dir — so the signal path is observation (a capmon path probe, a
+filed report, a release note), and the open window is genuinely unsafe
+in a way a Class B window is not: every conforming install tool writes
+to the stale location with normative confidence until the amendment
+lands.
+
+Accordingly: row-data amendments land **on observation, with no batch
+window and no reviewer subset**. The evidence standard is the
+observation itself, recorded in the amended row's `as_of`. A retired
+location moves to `status: superseded` and is never deleted
+([ACIF-INSTALL] §12). Rows never move canonical bytes (nothing in the
+matrix participates in any hash), so no vector expectation can flip;
+the suite impact is confined to the install-entry-points export and any
+matrix-pinned vector fixtures, inventoried in the manifest note. A
+change to the descriptor's grammar or enums is not a row-data
+amendment; it is Class C.
+
 ### Class C — vocabulary changes (full design treatment)
 
 A new canonical concept: a new enum member, a new canonical key, a new

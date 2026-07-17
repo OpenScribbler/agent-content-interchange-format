@@ -120,6 +120,8 @@ An L1 revision may add rows to its own render section without amending this docu
 
 Which providers carry which features — the input to choosing degradation paths — is observational capability-matrix data, not normative content of this document set. The capmon project publishes per-provider capability facts conforming to ACIF's canonical vocabularies (each published canonical key reserving a `spec_ref` into these documents); a renderer or registry consuming such a matrix gets its degradation predictions from living data rather than from spec snapshots. Nothing in a capability matrix relaxes a vocabulary table: a matrix says what a provider supports, never what a name means.
 
+The observational polarity is specific to *capability* facts, whose consumers warn and predict. Provider *placement* facts — where a provider reads a content type on disk — ground a conforming actor's MUST-behavior and are therefore frozen normative rows ([ACIF-INSTALL] Appendix A.2, with its own maintenance lane); the two matrices differ in polarity because they differ in what a stale row breaks.
+
 ## 12. Error Identifiers
 
 This document mints no error identifiers: every render diagnostic and refuse identifier is owned by the L1 specification that defines the condition (§7). This is deliberate — a degradation's meaning is per-type, and centralizing the identifiers here would put their conditions and their definitions in different documents.

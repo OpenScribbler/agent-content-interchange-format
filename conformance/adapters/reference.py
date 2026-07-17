@@ -120,7 +120,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
                 "implementation": "acif-bootstrap",
                 "version": "0.1",
                 "adapter_protocol": 1,
-                "scopes": ["core", "hook", "publisher", "registry"],
+                "scopes": ["core", "hook", "publisher", "registry", "install"],
             }
         )
     inp = request.get("input")
@@ -134,6 +134,8 @@ def handle(request: dict[str, Any]) -> dict[str, Any]:
         return handle_render(inp)
     if op == "evaluate_install":
         return handle_evaluate_install(inp)
+    if op == "resolve_install_targets":
+        return handle_resolve_install_targets(inp)
     if op == "reconcile_frontmatter":
         return handle_reconcile_frontmatter(inp)
     if op == "resolve_reference":
@@ -507,6 +509,79 @@ def _os_coverage(hook: dict[str, Any]) -> dict[str, Any]:
     if not os_values:
         os_values.update(["darwin", "linux", "windows"])
     return {"os": sorted(os_values), "os_divergent": constrained_count > 1}
+
+
+INSTALL_MATRIX_PATH = ROOT / "install-entry-points.yaml"
+_install_matrix_cache: dict[tuple[str, str], list[dict[str, Any]]] | None = None
+
+
+def _install_matrix() -> dict[tuple[str, str], list[dict[str, Any]]]:
+    global _install_matrix_cache
+    if _install_matrix_cache is not None:
+        return _install_matrix_cache
+    document = yaml.safe_load(INSTALL_MATRIX_PATH.read_text(encoding="utf-8"))
+    matrix: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for provider, types in (document.get("install_entry_points") or {}).items():
+        for ctype, entries in (types or {}).items():
+            matrix[(provider, ctype)] = [dict(entry) for entry in entries or []]
+    _install_matrix_cache = matrix
+    return matrix
+
+
+def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
+    content_name = inp.get("content_name")
+    if (
+        not isinstance(content_name, str)
+        or not content_name
+        or "/" in content_name
+        or "\\" in content_name
+        or "\x00" in content_name
+        or content_name in {".", ".."}
+    ):
+        raise SpecError("acif.install.content_name_invalid")
+    entry = inp.get("entry")
+    if isinstance(entry, dict):
+        rows = [dict(entry)]
+    else:
+        rows = [dict(row) for row in _install_matrix().get((_str(inp.get("provider")), _str(inp.get("content_type"))), [])]
+    if not rows:
+        raise SpecError("acif.install.no_entry_point")
+    requested_scope = inp.get("scope")
+    if isinstance(requested_scope, str):
+        available = sorted({row["scope"] for row in rows})
+        rows = [row for row in rows if row["scope"] == requested_scope]
+        if not rows:
+            raise SpecError(
+                "acif.install.scope_unavailable",
+                [{"id": "acif.install.scope_unavailable", "params": {"available_scopes": available}}],
+            )
+    targets: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
+    write_scopes: set[str] = set()
+    superseded_scopes: set[str] = set()
+    for row in rows:
+        template = str(row["path_template"])
+        for token in re.findall(r"<[^>]*>", template):
+            if token != "<content-name>":
+                raise SpecError("acif.install.placeholder_unrecognized")
+        substituted = template.replace("<content-name>", content_name)
+        if substituted.startswith("~/"):
+            path = _str(inp.get("home_dir")).rstrip("/") + substituted[1:]
+        elif substituted.startswith("/"):
+            path = substituted
+        else:
+            path = _str(inp.get("project_root")).rstrip("/") + "/" + substituted
+        write_target = row["status"] == "current" and row["scope"] not in write_scopes
+        if write_target:
+            write_scopes.add(row["scope"])
+        if row["status"] == "superseded":
+            superseded_scopes.add(row["scope"])
+        targets.append(
+            {"scope": row["scope"], "path": path, "layout": row["layout"], "status": row["status"], "write_target": write_target}
+        )
+    for scope in sorted(superseded_scopes - write_scopes):
+        diagnostics.append({"id": "acif.install.entry_point_superseded", "params": {"scope": scope}})
+    return ok({"targets": targets, "diagnostics": diagnostics})
 
 
 def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:

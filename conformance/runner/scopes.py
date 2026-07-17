@@ -8,7 +8,7 @@ import yaml
 from .report import STATUSES
 from .vectors import CatalogSet
 
-SCOPE_ORDER = ["core", "hook", "skill", "rule", "command", "agent", "mcp", "publisher", "registry", "render"]
+SCOPE_ORDER = ["core", "hook", "skill", "rule", "command", "agent", "mcp", "publisher", "registry", "render", "install"]
 L1_SCOPES = {"hook", "skill", "rule", "command", "agent", "mcp"}
 PREREQUISITES = {
     "hook": {"core"},
@@ -20,6 +20,7 @@ PREREQUISITES = {
     "publisher": {"core"},
     "registry": {"core"},
     "render": {"core"},
+    "install": {"core"},
 }
 STATUS_BLOCKERS = {"fail", "unsupported", "env-blocked", "harness-error"}
 

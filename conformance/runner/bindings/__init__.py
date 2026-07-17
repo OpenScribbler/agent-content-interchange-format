@@ -38,6 +38,7 @@ def load_all() -> None:
     importlib.import_module(__name__ + ".mcp")
     importlib.import_module(__name__ + ".render")
     importlib.import_module(__name__ + ".registry")
+    importlib.import_module(__name__ + ".install")
     _LOADED = True
 
 

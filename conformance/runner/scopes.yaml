@@ -50,6 +50,7 @@ hook:
   - TV-PLATFORM-t
   - TV-PLATFORM-u
   - TV-PLATFORM-v
+  - TV-PLATFORM-w
 skill:
   - TV-SKILL-a
   - TV-SKILL-b
@@ -193,3 +194,10 @@ registry:
   - TV-L3-b
   - TV-L3-c
   - TV-L3-d
+install:
+  - TV-INSTALL-a
+  - TV-INSTALL-b
+  - TV-INSTALL-c
+  - TV-INSTALL-d
+  - TV-INSTALL-e
+  - TV-INSTALL-f

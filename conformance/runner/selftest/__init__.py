@@ -32,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         ("capability-vocabulary sync", check_capability_vocabulary),
         ("diagnostic-ids sync", check_diagnostic_ids),
         ("source-mechanisms sync", check_source_mechanisms),
+        ("install-entry-points sync", check_install_entry_points),
         ("sabotage", check_sabotage),
     ]
     failures: list[str] = []
@@ -490,6 +491,86 @@ def check_source_mechanisms() -> None:
             errors.append(f"{kind}: token drift — yaml {sorted(declared.items())} != spec table {sorted(spec_tokens.items())}")
         if (entry.get("aliases") or {}) != spec_aliases:
             errors.append(f"{kind}: alias drift — yaml {entry.get('aliases')} != spec table {spec_aliases}")
+    if errors:
+        raise AssertionError("; ".join(errors))
+
+
+INSTALL_ROW_RE = re.compile(
+    r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*`([^`]+)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$"
+)
+INSTALL_SCOPES = {"user", "project", "managed"}
+INSTALL_LAYOUTS = {"single_file", "directory_of_files", "merged_into_shared_file"}
+INSTALL_STATUSES = {"current", "superseded"}
+INSTALL_TYPES = {"rule", "hook", "skill", "command", "agent", "mcp_config"}
+INSTALL_PLACEHOLDER_RE = re.compile(r"<[^>]*>")
+
+
+def check_install_entry_points() -> None:
+    """install-entry-points.yaml must match [ACIF-INSTALL] Appendix A.2 —
+    row set, field values, and order (order is normative precedence),
+    bidirectionally — and both must satisfy the [ACIF-INSTALL] §6–§9
+    structural rules: closed enums, closed placeholder grammar, the
+    (provider, content type, scope, path_template) uniqueness invariant,
+    and the pinned alphabetical group ordering. Spec-prose parsing happens
+    here, at the authority, so downstream copies diff against the yaml."""
+    path = CONFORMANCE_ROOT / "install-entry-points.yaml"
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    matrix = document.get("install_entry_points") if isinstance(document, dict) else None
+    if not isinstance(matrix, dict):
+        raise AssertionError("install-entry-points.yaml missing install_entry_points mapping")
+    spec_text = (CONFORMANCE_ROOT.parent / "specs" / "install-targets" / "spec.md").read_text(encoding="utf-8")
+    section = _spec_section(spec_text, r"^### A\.2 ")
+    if section is None:
+        raise AssertionError("no A.2 section found in [ACIF-INSTALL]")
+    spec_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    for line in section.splitlines():
+        match = INSTALL_ROW_RE.match(line.strip())
+        if match and match.group(1) != "Provider":
+            spec_rows.append(match.groups())
+    if not spec_rows:
+        raise AssertionError("A.2 table parsed zero rows")
+    yaml_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    errors: list[str] = []
+    providers = list(matrix)
+    if providers != sorted(providers):
+        errors.append("provider groups not alphabetical")
+    for provider, types in matrix.items():
+        type_keys = list(types)
+        if type_keys != sorted(type_keys):
+            errors.append(f"{provider}: content-type groups not alphabetical")
+        for ctype, entries in types.items():
+            if ctype not in INSTALL_TYPES:
+                errors.append(f"{provider}: unknown content type {ctype!r}")
+            for entry in entries:
+                yaml_rows.append(
+                    (provider, ctype, str(entry.get("scope")), str(entry.get("path_template")),
+                     str(entry.get("layout")), str(entry.get("status")), str(entry.get("as_of")))
+                )
+    seen: set[tuple[str, str, str, str]] = set()
+    for provider, ctype, scope, template, layout, status, _as_of in yaml_rows:
+        if scope not in INSTALL_SCOPES:
+            errors.append(f"{provider}/{ctype}: scope {scope!r} outside the closed enum")
+        if layout not in INSTALL_LAYOUTS:
+            errors.append(f"{provider}/{ctype}: layout {layout!r} outside the closed enum")
+        if status not in INSTALL_STATUSES:
+            errors.append(f"{provider}/{ctype}: status {status!r} outside the closed enum")
+        for token in INSTALL_PLACEHOLDER_RE.findall(template):
+            if token != "<content-name>":
+                errors.append(f"{provider}/{ctype}: placeholder {token!r} outside the closed grammar")
+        if layout == "merged_into_shared_file" and "<content-name>" in template:
+            errors.append(f"{provider}/{ctype}: merged_into_shared_file template carries <content-name>: {template!r}")
+        key = (provider, ctype, scope, template)
+        if key in seen:
+            errors.append(f"duplicate row {key}")
+        seen.add(key)
+    if spec_rows != yaml_rows:
+        spec_set, yaml_set = set(spec_rows), set(yaml_rows)
+        missing = spec_set - yaml_set
+        extra = yaml_set - spec_set
+        if missing or extra:
+            errors.append(f"row drift — in spec not yaml: {sorted(missing)[:3]}; in yaml not spec: {sorted(extra)[:3]}")
+        else:
+            errors.append("row order drift between A.2 table and yaml (order is normative precedence)")
     if errors:
         raise AssertionError("; ".join(errors))
 

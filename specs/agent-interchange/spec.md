@@ -127,7 +127,7 @@ Each predicate produces `{derivable-true, derivable-false}` per the boolean disc
 
 ### 9.2 OUT-OF-SCOPE-AT-L1 keys *(informative rationale)*
 
-`definition_format` is a meta-property: the canonical body *is* the format, and the source-format zoo is an [ACIF-RENDER] concern. `invocation_patterns` (@-mention vs slash vs auto-delegate) is provider picker UX — authors write a name and description; the provider chooses the surface; prose leakage of invocation intent is soft preference, not structured declaration. `agent_scopes` is install-location-determined and surfaces through `install_scope_capabilities` ([ACIF-REGISTRY]). Under the out-of-band guardrail ([ACIF-CORE] §9.3) none is `requires`-eligible.
+`definition_format` is a meta-property: the canonical body *is* the format, and the source-format zoo is an [ACIF-RENDER] concern. `invocation_patterns` (@-mention vs slash vs auto-delegate) is provider picker UX — authors write a name and description; the provider chooses the surface; prose leakage of invocation intent is soft preference, not structured declaration. `agent_scopes` is install-location-determined: scope *compatibility* surfaces through `install_scope_capabilities` ([ACIF-REGISTRY]), and the on-disk locations themselves live in the provider install-target matrix ([ACIF-INSTALL] Appendix A.2). Under the out-of-band guardrail ([ACIF-CORE] §9.3) none is `requires`-eligible.
 
 ### 9.3 Orphan keys
 

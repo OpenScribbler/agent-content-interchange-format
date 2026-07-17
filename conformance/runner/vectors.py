@@ -19,6 +19,7 @@ CATALOG_ORDER = [
     "render.yaml",
     "uri.yaml",
     "fresh.yaml",
+    "install.yaml",
 ]
 
 

@@ -60,8 +60,8 @@ note); the runner refuses any other value.
 
 `scopes` is the set of conformance scopes the IUT claims, drawn from the
 closed enum: `core`, `hook`, `skill`, `rule`, `command`, `agent`, `mcp`,
-`publisher`, `registry`, `render`. Scope prerequisites and the normative
-scope→vector mapping live in `scopes.yaml` beside the runner
+`publisher`, `registry`, `render`, `install`. Scope prerequisites and the
+normative scope→vector mapping live in `scopes.yaml` beside the runner
 ([DESIGN.md] §8). Claim strings use these tokens verbatim.
 
 ## 3. Requests and responses
@@ -319,6 +319,18 @@ Publisher-side frontmatter CI reconciliation ([ACIF-PUBLISHER] §7).
 (`acif.publisher.frontmatter_conflict` accompanies `block` and
 `overwrite`-with-log outcomes).
 
+### 4.14 `resolve_install_targets`
+
+Entry-point resolution over the install-target matrix ([ACIF-INSTALL]
+§6–§9, §11). `input`: `provider`, `content_type`, `content_name`,
+`home_dir`, `project_root`, optional `scope`, optional `entry` (a
+fully-formed entry-point row the vector supplies, overriding the matrix
+— grammar and disposition vectors use it) → `result`: `targets` (ordered
+list of `{scope, path, layout, status, write_target}` with `path` fully
+resolved), `diagnostics`. Refusals surface as errors with the
+`acif.install.*` identifier; the supersession warn rides `diagnostics`
+alongside a populated `targets`.
+
 ## Appendix A — Pinned diagnostic params
 
 Populated in lockstep with the bindings; the Appendix-A payload-pin
@@ -336,6 +348,7 @@ Payload-pinned (a vector asserts params content):
 | `acif.registry.reference_unresolved` | `declared_name` (the declared reference string as written) | TV-AGENT-j |
 | `acif.registry.stale` | `expires` (the effective `E_sidecar` as an RFC 3339 timestamp; compared as an instant, not byte-wise — any valid serialization of the instant passes) | TV-FRESH-a |
 | `acif.registry.stale` | `expires` (as above; here `E_sidecar` is the computed default window, `fetched_at + 72h`) | TV-FRESH-h |
+| `acif.install.scope_unavailable` | `available_scopes` (the scopes that do have rows for the pair, sorted) | TV-INSTALL-e |
 
 Identifier-only (vectors assert presence of the id; `params` MAY be empty
 and is not asserted): `acif.command.placeholder_named_arg_collapsed`,
