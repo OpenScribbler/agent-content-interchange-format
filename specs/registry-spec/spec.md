@@ -126,7 +126,23 @@ An advisory signal that cannot meet all four constraints MUST NOT be emitted.
 
 ### 8.4 `provider_capability_coverage`
 
-Registries MUST surface, per canonical capability key an L1 specification disposes as a provider-matrix fact, the set of providers supporting it — a shared capability-matrix fact computed once, not per-item. Rows in 0.1: `file_imports`, `hierarchical_loading`, `cross_provider_recognition`, `auto_memory` (rules); `argument_substitution`, `builtin_commands` (commands); per-event provider recognition (`event_provider_coverage`, hooks). Proxy mechanisms MUST NOT be recorded as support. *(Informative: matrix contents are observational snapshot data; registries should publish the matrix's provenance — source and crawl date — alongside the rows so consumers can judge staleness.)*
+Registries MUST surface, per canonical capability key an L1 specification disposes as a provider-matrix fact, the set of providers supporting it — a shared capability-matrix fact computed once, not per-item. Rows in 0.1: `file_imports`, `hierarchical_loading`, `cross_provider_recognition`, `auto_memory` (rules); `argument_substitution`, `builtin_commands` (commands); per-event provider recognition (`event_provider_coverage`, hooks). Proxy mechanisms MUST NOT be recorded as support.
+
+Matrix contents are observational snapshot data, and a registry emitting this projection MUST publish the matrix's provenance as two members of the projection value itself, exactly once per matrix:
+
+```yaml
+provider_capability_coverage:
+  basis: "provider documentation survey, 2026-07"   # free text — NOT the §8.5 source enum
+  computed_at: "2026-07-10T09:00:00Z"               # RFC 3339, explicit offset
+  hierarchical_loading: [...]                       # per-key rows follow
+```
+
+The member names `basis` and `computed_at` are reserved within this projection; no canonical capability key uses them.
+
+- `basis` — a non-empty free-text string naming the observation basis the matrix was computed from (a provider build, provider documentation, or a named survey). It is not the §8.5 `source` enum. Validity predicate: one or more bytes, none in 0x00–0x1F or 0x7F; the predicate is evaluated over the raw value — no trimming or case folding is applied first.
+- `computed_at` — the instant the matrix was computed, as an RFC 3339 timestamp with an explicit offset, mirroring the §11.2 offset discipline. `computed_at` is not a freshness field: it never feeds the §11.2 predicate, and a malformed `computed_at` discloses here — never as `acif.registry.timestamp_offset_missing`. It is deliberately distinct from the envelope's `fetched_at`: the matrix is computed once, not per-item, so a conforming `computed_at` may legitimately trail every record's `fetched_at`.
+
+A projection emitted with either member absent is non-conformant (`acif.registry.coverage_provenance_missing` — the §8.4 mirror of §8.5's `provenance_tag_missing`); a projection whose member is present but fails its predicate is non-conformant (`acif.registry.coverage_provenance_invalid`). *(Informative: 0.1 defines no matrix staleness predicate — the §11.2 predicate applies to items, not to this projection; `computed_at` exists so a consumer can see how old the matrix is, not to mechanize a verdict. This observational provenance belongs to this projection alone: the deterministic exports published under `conformance/` are functions of their git revision and carry no crawl-date or observational provenance ([ACIF-INSTALL] §12); this section is not a template for them.)*
 
 ### 8.5 `install_scope_capabilities`
 
@@ -256,6 +272,8 @@ Staleness is a state flag on the warn lane: consumers SHOULD warn on stale items
 | `acif.registry.reference_unresolved` | diagnostic (MUST-emit) | Cross-reference resolution lands `unresolved` or `revoked`; params: `declared_name` (the declared reference string as written) (§9) |
 | `acif.registry.method_stamp_missing` | reject (verdict) | Advisory-tier entry emitted without its REQUIRED method-version stamp (§8.3) |
 | `acif.registry.provenance_tag_missing` | reject (verdict) | `install_scope_capabilities` entry emitted without its `source` tag (§8.5) |
+| `acif.registry.coverage_provenance_missing` | reject (verdict) | `provider_capability_coverage` projection emitted with `basis` or `computed_at` absent (§8.4) |
+| `acif.registry.coverage_provenance_invalid` | reject (verdict) | `provider_capability_coverage` provenance member present but failing its §8.4 predicate |
 | `acif.registry.timestamp_offset_missing` | reject (verdict) | Freshness field timestamp lacks an explicit offset (§11.2) |
 
 Rows classed `reject (verdict)` follow the minted-ahead-of-assertion discipline defined at [ACIF-CORE] §8.7: the condition is conformance-tested today through the `{conformant: false}` verdict, and the identifier value is unasserted under `adapter_protocol: 1`.
