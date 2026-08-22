@@ -437,10 +437,10 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 |---|---|
 | `before_tool_execute` | claude-code `PreToolUse` · gemini-cli `BeforeTool` · copilot-cli `preToolUse` · kiro `preToolUse` · cursor `PreToolUse` · opencode `tool.execute.before` · vs-code-copilot `PreToolUse` · factory-droid `PreToolUse` · pi `tool_call` |
 | `after_tool_execute` | claude-code `PostToolUse` · gemini-cli `AfterTool` · copilot-cli `postToolUse` · kiro `postToolUse` · cursor `PostToolUse` · opencode `tool.execute.after` · vs-code-copilot `PostToolUse` · factory-droid `PostToolUse` · pi `tool_result` |
-| `before_prompt` | claude-code `UserPromptSubmit` · gemini-cli `BeforeAgent` · copilot-cli `userPromptSubmitted` · kiro `userPromptSubmit` · cursor `UserPromptSubmit` · windsurf `pre_user_prompt` · vs-code-copilot `UserPromptSubmit` · factory-droid `UserPromptSubmit` · pi `input` |
-| `agent_stop` | claude-code `Stop` · gemini-cli `AfterAgent` · kiro `stop` · copilot-cli `agentStop` · cursor `Stop` · windsurf `post_cascade_response` · opencode `session.idle` · vs-code-copilot `Stop` · factory-droid `Stop` · pi `agent_end` |
-| `session_start` | claude-code `SessionStart` · gemini-cli `SessionStart` · copilot-cli `sessionStart` · kiro `agentSpawn` · cursor `SessionStart` · windsurf `session_start` · opencode `session.created` · vs-code-copilot `SessionStart` · factory-droid `SessionStart` · pi `session_start` |
-| `session_end` | claude-code `SessionEnd` · gemini-cli `SessionEnd` · copilot-cli `sessionEnd` · cursor `SessionEnd` · windsurf `session_end` · factory-droid `SessionEnd` · pi `session_shutdown` |
+| `before_prompt` | claude-code `UserPromptSubmit` · gemini-cli `BeforeAgent` · copilot-cli `userPromptSubmitted` · kiro `userPromptSubmit` · cursor `UserPromptSubmit` · devin `pre_user_prompt` · vs-code-copilot `UserPromptSubmit` · factory-droid `UserPromptSubmit` · pi `input` |
+| `agent_stop` | claude-code `Stop` · gemini-cli `AfterAgent` · kiro `stop` · copilot-cli `agentStop` · cursor `Stop` · devin `post_cascade_response` · opencode `session.idle` · vs-code-copilot `Stop` · factory-droid `Stop` · pi `agent_end` |
+| `session_start` | claude-code `SessionStart` · gemini-cli `SessionStart` · copilot-cli `sessionStart` · kiro `agentSpawn` · cursor `SessionStart` · devin `session_start` · opencode `session.created` · vs-code-copilot `SessionStart` · factory-droid `SessionStart` · pi `session_start` |
+| `session_end` | claude-code `SessionEnd` · gemini-cli `SessionEnd` · copilot-cli `sessionEnd` · cursor `SessionEnd` · devin `session_end` · factory-droid `SessionEnd` · pi `session_shutdown` |
 | `before_compact` | claude-code `PreCompact` · gemini-cli `PreCompress` · cursor `PreCompact` · vs-code-copilot `PreCompact` · factory-droid `PreCompact` · pi `session_before_compact` |
 | `notification` | claude-code `Notification` · gemini-cli `Notification` |
 | `subagent_start` | claude-code `SubagentStart` · cursor `SubagentStart` · vs-code-copilot `SubagentStart` · factory-droid `SubagentStart` · pi `before_agent_start` |
@@ -451,7 +451,7 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 | `after_compact` | claude-code `PostCompact` |
 | `instructions_loaded` | claude-code `InstructionsLoaded` |
 | `config_change` | claude-code `ConfigChange` |
-| `worktree_create` | claude-code `WorktreeCreate` · windsurf `post_setup_worktree` |
+| `worktree_create` | claude-code `WorktreeCreate` · devin `post_setup_worktree` |
 | `worktree_remove` | claude-code `WorktreeRemove` |
 | `elicitation` | claude-code `Elicitation` |
 | `elicitation_result` | claude-code `ElicitationResult` |
@@ -466,7 +466,7 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 | `file_deleted` | kiro `File Delete` |
 | `before_task` | kiro `Pre Task Execution` |
 | `after_task` | kiro `Post Task Execution` |
-| `transcript_export` | windsurf `post_cascade_response_with_transcript` |
+| `transcript_export` | devin `post_cascade_response_with_transcript` |
 | `turn_start` | pi `turn_start` |
 | `turn_end` | pi `turn_end` |
 | `model_select` | pi `model_select` |

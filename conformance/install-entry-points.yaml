@@ -26,6 +26,11 @@
 # "Row-data amendments"): land on observation, supersede, never delete.
 # Grammar/enum changes are Class C. Providers are keyed by the slugs the
 # normative appendices already use ([ACIF-HOOK] Appendix A/B columns).
+# A vendor rename re-keys a provider's rows under the same lane; it is
+# not an observation about any location, so rows carry across unchanged
+# (a provider MAY keep its former name inside a path template). A rename
+# appears here as one key leaving and another arriving — read it as a
+# rename, never as a retirement plus an unrelated addition.
 
 install_entry_points:
   amp:
@@ -129,6 +134,34 @@ install_entry_points:
     skill:
       - {scope: user, path_template: "~/.cursor/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
       - {scope: project, path_template: ".cursor/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
+  devin:
+    agent:
+      - {scope: project, path_template: ".devin/agents/<content-name>.md", layout: single_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+    command:
+      - {scope: user, path_template: "~/.codeium/windsurf/global_workflows/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
+      - {scope: project, path_template: ".windsurf/workflows/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
+    hook:
+      - {scope: user, path_template: "~/.config/devin/config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".devin/hooks.v1.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".devin/config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+    mcp_config:
+      - {scope: user, path_template: "~/.config/devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+    rule:
+      - {scope: user, path_template: "~/.config/devin/AGENTS.md", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: user, path_template: "~/.devin/rules/<content-name>.md", layout: single_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: user, path_template: "~/.devin/global_rules.md", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".devin/rules/<content-name>.md", layout: single_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".devin/global_rules.md", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".windsurf/rules/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
+      - {scope: project, path_template: ".windsurfrules", layout: merged_into_shared_file, status: current, as_of: "syllago 2026-07 survey"}
+    skill:
+      - {scope: user, path_template: "~/.config/devin/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: user, path_template: "~/.codeium/windsurf/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
+      - {scope: user, path_template: "~/.agents/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
+      - {scope: project, path_template: ".devin/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".windsurf/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
+      - {scope: project, path_template: ".agents/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
   factory-droid:
     agent:
       - {scope: user, path_template: "~/.factory/droids/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
@@ -215,16 +248,4 @@ install_entry_points:
       - {scope: user, path_template: "~/.roo/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
       - {scope: user, path_template: "~/.agents/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
       - {scope: project, path_template: ".roo/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
-      - {scope: project, path_template: ".agents/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
-  windsurf:
-    command:
-      - {scope: user, path_template: "~/.codeium/windsurf/global_workflows/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
-      - {scope: project, path_template: ".windsurf/workflows/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
-    rule:
-      - {scope: project, path_template: ".windsurf/rules/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
-      - {scope: project, path_template: ".windsurfrules", layout: merged_into_shared_file, status: current, as_of: "syllago 2026-07 survey"}
-    skill:
-      - {scope: user, path_template: "~/.codeium/windsurf/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
-      - {scope: user, path_template: "~/.agents/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
-      - {scope: project, path_template: ".windsurf/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}
       - {scope: project, path_template: ".agents/skills/<content-name>/", layout: directory_of_files, status: current, as_of: "syllago 2026-07 survey"}

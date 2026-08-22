@@ -87,7 +87,7 @@
   description: disposition lanes — no_entry_point and scope_unavailable refuse with pinned params; supersession warns and proceeds
   input:
     cases:
-      - {provider: windsurf, content_type: hook, content_name: guard, home_dir: /h, project_root: /p}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p}
       - {provider: kiro, content_type: rule, content_name: style, home_dir: /h, project_root: /p, scope: user}
       - {provider: claude-code, content_type: command, content_name: deploy, home_dir: /h, project_root: /p,
          entry: {scope: user, path_template: "~/.claude/commands/<content-name>.md", layout: single_file, status: superseded}}

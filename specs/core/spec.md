@@ -375,15 +375,15 @@ Canonical tool names are snake_case and provider-neutral. Canonicalization rewri
 
 | Canonical | Provider mappings (`provider → native name`) |
 |---|---|
-| `file_read` | claude-code `Read` · gemini-cli `read_file` · copilot-cli `view` · kiro `read` · opencode `read` · vs-code-copilot `Read` · zed `read_file` · roo-code `read_file` · cursor `read_file` · windsurf `view_line_range` · codex `read_file` · factory-droid `Read` · pi `read` |
-| `file_write` | claude-code `Write` · gemini-cli `write_file` · copilot-cli `create` · kiro `fs_write` · opencode `write` · vs-code-copilot `Write` · zed `edit_file` · roo-code `write_to_file` · cursor `edit_file` · windsurf `write_to_file` · codex `apply_patch` · factory-droid `Create` · pi `write` |
-| `file_edit` | claude-code `Edit` · gemini-cli `replace` · copilot-cli `edit` · kiro `fs_write` · opencode `edit` · vs-code-copilot `Edit` · zed `edit_file` · roo-code `replace_in_file` · cursor `edit_file` · windsurf `edit_file` · codex `apply_patch` · factory-droid `Edit` · pi `edit` |
-| `shell` | claude-code `Bash` · gemini-cli `run_shell_command` · copilot-cli `bash` · kiro `shell` · opencode `bash` · vs-code-copilot `Bash` · zed `terminal` · roo-code `execute_command` · cursor `run_terminal_cmd` · windsurf `run_command` · codex `shell` · factory-droid `Execute` · pi `bash` |
-| `find` | claude-code `Glob` · gemini-cli `glob` · copilot-cli `glob` · kiro `glob` · opencode `glob` · vs-code-copilot `Glob` · zed `find_path` · roo-code `list_files` · cursor `file_search` · windsurf `find_by_name` · codex `list_dir` · factory-droid `Glob` · pi `find` |
-| `search` | claude-code `Grep` · gemini-cli `grep_search` · copilot-cli `grep` · kiro `grep` · opencode `grep` · vs-code-copilot `Grep` · zed `grep` · roo-code `search_files` · cursor `grep_search` · windsurf `grep_search` · codex `grep_files` · factory-droid `Grep` · pi `grep` |
-| `web_search` | claude-code `WebSearch` · gemini-cli `google_web_search` · opencode `websearch` · vs-code-copilot `WebSearch` · zed `web_search` · cursor `web_search` · windsurf `search_web` · codex `web_search` · kiro `web_search` · factory-droid `WebSearch` |
+| `file_read` | claude-code `Read` · gemini-cli `read_file` · copilot-cli `view` · kiro `read` · opencode `read` · vs-code-copilot `Read` · zed `read_file` · roo-code `read_file` · cursor `read_file` · devin `view_line_range` · codex `read_file` · factory-droid `Read` · pi `read` |
+| `file_write` | claude-code `Write` · gemini-cli `write_file` · copilot-cli `create` · kiro `fs_write` · opencode `write` · vs-code-copilot `Write` · zed `edit_file` · roo-code `write_to_file` · cursor `edit_file` · devin `write_to_file` · codex `apply_patch` · factory-droid `Create` · pi `write` |
+| `file_edit` | claude-code `Edit` · gemini-cli `replace` · copilot-cli `edit` · kiro `fs_write` · opencode `edit` · vs-code-copilot `Edit` · zed `edit_file` · roo-code `replace_in_file` · cursor `edit_file` · devin `edit_file` · codex `apply_patch` · factory-droid `Edit` · pi `edit` |
+| `shell` | claude-code `Bash` · gemini-cli `run_shell_command` · copilot-cli `bash` · kiro `shell` · opencode `bash` · vs-code-copilot `Bash` · zed `terminal` · roo-code `execute_command` · cursor `run_terminal_cmd` · devin `run_command` · codex `shell` · factory-droid `Execute` · pi `bash` |
+| `find` | claude-code `Glob` · gemini-cli `glob` · copilot-cli `glob` · kiro `glob` · opencode `glob` · vs-code-copilot `Glob` · zed `find_path` · roo-code `list_files` · cursor `file_search` · devin `find_by_name` · codex `list_dir` · factory-droid `Glob` · pi `find` |
+| `search` | claude-code `Grep` · gemini-cli `grep_search` · copilot-cli `grep` · kiro `grep` · opencode `grep` · vs-code-copilot `Grep` · zed `grep` · roo-code `search_files` · cursor `grep_search` · devin `grep_search` · codex `grep_files` · factory-droid `Grep` · pi `grep` |
+| `web_search` | claude-code `WebSearch` · gemini-cli `google_web_search` · opencode `websearch` · vs-code-copilot `WebSearch` · zed `web_search` · cursor `web_search` · devin `search_web` · codex `web_search` · kiro `web_search` · factory-droid `WebSearch` |
 | `agent` | claude-code `Agent` · copilot-cli `task` · opencode `task` · vs-code-copilot `Agent` · zed `spawn_agent` · codex `spawn_agent` · kiro `use_subagent` · factory-droid `Task` |
-| `web_fetch` | claude-code `WebFetch` · gemini-cli `web_fetch` · copilot-cli `web_fetch` · kiro `web_fetch` · opencode `webfetch` · vs-code-copilot `WebFetch` · zed `fetch` · windsurf `read_url_content` · factory-droid `FetchUrl` |
+| `web_fetch` | claude-code `WebFetch` · gemini-cli `web_fetch` · copilot-cli `web_fetch` · kiro `web_fetch` · opencode `webfetch` · vs-code-copilot `WebFetch` · zed `fetch` · devin `read_url_content` · factory-droid `FetchUrl` |
 | `list` | pi `ls` |
 | `notebook_edit` | claude-code `NotebookEdit` · vs-code-copilot `NotebookEdit` |
 | `multi_edit` | claude-code `MultiEdit` · vs-code-copilot `MultiEdit` |
@@ -405,7 +405,7 @@ Hook matcher strings are translated component-wise on `|`-split alternations. Ba
 
 ### A.4 MCP tool-name formats
 
-Per-provider MCP tool-name formats, for matcher passthrough and render-back: claude-code / kiro / factory-droid `mcp__server__tool` · gemini-cli `mcp_server_tool` · opencode / cline / roo-code / cursor / windsurf `server__tool` · copilot-cli / codex `server/tool` · zed `mcp:server:tool`. A name not parseable under the source provider's pattern is not an MCP tool name and passes through verbatim.
+Per-provider MCP tool-name formats, for matcher passthrough and render-back: claude-code / kiro / factory-droid `mcp__server__tool` · gemini-cli `mcp_server_tool` · opencode / cline / roo-code / cursor / devin `server__tool` · copilot-cli / codex `server/tool` · zed `mcp:server:tool`. A name not parseable under the source provider's pattern is not an MCP tool name and passes through verbatim.
 
 ---
 

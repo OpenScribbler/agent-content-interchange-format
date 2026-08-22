@@ -72,24 +72,27 @@ without a vector is legal but unpinned — prose the suite cannot yet
 contradict, and invisible to report-currency comparison until its
 vector lands.
 
-### Row-data amendments — install-target rows (land on observation)
+### Row-data amendments — install-target rows and provider identity (land on observation)
 
-A correction to the install-target matrix ([ACIF-INSTALL] Appendix A.2):
-a provider moved, added, or retired a location, so a published row no
-longer corresponds to the provider's living behavior. These are neither
-Class A (they touch a normative ACIF appendix and its export) nor
-Class B (they may supersede an existing row, which Class B's
-additive-only rule forbids) nor Class C (they mint no vocabulary — the
-grammar, scope, and layout enums are untouched).
+A correction to the install-target matrix ([ACIF-INSTALL] Appendix A.2),
+or to the provider slug ACIF keys a provider by: a provider moved,
+added, or retired a location, or the vendor renamed the product ACIF
+tracks under that slug, so a published row or key no longer corresponds
+to the provider's living behavior. These are neither Class A (they touch
+a normative ACIF appendix and its export) nor Class B (they may
+supersede an existing row, which Class B's additive-only rule forbids)
+nor Class C (they mint no vocabulary — the grammar, scope, and layout
+enums are untouched, and a renamed product is not a new concept).
 
-The lane exists because install paths are vendor-controlled facts with
-no totality net: a moved directory fires no diagnostic on any content —
-nothing in an item's bytes goes wrong when a provider relocates its
-config dir — so the signal path is observation (a capmon path probe, a
-filed report, a release note), and the open window is genuinely unsafe
-in a way a Class B window is not: every conforming install tool writes
-to the stale location with normative confidence until the amendment
-lands.
+The lane exists because install paths and product names are
+vendor-controlled facts with no totality net: neither a moved directory
+nor a rename fires a diagnostic on any content — nothing in an item's
+bytes goes wrong when a provider relocates its config dir or changes
+what it calls itself — so the signal path is observation (a capmon path
+probe, a filed report, a release note), and the open window is genuinely
+unsafe in a way a Class B window is not: every conforming install tool
+writes to the stale location with normative confidence until the
+amendment lands.
 
 Accordingly: row-data amendments land **on observation, with no batch
 window and no reviewer subset**. The evidence standard is the
@@ -101,6 +104,35 @@ the suite impact is confined to the install-entry-points export and any
 matrix-pinned vector fixtures, inventoried in the manifest note. A
 change to the descriptor's grammar or enums is not a row-data
 amendment; it is Class C.
+
+A **provider-identity amendment** — the slug itself changes because the
+vendor renamed the product — carries three obligations a location
+amendment does not, because the slug is the key every downstream
+consumer diffs against rather than a value inside one row:
+
+1. **Atomic across every keyed table.** The rename lands in a single
+   change across every normative table keyed by the slug ([ACIF-INSTALL]
+   Appendix A.2 and its export, and the [ACIF-HOOK] and [ACIF-CORE]
+   crosswalk provider columns). A partial rename leaves the slug
+   ambiguous, which is worse for a consumer than either name alone.
+2. **Path templates are not renamed.** A vendor that renames a product
+   MAY keep the former name inside its configuration paths. Template
+   bytes are amended only on an observed path change, never to match the
+   new slug: a rename and a relocation are separate observations that
+   happen to arrive together, and conflating them writes paths no
+   provider reads.
+3. **The retired slug is never reused.** It is not reassigned to another
+   provider, so a consumer still keyed to it reads absence rather than an
+   unrelated vendor's rows.
+
+Rows carried across a rename keep their own `status` and `as_of`: a
+rename is not an observation about any location, so it neither
+supersedes a row nor refreshes its evidence date. The export surfaces a
+rename as one key disappearing and another appearing, and consumers MUST
+NOT read that as a retirement plus an unrelated addition. Carrying the
+prior slug in machine-readable form would add a field to the export,
+which is a grammar change and therefore Class C; until such a field is
+minted the mapping lives in this amendment's own record.
 
 ### Class C — vocabulary changes (full design treatment)
 

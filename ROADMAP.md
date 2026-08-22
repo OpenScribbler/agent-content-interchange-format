@@ -135,3 +135,11 @@ Each (provider, content type) publishes one row set, pinned to current released 
 **Why deferred:** version-conditional rows (per-provider-version applicability ranges) add a dimension the row-data amendment lane makes mostly unnecessary — a moved path is amended on observation and the old row retained as `superseded`.
 
 **What it would take to revisit:** a provider maintains two live release channels with different locations, so "current released behavior" stops being singular.
+
+### Machine-readable provider-rename mapping
+
+A vendor rename re-keys a provider's rows under the row-data amendment lane ([CHANGE-PROCESS] "Row-data amendments"). The export carries no record of the former slug, so a consumer diffing two revisions sees one key leave and another arrive; the prose obliges it not to read that as a retirement plus an addition, but nothing in the bytes says so.
+
+**Why deferred:** carrying a prior slug would add a field to the export, which is a grammar change and therefore Class C, and renames are rare enough that the amendment record has so far been sufficient. Minting a field to describe an event that fires once every few years is the wrong trade while the set of affected consumers is small enough to notify.
+
+**What it would take to revisit:** a second rename lands, or a downstream drift check reports a rename as a provider retirement in a way that misleads an operator rather than merely reading oddly.

@@ -160,7 +160,7 @@ The Appendix A.2 rows are **normative as the interoperability contract among ACI
 
 That split sets the maintenance model:
 
-- **Row-data amendments** — correcting or superseding a row because a provider moved, added, or retired a location — follow the row-data amendment lane of [CHANGE-PROCESS]: land on observation, no batch window. A moved directory fires no totality-net diagnostic on any content (the loud absence that makes this lane necessary — nothing in an item's bytes goes wrong when a provider relocates its config dir), so the signal path is observation and filed reports, not diagnostics.
+- **Row-data amendments** — correcting or superseding a row because a provider moved, added, or retired a location, or re-keying a provider's rows because the vendor renamed the product — follow the row-data amendment lane of [CHANGE-PROCESS]: land on observation, no batch window. Neither a moved directory nor a rename fires a totality-net diagnostic on any content (the loud absence that makes this lane necessary — nothing in an item's bytes goes wrong when a provider relocates its config dir or changes what it calls itself), so the signal path is observation and filed reports, not diagnostics. A rename re-keys rows without amending them: a provider MAY keep its former name inside path templates, and template bytes change only on an observed path change.
 - **Supersession, not deletion.** A row a provider no longer reads moves to `status: superseded` and remains published. Consumers holding older exports see the supersession on their next diff instead of a vanished row; the superseded location keeps serving read/discovery (uninstall of old installs needs it).
 - **Grammar and enum changes** — a new placeholder token, scope, layout, or row field — are Class C changes with full design treatment.
 - **Consumption.** The matrix is published as the deterministic export `conformance/install-entry-points.yaml`, selftest-synced to Appendix A.2 (spec-prose parsing happens at the authority; downstream diffs the export, [CHANGE-PROCESS] source-of-truth rule). It carries no crawl date and no observational provenance — it is a function of its git revision, which is what keeps downstream drift checks deterministic. An install tool SHOULD refresh the export from its registry or from the spec repository at install time and treat any copy vendored into its binary as a fallback; a registry re-serving the export MUST serve it byte-identical — no freshness decoration, no `fetched_at` stamp.
@@ -218,6 +218,8 @@ The machine-readable form of this appendix is `conformance/install-entry-points.
 Rows are grouped by provider, then content type; order within a group is normative precedence (§6). Sorting between groups is alphabetical by provider slug, then content type — the pinned canonical export ordering. No `managed` row is published in 0.1: none was in the verified survey, and the enum member awaits its first verified location. Providers are keyed by the slugs the normative appendices already use ([ACIF-HOOK] Appendix A/B columns); the survey basis omitted rows whose location, filename, or scope could not be stated determinately (a bare provider config dir with no per-type naming; a config path whose anchor the survey left ambiguous) — absence asserts nothing (A.1).
 
 *(Informative)* One omission is the named witness for the §8.3 OS-dimension roadmap item: cline's MCP settings file lives under the host editor's per-OS application-data root (`%APPDATA%` / `~/Library/Application Support` / `~/.config`), which no 0.1 template can carry.
+
+*(Informative)* A second class of omission is deliberate and worth naming, because a reader comparing the matrix to a provider's own documentation will notice it. Some providers *read* another provider's configuration for compatibility: `devin` loads hooks, commands, and subagents from `~/.claude.json`, `~/.claude/settings.json`, and `.claude/settings.json` in addition to its own locations. Those are not entry-point rows. An entry point is where a conforming install tool *writes* so that this provider picks the item up (§4), and writing into a path another provider's rows already claim would install the item into that provider too, which no caller asked for. A compatibility read is a fact about the reading provider's loader, not a location ACIF directs anyone to write. The matrix therefore carries only the provider's own namespace, and a shared-convention path (`AGENTS.md`, `.agents/skills/`) counts as its own namespace because no single provider owns it.
 
 | Provider | Type | Scope | Path template | Layout | Status | as_of *(informative)* |
 |---|---|---|---|---|---|---|
@@ -282,6 +284,27 @@ Rows are grouped by provider, then content type; order within a group is normati
 | `cursor` | rule | project | `.cursorrules` | merged_into_shared_file | current | syllago 2026-07 survey |
 | `cursor` | skill | user | `~/.cursor/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
 | `cursor` | skill | project | `.cursor/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
+| `devin` | agent | project | `.devin/agents/<content-name>.md` | single_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | command | user | `~/.codeium/windsurf/global_workflows/<content-name>.md` | single_file | current | syllago 2026-07 survey |
+| `devin` | command | project | `.windsurf/workflows/<content-name>.md` | single_file | current | syllago 2026-07 survey |
+| `devin` | hook | user | `~/.config/devin/config.json` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | hook | project | `.devin/hooks.v1.json` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | hook | project | `.devin/config.json` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | mcp_config | user | `~/.config/devin/mcp_config.json` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | mcp_config | project | `.devin/mcp_config.json` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | rule | user | `~/.config/devin/AGENTS.md` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | rule | user | `~/.devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | rule | user | `~/.devin/global_rules.md` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | rule | project | `.devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | rule | project | `.devin/global_rules.md` | merged_into_shared_file | current | docs.devin.ai 2026-08 verification |
+| `devin` | rule | project | `.windsurf/rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
+| `devin` | rule | project | `.windsurfrules` | merged_into_shared_file | current | syllago 2026-07 survey |
+| `devin` | skill | user | `~/.config/devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-08 verification |
+| `devin` | skill | user | `~/.codeium/windsurf/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
+| `devin` | skill | user | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
+| `devin` | skill | project | `.devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-08 verification |
+| `devin` | skill | project | `.windsurf/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
+| `devin` | skill | project | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
 | `factory-droid` | agent | user | `~/.factory/droids/<content-name>.md` | single_file | current | syllago 2026-07 survey |
 | `factory-droid` | agent | project | `.factory/droids/<content-name>.md` | single_file | current | syllago 2026-07 survey |
 | `factory-droid` | command | user | `~/.factory/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
@@ -337,14 +360,6 @@ Rows are grouped by provider, then content type; order within a group is normati
 | `roo-code` | skill | user | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
 | `roo-code` | skill | project | `.roo/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
 | `roo-code` | skill | project | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `windsurf` | command | user | `~/.codeium/windsurf/global_workflows/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `windsurf` | command | project | `.windsurf/workflows/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `windsurf` | rule | project | `.windsurf/rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `windsurf` | rule | project | `.windsurfrules` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `windsurf` | skill | user | `~/.codeium/windsurf/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `windsurf` | skill | user | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `windsurf` | skill | project | `.windsurf/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `windsurf` | skill | project | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
 
 ## Appendix B — Conformance Test-Vector Family (Normative)
 
