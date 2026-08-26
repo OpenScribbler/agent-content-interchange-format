@@ -89,6 +89,7 @@ diagnostics:
       - acif.hook.no_default_for_degraded_render
     diagnostic:
       - acif.hook.platform_override_dropped
+      - acif.hook.event_untranslatable
       - acif.hook.platform_shell_os_proxy
       - acif.hook.platform_filename_uninferable
       - acif.hook.platform_filename_inferred

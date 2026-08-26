@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 9
+  date: 2026-08-26
+  change_class: c
+  supersedes: 8
+  note: "acif-43b Class C (SHAPE.md Decision #44): [ACIF-HOOK] Appendix A.4 pins the render-back target per (canonical, provider) pair for providers carrying more than one native name on an A.1 row, and mints `acif.hook.event_untranslatable` (diagnostic, MUST-emit; params `event`, `provider`, pinned in PROTOCOL Appendix A). devin's Devin CLI names (PascalCase) join its Cascade names in A.1; the pins select the CLI surface, aligned with [ACIF-INSTALL] A.2 row order. Additive vectors: TV-HOOK-k (four lossless pins, diagnostic absent), TV-HOOK-l (both spellings canonicalize and hash equal), TV-HOOK-m (degraded Cascade-only pair and no-native-row event, both diagnosed). Expectation-flip inventory: EMPTY — no existing vector renders a hook to an A.1 provider, and passthrough to targets absent from A.1 is unchanged."
+  vectors: 180
+  binding_set: b2b654090c4b0168b59ef97e436d7a810d243aa0e51f01ca5cdaa80ed4278508
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: 6ee229fcee55cce883a6a1b01e30140304eb9043e580a7a13727edcc83f49dc8
+    fresh.yaml: 643cb8ad306dc09d397d85f3d7caaf6a3fc8e055a92f1cf2e783fc2fc5c93fdf
+    hook.yaml: 8956aa17acad4f1ec79e5ab9424107a8d84eccb54886eae514d6e2dcb652aa82
+    install.yaml: 9cd54f79005410d9814370a83f6e9538ec576ce3c8e7528c67779c55a0ba754c
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: e473be422f5634a33d7c614a700fd95cbfae47354ba3e1719ded274c05dda44d
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 8
   date: 2026-08-21
   change_class: repair

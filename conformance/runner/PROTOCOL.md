@@ -349,6 +349,7 @@ Payload-pinned (a vector asserts params content):
 | `acif.registry.stale` | `expires` (the effective `E_sidecar` as an RFC 3339 timestamp; compared as an instant, not byte-wise — any valid serialization of the instant passes) | TV-FRESH-a |
 | `acif.registry.stale` | `expires` (as above; here `E_sidecar` is the computed default window, `fetched_at + 72h`) | TV-FRESH-h |
 | `acif.install.scope_unavailable` | `available_scopes` (the scopes that do have rows for the pair, sorted) | TV-INSTALL-e |
+| `acif.hook.event_untranslatable` | `event` (the canonical event name), `provider` (the render-target provider slug) | TV-HOOK-m |
 
 Identifier-only (vectors assert presence of the id; `params` MAY be empty
 and is not asserted): `acif.command.placeholder_named_arg_collapsed`,

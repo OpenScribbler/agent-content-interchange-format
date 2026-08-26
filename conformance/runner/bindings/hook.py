@@ -4,7 +4,16 @@ import copy
 from typing import Any
 
 from . import binding
-from .common import assert_relation, assert_verdict_reason
+from .common import (
+    assert_diagnostic,
+    assert_output_contains,
+    assert_output_excludes,
+    assert_relation,
+    assert_verdict_reason,
+    diagnostics_for,
+    render,
+    send,
+)
 from ..protocol import AdapterResponse
 from ..report import VectorResult
 from ..vectors import Vector
@@ -348,4 +357,67 @@ def tv_hook_j(vector: Vector, session: Any, ctx: Any) -> VectorResult:
     _assert_error(result, "absolute", response, exp["absolute"]["error"])
     response = _send(result, session, ctx, _sidecar_ingest(inp["traversal"]["hook"]))
     _assert_error(result, "traversal", response, exp["traversal"]["error"])
+    return result
+
+
+def _render_hook(event: str, handlers: list[dict[str, Any]], target: str) -> dict[str, Any]:
+    return render({"hook": {"event": event, "handlers": handlers}}, target)
+
+
+def _assert_diagnostic_absent(result: VectorResult, case: str, response: AdapterResponse, diagnostic_id: str) -> None:
+    if response.kind == "unsupported":
+        result.set_status("unsupported", f"{case}: adapter returned unsupported")
+        return
+    if response.kind == "harness-error":
+        return
+    observed = [d.get("id") for d in diagnostics_for(response) if d.get("id") == diagnostic_id]
+    result.add_check(case, "diagnostic_absent", diagnostic_id, observed, not observed)
+
+
+@binding("TV-HOOK-k")
+def tv_hook_k(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        response = _send(result, session, ctx, _render_hook(case["event"], inp["common_handlers"], inp["render_target"]))
+        assert_output_contains(result, name, response, "emitted", exp[name]["emitted"])
+        assert_output_excludes(result, name, response, "excluded", exp[name]["excluded"])
+        _assert_diagnostic_absent(result, name, response, exp["diagnostic_absent"])
+    return result
+
+
+@binding("TV-HOOK-l")
+def tv_hook_l(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    responses: dict[str, AdapterResponse] = {}
+    for name, case in inp["cases"].items():
+        hook = {"event": case["event"], "handlers": inp["common_handlers"]}
+        response = _send(result, session, ctx, _provider_ingest(inp["provider"], hook))
+        responses[name] = response
+        _assert_value(result, name, "canonical_event", exp[name]["canonical_event"], _canonical_event(response), response)
+    for left, right in inp["body_hash_equal_pairs"]:
+        if _all_ok([responses[left], responses[right]]):
+            hashes = [_body_hash(responses[left]), _body_hash(responses[right])]
+            result.add_check(f"{left}={right}", "body_hash_equal", exp["body_hash_equal"], hashes, hashes[0] == hashes[1] and hashes[0] is not ABSENT)
+    return result
+
+
+@binding("TV-HOOK-m")
+def tv_hook_m(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        response = send(
+            result,
+            session,
+            ctx,
+            _render_hook(case["event"], inp["common_handlers"], inp["render_target"]),
+            tags={"degradation_path": "hook-event-untranslatable", "paired_diagnostic": exp[name]["diagnostic"]},
+        )
+        assert_output_contains(result, name, response, "emitted", exp[name]["emitted"])
+        assert_diagnostic(result, name, response, exp[name]["diagnostic"], exp[name]["params"])
     return result

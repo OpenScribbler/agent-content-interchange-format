@@ -130,3 +130,68 @@
   expect:
     absolute: {error: acif.hook.script_path_invalid}
     traversal: {error: acif.hook.script_path_invalid}
+
+- id: TV-HOOK-k
+  spec: "[ACIF-HOOK] Appendix A.4, §12.3"
+  harness: static
+  description: devin render-back pins — each multi-native pair emits its Devin CLI name, lossless, with no event diagnostic
+  input:
+    render_target: devin
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      before_prompt: {event: before_prompt}
+      agent_stop: {event: agent_stop}
+      session_start: {event: session_start}
+      session_end: {event: session_end}
+  expect:
+    diagnostic_absent: acif.hook.event_untranslatable
+    before_prompt: {emitted: UserPromptSubmit, excluded: [before_prompt, pre_user_prompt]}
+    agent_stop: {emitted: Stop, excluded: [agent_stop, post_cascade_response]}
+    session_start: {emitted: SessionStart, excluded: [session_start]}
+    session_end: {emitted: SessionEnd, excluded: [session_end]}
+
+- id: TV-HOOK-l
+  spec: "[ACIF-HOOK] Appendix A.2, A.4, §8.1"
+  harness: static
+  description: A.4 pins never touch canonicalization — devin CLI and Cascade spellings both canonicalize, and hash equal
+  input:
+    provider: devin
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      cli_prompt: {event: UserPromptSubmit}
+      cascade_prompt: {event: pre_user_prompt}
+      cli_stop: {event: Stop}
+      cascade_stop: {event: post_cascade_response}
+      cli_session_start: {event: SessionStart}
+      cli_session_end: {event: SessionEnd}
+      cascade_transcript: {event: post_cascade_response_with_transcript}
+    body_hash_equal_pairs: [[cli_prompt, cascade_prompt], [cli_stop, cascade_stop]]
+  expect:
+    cli_prompt: {canonical_event: before_prompt}
+    cascade_prompt: {canonical_event: before_prompt}
+    cli_stop: {canonical_event: agent_stop}
+    cascade_stop: {canonical_event: agent_stop}
+    cli_session_start: {canonical_event: session_start}
+    cli_session_end: {canonical_event: session_end}
+    cascade_transcript: {canonical_event: transcript_export}
+    body_hash_equal: true
+
+- id: TV-HOOK-m
+  spec: "[ACIF-HOOK] Appendix A.4, §12.3, §14"
+  harness: static
+  description: devin degraded render — Cascade-only event emits its Cascade name, no-native-row event emits verbatim, both with acif.hook.event_untranslatable
+  input:
+    render_target: devin
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      degraded_pair: {event: transcript_export}
+      no_native_row: {event: worktree_remove}
+  expect:
+    degraded_pair:
+      emitted: post_cascade_response_with_transcript
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: transcript_export, provider: devin}
+    no_native_row:
+      emitted: worktree_remove
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: worktree_remove, provider: devin}

@@ -228,7 +228,7 @@ Each `os` tag in canonical form has a decode-time provenance: **declared** (pres
 
 ### 8.1 Event names
 
-Canonicalization rewrites provider-native event names to the canonical vocabulary (Appendix A) before `body_hash` is computed ([ACIF-CORE] §8.2). Reverse translation applies the pinned tiebreaker in Appendix A.3; for any multi-match without a pinned row, the lexicographically smaller canonical name wins ([ACIF-CORE] §8.4).
+Canonicalization rewrites provider-native event names to the canonical vocabulary (Appendix A) before `body_hash` is computed ([ACIF-CORE] §8.2). Reverse translation applies the pinned tiebreaker in Appendix A.3; for any multi-match without a pinned row, the lexicographically smaller canonical name wins ([ACIF-CORE] §8.4). The render-back direction takes its target from Appendix A.1, or from Appendix A.4 where a provider carries more than one native name on a row (§12.3).
 
 ### 8.2 Handler types
 
@@ -340,7 +340,7 @@ Rendering an all-constrained hook (no default entry) to a no-mechanism provider 
 
 - All opaque passthrough values MUST be re-serialized through the target format's structured encoder ([ACIF-CORE] §8.5); string-splicing is non-conformant.
 - A default entry made unreachable by full constrained coverage MUST NOT be stripped at render-back; removing it breaks round-trip to source formats in which the base command is required.
-- Event and handler-type names are translated to provider-native names per Appendix A/B; canonical names with no mapping row for the target emit verbatim ([ACIF-CORE] §8.5).
+- Event and handler-type names are translated to provider-native names per Appendix A/B. A target provider that appears in Appendix A.1 takes its event name per A.1 and A.4; where A.4 classifies the pair as degraded, or the provider carries no native name for the event, the renderer emits the A.4-specified form and `acif.hook.event_untranslatable`. A target provider that does not appear in Appendix A.1 receives canonical names verbatim with no diagnostic ([ACIF-CORE] §8.5).
 - *(Informative)* Round-trip through a per-OS key-map provider is identity-preserving because re-ingestion applies the §7.4 identity-merge: an entry constrained to multiple OSes necessarily renders to one key per OS, and the merge collapses those keys back to the single entry. Without the merge, round-trip identity would be unachievable for any multi-OS constrained entry.
 
 ## 13. Registry Projections
@@ -387,6 +387,7 @@ Registries MUST compute, per canonical event name, the set of providers recogniz
 | `acif.hook.platform_mechanism_malformed` | reject | Pre-abstracted envelope without present, decodable content (§7.4 step 1), or a recognized mechanism instance violating its §7.4 shape predicate (step 4) |
 | `acif.hook.no_default_for_degraded_render` | refuse (render) | §12.2 |
 | `acif.hook.platform_override_dropped` | diagnostic (MUST-emit) | Constrained entries dropped at degraded render (§12.1) |
+| `acif.hook.event_untranslatable` | diagnostic (MUST-emit) | Render target present in A.1 cannot fire the canonical event on its write surface: no native name, an unpinned multi-native pair, or a degraded A.4 pair (A.4, §12.3) |
 | `acif.hook.platform_shell_os_proxy` | diagnostic (MUST-emit) | OS tags minted from dual shell fields (§7.4) |
 | `acif.hook.platform_filename_uninferable` | diagnostic (MUST-emit) | Extension convention could not infer an OS (§7.4) |
 | `acif.hook.platform_filename_inferred` | diagnostic (INFORMATIVE) | Extension convention minted an OS tag (§7.4) |
@@ -429,7 +430,7 @@ Reject-class identifiers make canonicalization fail; diagnostic-class identifier
 
 ## Appendix A — Canonical Hook Event Vocabulary (Normative)
 
-This appendix is ACIF-owned normative text; implementations conform to this copy. It is normative for the canonical names, the render-back targets of each mapping, and the tiebreakers; which providers carry a name for an event is observational snapshot data.
+This appendix is ACIF-owned normative text; implementations conform to this copy. It is normative for the canonical names, the render-back target of each (canonical, provider) pair (A.1 where the provider carries one native name on the row, A.4 where it carries more than one), and the canonicalize-direction tiebreaker (A.3); which providers carry a name for an event is observational snapshot data.
 
 ### A.1 Canonical names and provider mappings (39 events)
 
@@ -437,10 +438,10 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 |---|---|
 | `before_tool_execute` | claude-code `PreToolUse` · gemini-cli `BeforeTool` · copilot-cli `preToolUse` · kiro `preToolUse` · cursor `PreToolUse` · opencode `tool.execute.before` · vs-code-copilot `PreToolUse` · factory-droid `PreToolUse` · pi `tool_call` |
 | `after_tool_execute` | claude-code `PostToolUse` · gemini-cli `AfterTool` · copilot-cli `postToolUse` · kiro `postToolUse` · cursor `PostToolUse` · opencode `tool.execute.after` · vs-code-copilot `PostToolUse` · factory-droid `PostToolUse` · pi `tool_result` |
-| `before_prompt` | claude-code `UserPromptSubmit` · gemini-cli `BeforeAgent` · copilot-cli `userPromptSubmitted` · kiro `userPromptSubmit` · cursor `UserPromptSubmit` · devin `pre_user_prompt` · vs-code-copilot `UserPromptSubmit` · factory-droid `UserPromptSubmit` · pi `input` |
-| `agent_stop` | claude-code `Stop` · gemini-cli `AfterAgent` · kiro `stop` · copilot-cli `agentStop` · cursor `Stop` · devin `post_cascade_response` · opencode `session.idle` · vs-code-copilot `Stop` · factory-droid `Stop` · pi `agent_end` |
-| `session_start` | claude-code `SessionStart` · gemini-cli `SessionStart` · copilot-cli `sessionStart` · kiro `agentSpawn` · cursor `SessionStart` · devin `session_start` · opencode `session.created` · vs-code-copilot `SessionStart` · factory-droid `SessionStart` · pi `session_start` |
-| `session_end` | claude-code `SessionEnd` · gemini-cli `SessionEnd` · copilot-cli `sessionEnd` · cursor `SessionEnd` · devin `session_end` · factory-droid `SessionEnd` · pi `session_shutdown` |
+| `before_prompt` | claude-code `UserPromptSubmit` · gemini-cli `BeforeAgent` · copilot-cli `userPromptSubmitted` · kiro `userPromptSubmit` · cursor `UserPromptSubmit` · devin `UserPromptSubmit` · devin `pre_user_prompt` · vs-code-copilot `UserPromptSubmit` · factory-droid `UserPromptSubmit` · pi `input` |
+| `agent_stop` | claude-code `Stop` · gemini-cli `AfterAgent` · kiro `stop` · copilot-cli `agentStop` · cursor `Stop` · devin `Stop` · devin `post_cascade_response` · opencode `session.idle` · vs-code-copilot `Stop` · factory-droid `Stop` · pi `agent_end` |
+| `session_start` | claude-code `SessionStart` · gemini-cli `SessionStart` · copilot-cli `sessionStart` · kiro `agentSpawn` · cursor `SessionStart` · devin `SessionStart` · devin `session_start` · opencode `session.created` · vs-code-copilot `SessionStart` · factory-droid `SessionStart` · pi `session_start` |
+| `session_end` | claude-code `SessionEnd` · gemini-cli `SessionEnd` · copilot-cli `sessionEnd` · cursor `SessionEnd` · devin `SessionEnd` · devin `session_end` · factory-droid `SessionEnd` · pi `session_shutdown` |
 | `before_compact` | claude-code `PreCompact` · gemini-cli `PreCompress` · cursor `PreCompact` · vs-code-copilot `PreCompact` · factory-droid `PreCompact` · pi `session_before_compact` |
 | `notification` | claude-code `Notification` · gemini-cli `Notification` |
 | `subagent_start` | claude-code `SubagentStart` · cursor `SubagentStart` · vs-code-copilot `SubagentStart` · factory-droid `SubagentStart` · pi `before_agent_start` |
@@ -479,11 +480,38 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 
 An event name is recognized if and only if it is a canonical name in A.1 or a provider-native name appearing in A.1. Any other name rejects per §6.2.
 
-### A.3 Reverse-translation tiebreaker
+### A.3 Canonicalize-direction tiebreaker
+
+This tiebreaker governs canonicalization only: a provider-native name that appears on more than one A.1 row (a multi-match) resolves to one canonical name here. The render-back direction is governed by A.1 and A.4.
 
 copilot-cli maps BOTH `error_occurred` and `tool_use_failure` to `errorOccurred`; reverse translation MUST prefer `error_occurred`. For any other multi-match, the lexicographically smaller canonical name wins ([ACIF-CORE] §8.4).
 
 *(Informative)* Approximately 16 events have single-provider coverage. Coverage is observational; the canonical vocabulary is not relaxed by low coverage.
+
+### A.4 Render-back targets for multi-native providers
+
+An A.1 row that carries more than one native name for one provider does not determine that provider's render-back target on its own. This table pins the target for every such (canonical, provider) pair, and pins the fidelity class ([ACIF-RENDER] §7) of the pairs whose only native name is one the provider's write surface cannot fire. The table is normative on its own authority: an A.1 row-data amendment that adds a native name does not amend this table, and this table does not affect canonicalization (A.2 recognition, A.3 tiebreaker), so every native name in A.1 remains recognized at ingestion.
+
+| Canonical | Provider | Render-back target | Fidelity |
+|---|---|---|---|
+| `before_prompt` | devin | `UserPromptSubmit` | lossless |
+| `agent_stop` | devin | `Stop` | lossless |
+| `session_start` | devin | `SessionStart` | lossless |
+| `session_end` | devin | `SessionEnd` | lossless |
+| `worktree_create` | devin | `post_setup_worktree` | degraded (`acif.hook.event_untranslatable`) |
+| `transcript_export` | devin | `post_cascade_response_with_transcript` | degraded (`acif.hook.event_untranslatable`) |
+
+Render-back of a canonical event name to a target provider resolves in this order:
+
+1. The (canonical, provider) pair has a row in this table: emit the render-back target. A `degraded` row additionally emits `acif.hook.event_untranslatable`.
+2. The provider appears in A.1 and the A.1 row carries exactly one native name for the provider: emit that name (lossless).
+3. The provider appears in A.1 and the A.1 row carries more than one native name for the provider, with no row here: emit the canonical name verbatim and `acif.hook.event_untranslatable`. No such pair exists in this revision; the rule keeps render-back total when a row-data amendment lands ahead of its pin.
+4. The provider appears in A.1 and the A.1 row carries no native name for the provider: emit the canonical name verbatim and `acif.hook.event_untranslatable` (degraded).
+5. The provider does not appear in A.1: emit the canonical name verbatim with no diagnostic ([ACIF-CORE] §8.5, §12.3).
+
+`acif.hook.event_untranslatable` carries `params.event` (the canonical name) and `params.provider` (the target provider slug).
+
+*(Informative)* devin has two writable hook surfaces. The Devin CLI reads PascalCase names from `~/.config/devin/config.json` and `.devin/hooks.v1.json`; Cascade (Devin Desktop IDE and the JetBrains plugin) reads snake_case names from `~/.codeium/windsurf/hooks.json`, `~/.codeium/hooks.json`, and `.windsurf/hooks.json`. Neither page on docs.devin.ai mentions the other surface, and nothing forces one choice. The pins select the CLI surface as a policy choice aligned with [ACIF-INSTALL] Appendix A.2, which lists the CLI row first per scope, so the file an install tool writes is the file that reads the emitted name. `worktree_create` and `transcript_export` have Cascade names only, so a devin render emits the Cascade name and discloses that the CLI surface cannot fire it.
 
 ## Appendix B — Canonical Handler-Type Enum (Normative)
 

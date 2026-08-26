@@ -53,8 +53,36 @@ EVENT_MAP = {
     "PreToolUse": "before_tool_execute",
     "BeforeTool": "before_tool_execute",
     "tool.execute.before": "before_tool_execute",
+    "UserPromptSubmit": "before_prompt",
+    "pre_user_prompt": "before_prompt",
+    "Stop": "agent_stop",
+    "post_cascade_response": "agent_stop",
+    "SessionStart": "session_start",
+    "SessionEnd": "session_end",
+    "post_setup_worktree": "worktree_create",
+    "post_cascade_response_with_transcript": "transcript_export",
 }
-CANONICAL_EVENTS = {"session_start", "before_tool_execute"}
+CANONICAL_EVENTS = {
+    "session_start",
+    "session_end",
+    "before_tool_execute",
+    "before_prompt",
+    "agent_stop",
+    "worktree_create",
+    "worktree_remove",
+    "transcript_export",
+}
+# [ACIF-HOOK] Appendix A.4: (render-back target, degraded) per canonical
+# event for the devin write surface. A canonical event absent from the
+# table has no devin native name and renders verbatim, degraded.
+DEVIN_RENDER_TARGETS = {
+    "before_prompt": ("UserPromptSubmit", False),
+    "agent_stop": ("Stop", False),
+    "session_start": ("SessionStart", False),
+    "session_end": ("SessionEnd", False),
+    "worktree_create": ("post_setup_worktree", True),
+    "transcript_export": ("post_cascade_response_with_transcript", True),
+}
 FRONTMATTER_KINDS = {"skill", "rule", "command", "agent"}
 UNRESOLVED_INSTALL = "refuse-unless-operator-opt-in"
 AGENT_NATIVE_BY_PROVIDER = {
@@ -659,7 +687,14 @@ def handle_render(inp: dict[str, Any]) -> dict[str, Any]:
     if isinstance(canonical.get("hook"), dict) or isinstance(canonical.get("event"), str):
         hook = _extract_hook(canonical)
         scripts = _first_handler_scripts(hook)
-        output: dict[str, Any] = {"event": hook.get("event"), "scripts": []}
+        event = hook.get("event")
+        diagnostics: list[dict[str, Any]] = []
+        if target == "devin":
+            native, degraded = DEVIN_RENDER_TARGETS.get(event, (event, True))
+            if degraded:
+                diagnostics.append({"id": "acif.hook.event_untranslatable", "params": {"event": event, "provider": target}})
+            event = native
+        output: dict[str, Any] = {"event": event, "scripts": []}
         for script in scripts:
             rendered = dict(script)
             output["scripts"].append(rendered)
@@ -668,7 +703,7 @@ def handle_render(inp: dict[str, Any]) -> dict[str, Any]:
                 for key, value in script.items():
                     if key not in {"type", "path", "content", "os"}:
                         output[key] = value
-        return ok({"output": json.dumps(output, separators=(",", ":")), "diagnostics": [], "lossy": []})
+        return ok({"output": json.dumps(output, separators=(",", ":")), "diagnostics": diagnostics, "lossy": []})
     raise Unsupported()
 
 
