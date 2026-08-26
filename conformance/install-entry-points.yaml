@@ -142,8 +142,11 @@ install_entry_points:
       - {scope: project, path_template: ".windsurf/workflows/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
     hook:
       - {scope: user, path_template: "~/.config/devin/config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: user, path_template: "~/.codeium/windsurf/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: user, path_template: "~/.codeium/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
       - {scope: project, path_template: ".devin/hooks.v1.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
       - {scope: project, path_template: ".devin/config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
+      - {scope: project, path_template: ".windsurf/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
     mcp_config:
       - {scope: user, path_template: "~/.config/devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
       - {scope: project, path_template: ".devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-08 verification"}
