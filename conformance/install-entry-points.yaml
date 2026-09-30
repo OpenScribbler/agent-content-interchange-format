@@ -163,12 +163,6 @@ install_entry_points:
       - {scope: project, path_template: ".devin/config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
       - {scope: project, path_template: ".devin/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
       - {scope: project, path_template: ".windsurf/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: managed, os: [darwin], path_template: "/Library/Application Support/Devin/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: managed, os: [linux], path_template: "/etc/devin/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: managed, os: [windows], path_template: "C:/ProgramData/Devin/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: managed, os: [darwin], path_template: "/Library/Application Support/Windsurf/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: managed, os: [linux], path_template: "/etc/windsurf/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: managed, os: [windows], path_template: "C:/ProgramData/Windsurf/hooks.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
     mcp_config:
       - {scope: user, os: [darwin, linux], path_template: "~/.config/devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
       - {scope: user, os: [windows], path_template: "<appdata>/devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
