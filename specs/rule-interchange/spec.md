@@ -213,7 +213,7 @@ Reject-class identifiers make canonicalization fail; the diagnostic accompanies 
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md`.
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
 - [ACIF-MCP] "ACIF MCP Configuration Interchange Specification", version 0.1.x. `../mcp-interchange/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/rules-requires-consensus.md` in the ACIF repository — decision provenance (Decisions #23 as amended, #30).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #23 as amended, #30).
 
 ---
 
@@ -268,7 +268,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix C — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: the rule extension block and Decisions #23 (rules application, out-of-band guardrail) and #30 of `SHAPE.md`, with the full deliberation record in `panel/rules-requires-consensus.md` — the first 2:2 panel split of the capability-walk series, resolved by the working group to keep `rules.requires` empty.
+Promoted 2026-07-11 from the ACIF design record: the rule extension block and Decisions #23 (rules application, out-of-band guardrail) and #30 of `SHAPE.md` — the first 2:2 panel split of the capability-walk series, resolved by the working group to keep `rules.requires` empty.
 
 Preserved positions recorded for future revision: spec-purist's ADMIT dissent on `file_imports` (fails the works-fine-without-it severity test; MUST be re-heard before any permanent never-parse resolution of the reference-grammar roadmap item); registry-operator's graceful-degradation class for `requires` evaluation (moot with no admitted key; reconsider if a graceful-class key ever lands); Remy's three-value-enum caution (round-trip resolving power; the Appendix A.2 residual rule is the mitigation — if round-trip divergence appears in practice, the mapping table is the file to fix); Karpathy's two-field minimal block (overridden; his out-of-band guardrail was adopted into [ACIF-CORE] §9.3).
 

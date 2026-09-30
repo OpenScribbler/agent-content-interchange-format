@@ -361,7 +361,7 @@ A canonical body MAY reference another item (e.g., a hook naming the skill it ac
 ### 12.2 Informative
 
 - [MOAT] MOAT v0.4.0 content-hash algorithm — the provenance of §7. The restatement in §7 is normative on its own; MOAT documents are not required to implement ACIF.
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/*.md` in the ACIF repository — the decision history (Decisions #1–#34) from which this document was promoted.
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — the decision history (Decisions #1–#34) from which this document was promoted.
 
 ---
 
@@ -411,6 +411,6 @@ Per-provider MCP tool-name formats, for matcher passthrough and render-back: cla
 
 ## Appendix B — Provenance (Informative)
 
-This document was promoted from the ACIF design record (`SHAPE.md`, Decisions #1–#34, and the panel consensus documents under `panel/`) on 2026-07-11. The tool vocabulary in Appendix A was repatriated from a frozen snapshot of the Syllago converter (`toolmap.go` at commit `cf047f52`) on 2026-07-11; from that date the authority direction is inverted — downstream implementations, including Syllago and capmon, conform to this document's copy.
+This document was promoted from the ACIF design record (`SHAPE.md`, Decisions #1–#34) on 2026-07-11. The tool vocabulary in Appendix A was repatriated from a frozen snapshot of the Syllago converter (`toolmap.go` at commit `cf047f52`) on 2026-07-11; from that date the authority direction is inverted — downstream implementations, including Syllago and capmon, conform to this document's copy.
 
 Amended after the second independent review (2026-07-11): the §7.3 entry-file frontmatter strip generalized to multi-file bodies, pinning in prose the single-coverage behavior that §7.8 and vector TV-SKILL (k) already required (the informative reference script was corrected to match — the vectors were authoritative, and the script disagreed with them); the §7.2 exclusion-match semantics; the §7.5 sidecar filename pin; the §2 YAML-schema and provider-input pins; the §7.4 NFC-collision reject; and the three `acif.body.*` identifiers.

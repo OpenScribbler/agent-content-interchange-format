@@ -13,7 +13,7 @@
 > | Auxiliary / supplementary files | Partial | Hook side resolved (SHAPE.md hook extension `auxiliary_files`); skill side still open (OQ-8). |
 > | Package / bundle concept | Resolved | Decision #18 (`kind: pack` L2 records with stable UUID identity; pack-less items first-class). |
 > | Discovery mechanism | Resolved for skills | Decision #22 (three-tier skill discovery). Hooks rely on `kind: hook` sidecar + UUIDv4 `id` per the common envelope. |
-> | Overlap with provider plugin manifests | Resolved | Decision #18 + panel/pack-model-consensus §8 (manifests are inference inputs, never canonical). |
+> | Overlap with provider plugin manifests | Resolved | Decision #18 (manifests are inference inputs, never canonical). |
 >
 > The "recommendation" in §2 (common envelope + type-specific extension block)
 > is exactly the structure SHAPE.md adopts — that line of thinking landed.

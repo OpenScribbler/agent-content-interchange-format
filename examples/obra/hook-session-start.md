@@ -8,7 +8,7 @@
 > |---|---|---|
 > | Q1 — What bytes does the registry hash for a hook | Resolved | Decision #19 (MOAT v0.4.0 directory hash over the hook content directory — all files, symlinks rejected, registry-generated sidecars excluded at root). |
 > | Q2 — Item granularity for hooks (per-hook vs per-plugin) | Resolved | Decision #18 (each hook is an independent `kind: hook` L2 record with its own UUIDv4 `id`; pack membership is a separate predicate over `pack_id` / `inferred_pack_id`). |
-> | Q3 — Sidecar overlap with existing plugin manifests | Resolved | Decision #10 (sidecar is the universal primary carrier; provider plugin manifests are inputs to inference per panel/pack-model-consensus §10, never canonical), Decision #18 (publisher-declared pack identity is UUIDv4; registry-inferred is UUIDv5 over `repository_url` + `display_name`). |
+> | Q3 — Sidecar overlap with existing plugin manifests | Resolved | Decision #10 (sidecar is the universal primary carrier; provider plugin manifests are inputs to inference, never canonical), Decision #18 (publisher-declared pack identity is UUIDv4; registry-inferred is UUIDv5 over `repository_url` + `display_name`). |
 > | Q4 — `SessionStart` matcher syntax vs HIF event model | Still open | Internal to HIF; not addressed by current SHAPE.md decisions. |
 > | Q5 — `run-hook.cmd` is undeclared auxiliary | Resolved | SHAPE.md hook extension block defines `auxiliary_files: [{ path }]` for runtime dependencies that the script loads but the harness does not invoke directly. |
 > | Q6 — Runtime provider detection inside the script | Still informative | Hook body is opaque to ACIF (round 2 finding #14); runtime hints flow through the `requires` block (OQ-7, direction sharpened). |

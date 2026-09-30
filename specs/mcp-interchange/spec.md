@@ -236,7 +236,7 @@ Reject-class identifiers make canonicalization fail; the INFORMATIVE diagnostic 
 - [ACIF-PUBLISHER] "ACIF Publisher Record Specification", version 0.1.x. `../publisher-spec/spec.md`.
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md`.
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/mcp-requires-consensus.md` in the ACIF repository — decision provenance (Decisions #23, #24).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #23, #24).
 
 ---
 
@@ -250,7 +250,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix B — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: the MCP extension block and Decisions #23 (MCP application) and #24 of `SHAPE.md`, with the full deliberation record in `panel/mcp-requires-consensus.md` (the first capability walk; unanimous; origin of the derivability principle and the named-error-code discipline).
+Promoted 2026-07-11 from the ACIF design record: the MCP extension block and Decisions #23 (MCP application) and #24 of `SHAPE.md` (the first capability walk; unanimous; origin of the derivability principle and the named-error-code discipline).
 
 Preserved positions and roadmap items: `env_file_reference` and `path_variable_expansion` as future `requires` candidates if the capability ever leaves the wiring; the marketplace identity model and enterprise/org-policy surface, both cut from the publisher schema with the ownership rationale recorded (§9.3); MCP working-group precedence over the server-name recommendation (§6.2).
 

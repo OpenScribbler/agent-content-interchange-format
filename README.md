@@ -93,9 +93,9 @@ under `conformance/reference/` are informative.
 ## Design record
 
 `SHAPE.md` is the historical design record — 45 decisions, the open-question
-ledger, and the spec-promotion ratifications — with full panel deliberations
-under `panel/`. Where the record and a spec disagree, the spec governs.
-Deferred work lives in `ROADMAP.md` (roadmap items, not version commitments).
+ledger, and the spec-promotion ratifications. Where the record and a spec
+disagree, the spec governs. Deferred work lives in `ROADMAP.md` (roadmap
+items, not version commitments).
 
 ## Layout
 
@@ -114,11 +114,10 @@ specs/
   install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
 SHAPE.md                 # historical design record (Decisions #1–#45)
-panel/                   # panel consensus records behind the decisions
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content
+```
 
 ## License
 
 Copyright 2026 Holden Hewett. Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-```

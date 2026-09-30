@@ -424,7 +424,7 @@ Reject-class identifiers make canonicalization fail; diagnostic-class identifier
 
 ### 16.2 Informative
 
-- [SHAPE] ACIF design record: `SHAPE.md`, `panel/hooks-requires-consensus.md`, and `panel/platform-commands-consensus.md` in the ACIF repository — decision provenance (Decisions #6, #19, #21, #23, #29, #33).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #6, #19, #21, #23, #29, #33).
 
 ---
 
@@ -540,7 +540,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix D — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: the hook extension block and Decisions #6, #19, #21, #23, #29, and #33 of `SHAPE.md`, with full deliberation records in `panel/hooks-requires-consensus.md` and `panel/platform-commands-consensus.md`.
+Promoted 2026-07-11 from the ACIF design record: the hook extension block and Decisions #6, #19, #21, #23, #29, and #33 of `SHAPE.md`.
 
 The event vocabulary and handler-type enum were repatriated from a frozen snapshot of the Syllago converter (commit `cf047f52`); implementations, including Syllago and capmon, conform to this document's copy.
 

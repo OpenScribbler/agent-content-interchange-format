@@ -238,7 +238,7 @@ Reject-class identifiers make canonicalization fail. All reject diagnostics for 
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
 - [ACIF-RULE] "ACIF Rule Interchange Specification", version 0.1.x. `../rule-interchange/spec.md`.
 - [ACIF-MCP] "ACIF MCP Configuration Interchange Specification", version 0.1.x. `../mcp-interchange/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/skills-requires-consensus.md` in the ACIF repository — decision provenance (Decisions #19, #21, #22, #23 and their amendments).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #19, #21, #22, #23 and their amendments).
 
 ---
 
@@ -256,7 +256,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix C — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: the skill extension block and Decisions #19, #21, #22, and #23 (skills application) of `SHAPE.md`, with the full deliberation record in `panel/skills-requires-consensus.md`. This document replaces an earlier `specs/skill-interchange` draft that predated the skills capability walk.
+Promoted 2026-07-11 from the ACIF design record: the skill extension block and Decisions #19, #21, #22, and #23 (skills application) of `SHAPE.md`. This document replaces an earlier `specs/skill-interchange` draft that predated the skills capability walk.
 
 Preserved positions recorded for future revision: Remy's adoption-data objection to the `user_invocable` surface (only one surveyed provider carries an explicit frontmatter key; re-evaluate if repo surveys show authors declaring it or not); the skills-as-highest-risk-content-type threat context (description injection, auto-invocation typosquatting, bundled-resource payloads, metadata license laundering) recorded for the registry-operator track; moderation revalidation cadence recorded as registry discretion, not a conformance requirement.
 

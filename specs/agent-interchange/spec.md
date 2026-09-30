@@ -191,7 +191,7 @@ This document mints no error identifiers. Agent canonicalization has no closed e
 - [ACIF-PUBLISHER] "ACIF Publisher Record Specification", version 0.1.x. `../publisher-spec/spec.md`.
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md`.
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/agents-requires-consensus.md` in the ACIF repository — decision provenance (Decisions #23, #25, #26, #27, #28).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #23, #25, #26, #27, #28).
 
 ---
 
@@ -205,7 +205,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix B — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: Decisions #23 (agents application), #25, #26, #27, and #28 of `SHAPE.md`, with the full deliberation record in `panel/agents-requires-consensus.md` (unanimous empty-`requires` verdict; the walk that originated the three-way disposition, the tiebreaker rule, and the registry projection decisions).
+Promoted 2026-07-11 from the ACIF design record: Decisions #23 (agents application), #25, #26, #27, and #28 of `SHAPE.md` (unanimous empty-`requires` verdict; the walk that originated the three-way disposition, the tiebreaker rule, and the registry projection decisions).
 
 The design record carried no drawn agent extension block; the §6.1 schema was drafted at spec-promotion time from the canonical fields the record references — `tools`/`disallowed_tools`, `model`, `mcp_servers`, `skills` (Decisions #23/#28), and `permission_mode`/`background` (named as canonical fields in the panel's deferred items). Field names are the snake_case forms of the referenced struct fields. This schema was ratified back into the design record (SHAPE.md, Agent Extension Block) at promotion time.
 

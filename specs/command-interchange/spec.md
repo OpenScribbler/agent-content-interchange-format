@@ -205,7 +205,7 @@ This vocabulary deliberately mints no reject identifiers (§7). The two obligati
 - [ACIF-PUBLISHER] "ACIF Publisher Record Specification", version 0.1.x. `../publisher-spec/spec.md`.
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md`.
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/commands-requires-consensus.md` in the ACIF repository — decision provenance (Decisions #12, #23 as refined, #31).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #12, #23 as refined, #31).
 
 ---
 
@@ -250,7 +250,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix C — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: the command extension block and Decisions #12, #23 (commands application, derivation-vs-heuristic refinement, three-way routing) and #31 of `SHAPE.md`, with the full deliberation record in `panel/commands-requires-consensus.md` — the final walk of the capability series, closing the `requires` question six-for-six.
+Promoted 2026-07-11 from the ACIF design record: the command extension block and Decisions #12, #23 (commands application, derivation-vs-heuristic refinement, three-way routing) and #31 of `SHAPE.md` — the final walk of the capability series, closing the `requires` question six-for-six.
 
 Preserved positions recorded for future revision: registry-operator's DERIVABLE-with-totality minority position (the advisory projection ships the same installer join, so the practical loss was the `derivable` flag, not the signal; his existence-proof framing — a deterministic advisory scan at registry scale is evidence a structured import grammar could run too — is input to the reference-grammar roadmap item); spec-purist's conditional body-token discipline (the authorship test, boundary-precise, disclosed-imprecision — the recorded design if body-content derivation is ever legitimized, which requires a structured canonical record, never a prose scan promoted to a predicate); Remy's sparse-vocabulary caveat (two keys is the weakest evidence in the series; the validation weight rests on the rules walk).
 

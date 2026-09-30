@@ -309,7 +309,7 @@ Reject-class identifiers here bind the registry at the record-emit boundary: a r
 ### 14.2 Informative
 
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md`, `panel/source-uri-consensus.md`, and `panel/freshness-consensus.md` in the ACIF repository — decision provenance (Decisions #13, #17, #26, #27, #28, #32, #34).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #13, #17, #26, #27, #28, #32, #34).
 
 ---
 
@@ -327,7 +327,7 @@ Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix B — Provenance and Preserved Positions (Informative)
 
-Promoted 2026-07-11 from the ACIF design record: the registry-section schema and Decisions #13, #17, #26, #27, #28, #32, and #34 of `SHAPE.md`, with deliberation records in `panel/source-uri-consensus.md` and `panel/freshness-consensus.md` (the project's two-reviewer mini-review format).
+Promoted 2026-07-11 from the ACIF design record: the registry-section schema and Decisions #13, #17, #26, #27, #28, #32, and #34 of `SHAPE.md`.
 
 Preserved positions recorded for future revision: post-redirect **final-URL recording was considered and rejected** on operational scale evidence (signed expiring asset URLs, delivery-host churn, geographic divergence) — if a future revision revisits redirect semantics, that evidence is the bar to clear; spec-purist's freshness dissent — an OPTIONAL informative `attestation_valid_until` mirror for offline consumers, with his absence semantics as the recorded design and the constraint that it MUST NOT be a staleness input — is the roadmap valve; the `min(sidecar, attestation)` blended-expiry strawman was rejected from both directions (unimplementable and operationally vacuous-or-storm) and its rejection is load-bearing for §11.
 

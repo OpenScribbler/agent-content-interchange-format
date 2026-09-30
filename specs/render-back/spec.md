@@ -150,7 +150,7 @@ This document mints no error identifiers: every render diagnostic and refuse ide
 - [ACIF-PUBLISHER] "ACIF Publisher Record Specification", version 0.1.x. `../publisher-spec/spec.md`.
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md`.
 - [CAPMON] capmon — provider capability matrix publishing per-provider facts conforming to ACIF canonical vocabularies (§11).
-- [SHAPE] ACIF design record: `SHAPE.md` and `panel/platform-commands-consensus.md` in the ACIF repository — decision provenance (Decisions #24 round-trip clause, #25/#29/#30/#31 render-back targets, #33 render rules).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #24 round-trip clause, #25/#29/#30/#31 render-back targets, #33 render rules).
 
 ---
 
