@@ -119,3 +119,41 @@
     case_3:
       targets:
         - {scope: managed, path: /etc/acme/agents/auditor.md, layout: single_file, status: current, write_target: true}
+
+- id: TV-INSTALL-g
+  spec: "[ACIF-INSTALL] §6, §8.3"
+  harness: static
+  description: OS selection — devin rows filter to the target OS before precedence, so the write target differs by OS; an <appdata>-anchored row resolves against the invocation-supplied application-data directory; a list that filtering empties refuses with no_entry_point, even when a scope is requested
+  input:
+    cases:
+      - {provider: devin, content_type: rule, content_name: style, os: linux, home_dir: /home/u, project_root: /p, scope: user}
+      - {provider: devin, content_type: rule, content_name: style, os: windows, home_dir: "C:/Users/u", appdata_dir: "C:/Users/u/AppData/Roaming", project_root: "C:/p", scope: user}
+      - {provider: devin, content_type: hook, content_name: guard, os: darwin, home_dir: /Users/u, project_root: /p, scope: managed}
+      - {provider: devin, content_type: hook, content_name: guard, os: windows, home_dir: "C:/Users/u", appdata_dir: "C:/Users/u/AppData/Roaming", project_root: "C:/p", scope: managed}
+      - {provider: claude-code, content_type: hook, content_name: guard, os: linux, home_dir: /h, project_root: /p,
+         entry: {scope: managed, os: [windows], path_template: "C:/ProgramData/Acme/hooks.json", layout: merged_into_shared_file, status: current}}
+      - {provider: claude-code, content_type: hook, content_name: guard, os: linux, home_dir: /h, project_root: /p, scope: managed,
+         entry: {scope: managed, os: [windows], path_template: "C:/ProgramData/Acme/hooks.json", layout: merged_into_shared_file, status: current}}
+  expect:
+    case_1:
+      targets:
+        - {scope: user, path: /home/u/.config/devin/AGENTS.md, layout: merged_into_shared_file, status: current, write_target: true}
+        - {scope: user, path: /home/u/.devin/rules/style.md, layout: single_file, status: current, write_target: false}
+        - {scope: user, path: /home/u/.devin/global_rules.md, layout: merged_into_shared_file, status: current, write_target: false}
+        - {scope: user, path: /home/u/.codeium/windsurf/memories/global_rules.md, layout: merged_into_shared_file, status: current, write_target: false}
+    case_2:
+      targets:
+        - {scope: user, path: "C:/Users/u/AppData/Roaming/devin/AGENTS.md", layout: merged_into_shared_file, status: current, write_target: true}
+        - {scope: user, path: "C:/Users/u/.devin/rules/style.md", layout: single_file, status: current, write_target: false}
+        - {scope: user, path: "C:/Users/u/.devin/global_rules.md", layout: merged_into_shared_file, status: current, write_target: false}
+        - {scope: user, path: "C:/Users/u/.codeium/windsurf/memories/global_rules.md", layout: merged_into_shared_file, status: current, write_target: false}
+    case_3:
+      targets:
+        - {scope: managed, path: /Library/Application Support/Devin/hooks.json, layout: merged_into_shared_file, status: current, write_target: true}
+        - {scope: managed, path: /Library/Application Support/Windsurf/hooks.json, layout: merged_into_shared_file, status: current, write_target: false}
+    case_4:
+      targets:
+        - {scope: managed, path: "C:/ProgramData/Devin/hooks.json", layout: merged_into_shared_file, status: current, write_target: true}
+        - {scope: managed, path: "C:/ProgramData/Windsurf/hooks.json", layout: merged_into_shared_file, status: current, write_target: false}
+    case_5: {error: acif.install.no_entry_point}
+    case_6: {error: acif.install.no_entry_point}

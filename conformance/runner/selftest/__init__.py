@@ -496,13 +496,15 @@ def check_source_mechanisms() -> None:
 
 
 INSTALL_ROW_RE = re.compile(
-    r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*`([^`]+)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$"
+    r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*([a-z, ]*?)\s*\|\s*`([^`]+)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$"
 )
 INSTALL_SCOPES = {"user", "project", "managed"}
 INSTALL_LAYOUTS = {"single_file", "directory_of_files", "merged_into_shared_file"}
 INSTALL_STATUSES = {"current", "superseded"}
 INSTALL_TYPES = {"rule", "hook", "skill", "command", "agent", "mcp_config"}
 INSTALL_PLACEHOLDER_RE = re.compile(r"<[^>]*>")
+INSTALL_OSES = ("darwin", "linux", "windows")
+INSTALL_MANAGED_ABS_RE = re.compile(r"^(/|[A-Z]:/)")
 
 
 def check_install_entry_points() -> None:
@@ -522,14 +524,14 @@ def check_install_entry_points() -> None:
     section = _spec_section(spec_text, r"^### A\.2 ")
     if section is None:
         raise AssertionError("no A.2 section found in [ACIF-INSTALL]")
-    spec_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    spec_rows: list[tuple[str, str, str, str, str, str, str, str]] = []
     for line in section.splitlines():
         match = INSTALL_ROW_RE.match(line.strip())
         if match and match.group(1) != "Provider":
             spec_rows.append(match.groups())
     if not spec_rows:
         raise AssertionError("A.2 table parsed zero rows")
-    yaml_rows: list[tuple[str, str, str, str, str, str, str]] = []
+    yaml_rows: list[tuple[str, str, str, str, str, str, str, str]] = []
     errors: list[str] = []
     providers = list(matrix)
     if providers != sorted(providers):
@@ -542,12 +544,29 @@ def check_install_entry_points() -> None:
             if ctype not in INSTALL_TYPES:
                 errors.append(f"{provider}: unknown content type {ctype!r}")
             for entry in entries:
+                os_value = entry.get("os")
+                if "os" not in entry:
+                    os_cell = ""
+                elif (
+                    not isinstance(os_value, list)
+                    or not os_value
+                    or any(member not in INSTALL_OSES for member in os_value)
+                    or os_value != sorted(set(os_value))
+                    or len(os_value) == len(INSTALL_OSES)
+                ):
+                    errors.append(
+                        f"{provider}/{ctype}: os {os_value!r} is not a sorted, duplicate-free, "
+                        "non-empty proper subset of {darwin, linux, windows}"
+                    )
+                    os_cell = str(os_value)
+                else:
+                    os_cell = ", ".join(os_value)
                 yaml_rows.append(
-                    (provider, ctype, str(entry.get("scope")), str(entry.get("path_template")),
+                    (provider, ctype, str(entry.get("scope")), os_cell, str(entry.get("path_template")),
                      str(entry.get("layout")), str(entry.get("status")), str(entry.get("as_of")))
                 )
     seen: set[tuple[str, str, str, str]] = set()
-    for provider, ctype, scope, template, layout, status, _as_of in yaml_rows:
+    for provider, ctype, scope, os_cell, template, layout, status, _as_of in yaml_rows:
         if scope not in INSTALL_SCOPES:
             errors.append(f"{provider}/{ctype}: scope {scope!r} outside the closed enum")
         if layout not in INSTALL_LAYOUTS:
@@ -555,8 +574,15 @@ def check_install_entry_points() -> None:
         if status not in INSTALL_STATUSES:
             errors.append(f"{provider}/{ctype}: status {status!r} outside the closed enum")
         for token in INSTALL_PLACEHOLDER_RE.findall(template):
-            if token != "<content-name>":
+            if token == "<appdata>":
+                if not template.startswith("<appdata>/") or template.count("<appdata>") != 1 or os_cell != "windows":
+                    errors.append(
+                        f"{provider}/{ctype}: <appdata> must be the leading segment of a row whose os is [windows]: {template!r}"
+                    )
+            elif token != "<content-name>":
                 errors.append(f"{provider}/{ctype}: placeholder {token!r} outside the closed grammar")
+        if scope == "managed" and not INSTALL_MANAGED_ABS_RE.match(template):
+            errors.append(f"{provider}/{ctype}: managed template is not absolute: {template!r}")
         if layout == "merged_into_shared_file" and "<content-name>" in template:
             errors.append(f"{provider}/{ctype}: merged_into_shared_file template carries <content-name>: {template!r}")
         key = (provider, ctype, scope, template)

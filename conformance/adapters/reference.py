@@ -572,6 +572,12 @@ def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
         rows = [dict(entry)]
     else:
         rows = [dict(row) for row in _install_matrix().get((_str(inp.get("provider")), _str(inp.get("content_type"))), [])]
+    # [ACIF-INSTALL] §6 OS filtering precedes precedence and every §11 lane.
+    target_os = inp.get("os")
+    if isinstance(target_os, str):
+        rows = [row for row in rows if "os" not in row or target_os in row["os"]]
+    elif any("os" in row for row in rows):
+        raise Unsupported()
     if not rows:
         raise SpecError("acif.install.no_entry_point")
     requested_scope = inp.get("scope")
@@ -590,12 +596,14 @@ def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
     for row in rows:
         template = str(row["path_template"])
         for token in re.findall(r"<[^>]*>", template):
-            if token != "<content-name>":
+            if token not in {"<content-name>", "<appdata>"}:
                 raise SpecError("acif.install.placeholder_unrecognized")
         substituted = template.replace("<content-name>", content_name)
         if substituted.startswith("~/"):
             path = _str(inp.get("home_dir")).rstrip("/") + substituted[1:]
-        elif substituted.startswith("/"):
+        elif substituted.startswith("<appdata>/"):
+            path = _str(inp.get("appdata_dir")).rstrip("/") + substituted[len("<appdata>"):]
+        elif row["scope"] == "managed":
             path = substituted
         else:
             path = _str(inp.get("project_root")).rstrip("/") + "/" + substituted

@@ -23,7 +23,7 @@ def _resolve_request(case: dict[str, Any]) -> dict[str, Any]:
         "home_dir": case["home_dir"],
         "project_root": case["project_root"],
     }
-    for optional in ("scope", "entry"):
+    for optional in ("scope", "entry", "os", "appdata_dir"):
         if optional in case:
             inp[optional] = case[optional]
     return {"op": "resolve_install_targets", "input": inp}
@@ -89,4 +89,18 @@ def tv_install_f(vector: Vector, session: Any, ctx: Any):
     for idx, case in enumerate(vector.data["input"]["cases"], start=1):
         response = send(result, session, ctx, _resolve_request(case))
         assert_result_field(result, f"case_{idx}", response, "targets", exp[f"case_{idx}"]["targets"])
+    return result
+
+
+@binding("TV-INSTALL-g")
+def tv_install_g(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    exp = vector.data["expect"]
+    for idx, case in enumerate(vector.data["input"]["cases"], start=1):
+        response = send(result, session, ctx, _resolve_request(case))
+        expected = exp[f"case_{idx}"]
+        if "error" in expected:
+            assert_error(result, f"case_{idx}", response, expected["error"])
+        else:
+            assert_result_field(result, f"case_{idx}", response, "targets", expected["targets"])
     return result

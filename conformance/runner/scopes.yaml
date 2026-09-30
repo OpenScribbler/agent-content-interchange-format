@@ -204,3 +204,4 @@ install:
   - TV-INSTALL-d
   - TV-INSTALL-e
   - TV-INSTALL-f
+  - TV-INSTALL-g

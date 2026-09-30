@@ -325,7 +325,12 @@ Entry-point resolution over the install-target matrix ([ACIF-INSTALL]
 §6–§9, §11). `input`: `provider`, `content_type`, `content_name`,
 `home_dir`, `project_root`, optional `scope`, optional `entry` (a
 fully-formed entry-point row the vector supplies, overriding the matrix
-— grammar and disposition vectors use it) → `result`: `targets` (ordered
+— grammar and disposition vectors use it), optional `os` (the target
+OS, one of `darwin` | `linux` | `windows`; a vector omits it only when
+no row of the resolved list carries `os`, so the result cannot depend on
+it), optional `appdata_dir` (the application-data directory `<appdata>`
+resolves to; present when a row surviving OS filtering carries it) →
+`result`: `targets` (ordered
 list of `{scope, path, layout, status, write_target}` with `path` fully
 resolved), `diagnostics`. Refusals surface as errors with the
 `acif.install.*` identifier; the supersession warn rides `diagnostics`
