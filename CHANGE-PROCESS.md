@@ -173,7 +173,7 @@ re-verification of the affected scope is warranted.
 
 ## Suite and report impact
 
-The conformance suite (165 vectors at this writing) is normatively
+The conformance suite (181 vectors at this writing) is normatively
 authoritative over prose, and conformance reports pin the exact catalog
 content hashes and binding-set hash they ran against. Those facts drive
 the impact rules:

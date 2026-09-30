@@ -7,6 +7,15 @@ configurations — across the AI coding tool ecosystem.
 **Status: ACIF 0.1 (Draft) — the full specification set and conformance suite
 are published in this repository.**
 
+## Stability
+
+The published specification set is frozen for Syllago, the first
+implementation building against it. New design decisions open only when an
+implementation hits a concrete need that the current text cannot meet, not
+ahead of one. Every change to a spec, a vector, or a published export follows
+[CHANGE-PROCESS.md](CHANGE-PROCESS.md), which sets the evidence each class of
+change needs and how the conformance suite records it.
+
 ## Why this exists
 
 AI agent content is published in provider-native formats. A "hook" for one
@@ -61,7 +70,7 @@ dependencies and conformance classes explicitly.
 ## Conformance suite
 
 [`conformance/`](conformance/README.md) publishes the test-vector catalog —
-165 vectors across 11 families. **The vectors are normatively authoritative
+181 vectors across 12 catalogs. **The vectors are normatively authoritative
 over prose**: an implementation that contradicts a published vector is
 non-conformant regardless of any prose reading. Post-publication changes
 follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state
@@ -83,7 +92,7 @@ under `conformance/reference/` are informative.
 
 ## Design record
 
-`SHAPE.md` is the historical design record — 34 decisions, the open-question
+`SHAPE.md` is the historical design record — 45 decisions, the open-question
 ledger, and the spec-promotion ratifications — with full panel deliberations
 under `panel/`. Where the record and a spec disagree, the spec governs.
 Deferred work lives in `ROADMAP.md` (roadmap items, not version commitments).
@@ -104,7 +113,7 @@ specs/
   render-back/           # [ACIF-RENDER]    (L4)
   install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
-SHAPE.md                 # historical design record (Decisions #1–#34)
+SHAPE.md                 # historical design record (Decisions #1–#45)
 panel/                   # panel consensus records behind the decisions
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content

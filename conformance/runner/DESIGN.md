@@ -9,8 +9,8 @@ document governs.
 ## 1. Goal and non-goals
 
 The runner executes the published conformance vectors
-(`conformance/vectors/*.yaml`: 165 vectors — 153 static, 10 mock-transport,
-2 mock-crawl — across 11 catalogs) against an **implementation under test
+(`conformance/vectors/*.yaml`: 181 vectors — 169 static, 10 mock-transport,
+2 mock-crawl — across 12 catalogs) against an **implementation under test
 (IUT)** and produces a conformance report. The specs graduate from Draft
 when two independent implementations pass all vectors in their claimed
 scope ([ACIF-REGISTRY] §5 and the per-spec conformance clauses).
@@ -154,7 +154,7 @@ that sprays diagnostics does not pass diagnostic vectors.
 
 ### 3.3 Operation vocabulary (v1)
 
-Derived from the input/expect shapes of all 165 vectors. Exact schemas
+Derived from the input/expect shapes of all published vectors. Exact schemas
 live in PROTOCOL.md (§2: written first); the vocabulary:
 
 | Op | Covers | In (essentials) | Out (essentials) |
@@ -394,7 +394,7 @@ such, never a wall of green.
   must agree with each other. The pair is its own oracle — this smuggles
   no informative reference implementation into normative status — and it
   kills the lookup-table adapter class outright: you cannot pre-compute
-  answers to inputs that did not exist yesterday. The published 165 remain
+  answers to inputs that did not exist yesterday. The published vectors remain
   the normative claim basis; the differential pass is graduation evidence
   only. Implementation: `conformance/runner/differential.py`, invoked as
   `python -m conformance.runner differential --adapter-a … --adapter-b …

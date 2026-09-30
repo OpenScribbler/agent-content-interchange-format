@@ -112,13 +112,13 @@ An OPTIONAL, informative `registry_section` field mirroring the external attesta
 
 **What it would take to revisit:** Offline/air-gapped consumers with attestation-based policies materialize as a real deployment class.
 
-### Install-target OS row dimension
+### Install-target host-editor dimension
 
-Entry-point rows ([ACIF-INSTALL] Appendix A.2) carry no per-OS dimension: every 0.1 row resolves on every OS through the `~`/project anchor rules.
+Entry-point rows ([ACIF-INSTALL] Appendix A.2) can now carry a per-OS `os` set and a Windows `<appdata>` anchor (SHAPE.md Decision #45), and devin's per-OS user and managed rows use both. One surveyed location still cannot be published: cline's MCP settings file lives in the `globalStorage` directory of whichever editor hosts the extension, so its path depends on the host editor as well as the OS.
 
-**Why deferred:** exactly one surveyed location needs it — cline's MCP settings file lives under the host editor's per-OS application-data root (`%APPDATA%` / `~/Library/Application Support` / `~/.config`), which no 0.1 template can carry. One witness is not enough to shape a dimension; the row was omitted instead ([ACIF-INSTALL] A.2's informative note names it).
+**Why deferred:** one provider needs it, and a host-editor input would add a resolution input that no other row uses. The row stays omitted ([ACIF-INSTALL] A.2's informative note names it).
 
-**What it would take to revisit:** a second provider ships an OS-divergent location, or an install tool needs cline's MCP row badly enough to justify the dimension. The shape is pre-named in [ACIF-INSTALL] §8.3: an `os` row field over the closed [ACIF-HOOK] §7.1 enum.
+**What it would take to revisit:** a second extension-hosted provider with the same shape, or an install tool that needs cline's MCP row badly enough to justify a host-editor input.
 
 ### Byte-level shared-file merge pinning
 
