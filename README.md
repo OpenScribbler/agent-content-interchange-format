@@ -117,4 +117,8 @@ SHAPE.md                 # historical design record (Decisions #1–#45)
 panel/                   # panel consensus records behind the decisions
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content
+
+## License
+
+Copyright 2026 Holden Hewett. Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 ```
