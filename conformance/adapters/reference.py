@@ -49,40 +49,98 @@ class SpecError(Exception):
         self.diagnostics = diagnostics or []
 
 
-EVENT_MAP = {
-    "PreToolUse": "before_tool_execute",
-    "BeforeTool": "before_tool_execute",
-    "tool.execute.before": "before_tool_execute",
-    "UserPromptSubmit": "before_prompt",
-    "pre_user_prompt": "before_prompt",
-    "Stop": "agent_stop",
-    "post_cascade_response": "agent_stop",
-    "SessionStart": "session_start",
-    "SessionEnd": "session_end",
-    "post_setup_worktree": "worktree_create",
-    "post_cascade_response_with_transcript": "transcript_export",
+# [ACIF-HOOK] Appendix A.1, transcribed row for row: canonical event ->
+# provider-native names, as "provider Native" pairs.
+HOOK_EVENTS = {
+    "before_tool_execute": "claude-code PreToolUse · gemini-cli BeforeTool · copilot-cli preToolUse · kiro preToolUse · cursor preToolUse · devin PreToolUse · opencode tool.execute.before · vs-code-copilot PreToolUse · factory-droid PreToolUse · pi tool_call",
+    "after_tool_execute": "claude-code PostToolUse · gemini-cli AfterTool · copilot-cli postToolUse · kiro postToolUse · cursor postToolUse · devin PostToolUse · opencode tool.execute.after · vs-code-copilot PostToolUse · factory-droid PostToolUse · pi tool_result",
+    "before_shell_execute": "cursor beforeShellExecution · devin pre_run_command",
+    "after_shell_execute": "cursor afterShellExecution · devin post_run_command",
+    "before_mcp_execute": "cursor beforeMCPExecution · devin pre_mcp_tool_use",
+    "after_mcp_execute": "cursor afterMCPExecution · devin post_mcp_tool_use",
+    "before_file_read": "cursor beforeReadFile · devin pre_read_code",
+    "before_prompt": "claude-code UserPromptSubmit · gemini-cli BeforeAgent · copilot-cli userPromptSubmitted · kiro userPromptSubmit · cursor beforeSubmitPrompt · devin UserPromptSubmit · devin pre_user_prompt · vs-code-copilot UserPromptSubmit · factory-droid UserPromptSubmit · pi input",
+    "agent_stop": "claude-code Stop · gemini-cli AfterAgent · kiro stop · copilot-cli agentStop · cursor stop · devin Stop · devin post_cascade_response · opencode session.idle · vs-code-copilot Stop · factory-droid Stop · pi agent_end",
+    "session_start": "claude-code SessionStart · gemini-cli SessionStart · copilot-cli sessionStart · kiro agentSpawn · cursor sessionStart · devin SessionStart · devin session_start · opencode session.created · vs-code-copilot SessionStart · factory-droid SessionStart · pi session_start",
+    "session_end": "claude-code SessionEnd · gemini-cli SessionEnd · copilot-cli sessionEnd · cursor sessionEnd · devin SessionEnd · devin session_end · factory-droid SessionEnd · pi session_shutdown",
+    "before_compact": "claude-code PreCompact · gemini-cli PreCompress · cursor preCompact · vs-code-copilot PreCompact · factory-droid PreCompact · pi session_before_compact",
+    "notification": "claude-code Notification · gemini-cli Notification · factory-droid Notification",
+    "subagent_start": "claude-code SubagentStart · cursor subagentStart · vs-code-copilot SubagentStart · pi before_agent_start",
+    "subagent_stop": "claude-code SubagentStop · copilot-cli subagentStop · cursor subagentStop · vs-code-copilot SubagentStop · factory-droid SubagentStop",
+    "error_occurred": "claude-code ErrorOccurred · copilot-cli errorOccurred · opencode session.error",
+    "tool_use_failure": "claude-code PostToolUseFailure · cursor postToolUseFailure · copilot-cli errorOccurred",
+    "permission_request": "claude-code PermissionRequest · devin PermissionRequest · opencode permission.asked",
+    "after_compact": "claude-code PostCompact · devin PostCompaction",
+    "instructions_loaded": "claude-code InstructionsLoaded",
+    "config_change": "claude-code ConfigChange",
+    "worktree_create": "claude-code WorktreeCreate · devin post_setup_worktree",
+    "worktree_remove": "claude-code WorktreeRemove",
+    "elicitation": "claude-code Elicitation",
+    "elicitation_result": "claude-code ElicitationResult",
+    "teammate_idle": "claude-code TeammateIdle",
+    "task_completed": "claude-code TaskCompleted",
+    "stop_failure": "claude-code StopFailure",
+    "before_model": "gemini-cli BeforeModel",
+    "after_model": "gemini-cli AfterModel · cursor afterAgentResponse",
+    "before_tool_selection": "gemini-cli BeforeToolSelection",
+    "file_changed": "claude-code FileChanged · cursor afterFileEdit · devin post_write_code · kiro File Save · opencode file.edited",
+    "file_created": "kiro File Create",
+    "file_deleted": "kiro File Delete",
+    "before_task": "kiro Pre Task Execution",
+    "after_task": "kiro Post Task Execution",
+    "transcript_export": "devin post_cascade_response_with_transcript",
+    "turn_start": "pi turn_start",
+    "turn_end": "pi turn_end",
+    "model_select": "pi model_select",
+    "user_bash": "pi user_bash",
+    "context_update": "pi context",
+    "message_start": "pi message_start",
+    "message_end": "pi message_end",
 }
-CANONICAL_EVENTS = {
-    "session_start",
-    "session_end",
-    "before_tool_execute",
-    "before_prompt",
-    "agent_stop",
-    "worktree_create",
-    "worktree_remove",
-    "transcript_export",
+HOOK_NATIVES = {
+    canonical: [tuple(pair.split(" ", 1)) for pair in row.split(" · ")]
+    for canonical, row in HOOK_EVENTS.items()
 }
-# [ACIF-HOOK] Appendix A.4: (render-back target, degraded) per canonical
-# event for the devin write surface. A canonical event absent from the
-# table has no devin native name and renders verbatim, degraded.
-DEVIN_RENDER_TARGETS = {
-    "before_prompt": ("UserPromptSubmit", False),
-    "agent_stop": ("Stop", False),
-    "session_start": ("SessionStart", False),
-    "session_end": ("SessionEnd", False),
-    "worktree_create": ("post_setup_worktree", True),
-    "transcript_export": ("post_cascade_response_with_transcript", True),
+HOOK_PROVIDERS = {provider for pairs in HOOK_NATIVES.values() for provider, _ in pairs}
+CANONICAL_EVENTS = set(HOOK_EVENTS)
+# Canonicalize direction: A.3 pins copilot-cli errorOccurred to
+# error_occurred; any other multi-match takes the smaller canonical name.
+EVENT_MAP: dict[str, str] = {}
+for _canonical in sorted(HOOK_NATIVES):
+    for _provider, _native in HOOK_NATIVES[_canonical]:
+        EVENT_MAP.setdefault(_native, _canonical)
+EVENT_MAP["errorOccurred"] = "error_occurred"
+# [ACIF-HOOK] Appendix A.4: (canonical, provider) -> (render-back target,
+# degraded).
+HOOK_RENDER_PINS = {
+    ("before_prompt", "devin"): ("UserPromptSubmit", False),
+    ("agent_stop", "devin"): ("Stop", False),
+    ("session_start", "devin"): ("SessionStart", False),
+    ("session_end", "devin"): ("SessionEnd", False),
+    ("worktree_create", "devin"): ("post_setup_worktree", True),
+    ("transcript_export", "devin"): ("post_cascade_response_with_transcript", True),
+    ("file_changed", "devin"): ("post_write_code", True),
+    ("before_shell_execute", "devin"): ("pre_run_command", True),
+    ("after_shell_execute", "devin"): ("post_run_command", True),
+    ("before_mcp_execute", "devin"): ("pre_mcp_tool_use", True),
+    ("after_mcp_execute", "devin"): ("post_mcp_tool_use", True),
+    ("before_file_read", "devin"): ("pre_read_code", True),
+    ("after_model", "cursor"): ("afterAgentResponse", True),
 }
+
+
+def render_hook_event(event: str, target: str) -> tuple[str, bool]:
+    """A.4 resolution order: (emitted name, emits event_untranslatable)."""
+    if (event, target) in HOOK_RENDER_PINS:
+        return HOOK_RENDER_PINS[(event, target)]
+    if target not in HOOK_PROVIDERS:
+        return event, False
+    names = [native for provider, native in HOOK_NATIVES.get(event, []) if provider == target]
+    if len(names) == 1:
+        return names[0], False
+    return event, True
+
+
 FRONTMATTER_KINDS = {"skill", "rule", "command", "agent"}
 UNRESOLVED_INSTALL = "refuse-unless-operator-opt-in"
 AGENT_NATIVE_BY_PROVIDER = {
@@ -697,11 +755,10 @@ def handle_render(inp: dict[str, Any]) -> dict[str, Any]:
         scripts = _first_handler_scripts(hook)
         event = hook.get("event")
         diagnostics: list[dict[str, Any]] = []
-        if target == "devin":
-            native, degraded = DEVIN_RENDER_TARGETS.get(event, (event, True))
-            if degraded:
-                diagnostics.append({"id": "acif.hook.event_untranslatable", "params": {"event": event, "provider": target}})
-            event = native
+        native, degraded = render_hook_event(event, target)
+        if degraded:
+            diagnostics.append({"id": "acif.hook.event_untranslatable", "params": {"event": event, "provider": target}})
+        event = native
         output: dict[str, Any] = {"event": event, "scripts": []}
         for script in scripts:
             rendered = dict(script)

@@ -195,3 +195,211 @@
       emitted: worktree_remove
       diagnostic: acif.hook.event_untranslatable
       params: {event: worktree_remove, provider: devin}
+
+- id: TV-HOOK-n
+  spec: "[ACIF-HOOK] Appendix A.1, A.2, §8.1"
+  harness: static
+  description: cursor camelCase names canonicalize; the retired PascalCase spellings stay recognized through claude-code and hash equal; names no Cursor surface defines, and the single-provider events left unmapped, reject
+  input:
+    provider: cursor
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      pre_tool_use: {event: preToolUse}
+      post_tool_use: {event: postToolUse}
+      before_submit_prompt: {event: beforeSubmitPrompt}
+      stop: {event: stop}
+      session_start: {event: sessionStart}
+      session_end: {event: sessionEnd}
+      subagent_start: {event: subagentStart}
+      subagent_stop: {event: subagentStop}
+      pre_compact: {event: preCompact}
+      legacy_user_prompt_submit: {event: UserPromptSubmit}
+      legacy_subagent_start: {event: SubagentStart}
+    body_hash_equal_pairs: [[before_submit_prompt, legacy_user_prompt_submit], [subagent_start, legacy_subagent_start]]
+    rejects:
+      before_agent_response: {event: beforeAgentResponse}
+      before_tool_selection: {event: beforeToolSelection}
+      after_agent_thought: {event: afterAgentThought}
+      devin_pre_write_code: {provider: devin, event: pre_write_code}
+  expect:
+    pre_tool_use: {canonical_event: before_tool_execute}
+    post_tool_use: {canonical_event: after_tool_execute}
+    before_submit_prompt: {canonical_event: before_prompt}
+    stop: {canonical_event: agent_stop}
+    session_start: {canonical_event: session_start}
+    session_end: {canonical_event: session_end}
+    subagent_start: {canonical_event: subagent_start}
+    subagent_stop: {canonical_event: subagent_stop}
+    pre_compact: {canonical_event: before_compact}
+    legacy_user_prompt_submit: {canonical_event: before_prompt}
+    legacy_subagent_start: {canonical_event: subagent_start}
+    body_hash_equal: true
+    before_agent_response: {error: acif.hook.event_unrecognized}
+    before_tool_selection: {error: acif.hook.event_unrecognized}
+    after_agent_thought: {error: acif.hook.event_unrecognized}
+    devin_pre_write_code: {error: acif.hook.event_unrecognized}
+
+- id: TV-HOOK-o
+  spec: "[ACIF-HOOK] Appendix A.1, A.4, §12.3"
+  harness: static
+  description: single-name render targets — cursor emits camelCase, devin emits its CLI tool, permission and compaction names, factory-droid emits Notification; all lossless with no event diagnostic
+  input:
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      cursor_before_tool_execute: {event: before_tool_execute, target: cursor}
+      cursor_after_tool_execute: {event: after_tool_execute, target: cursor}
+      cursor_before_prompt: {event: before_prompt, target: cursor}
+      cursor_agent_stop: {event: agent_stop, target: cursor}
+      cursor_session_start: {event: session_start, target: cursor}
+      cursor_session_end: {event: session_end, target: cursor}
+      cursor_subagent_start: {event: subagent_start, target: cursor}
+      cursor_subagent_stop: {event: subagent_stop, target: cursor}
+      cursor_before_compact: {event: before_compact, target: cursor}
+      cursor_before_shell_execute: {event: before_shell_execute, target: cursor}
+      cursor_after_shell_execute: {event: after_shell_execute, target: cursor}
+      cursor_before_mcp_execute: {event: before_mcp_execute, target: cursor}
+      cursor_after_mcp_execute: {event: after_mcp_execute, target: cursor}
+      cursor_before_file_read: {event: before_file_read, target: cursor}
+      devin_before_tool_execute: {event: before_tool_execute, target: devin}
+      devin_after_tool_execute: {event: after_tool_execute, target: devin}
+      devin_permission_request: {event: permission_request, target: devin}
+      devin_after_compact: {event: after_compact, target: devin}
+      factory_droid_notification: {event: notification, target: factory-droid}
+  expect:
+    diagnostic_absent: acif.hook.event_untranslatable
+    cursor_before_tool_execute: {emitted: preToolUse, excluded: [PreToolUse, before_tool_execute]}
+    cursor_after_tool_execute: {emitted: postToolUse, excluded: [PostToolUse, after_tool_execute]}
+    cursor_before_prompt: {emitted: beforeSubmitPrompt, excluded: [UserPromptSubmit, before_prompt]}
+    cursor_agent_stop: {emitted: stop, excluded: [Stop, agent_stop]}
+    cursor_session_start: {emitted: sessionStart, excluded: [SessionStart, session_start]}
+    cursor_session_end: {emitted: sessionEnd, excluded: [SessionEnd, session_end]}
+    cursor_subagent_start: {emitted: subagentStart, excluded: [SubagentStart, subagent_start]}
+    cursor_subagent_stop: {emitted: subagentStop, excluded: [SubagentStop, subagent_stop]}
+    cursor_before_compact: {emitted: preCompact, excluded: [PreCompact, before_compact]}
+    cursor_before_shell_execute: {emitted: beforeShellExecution, excluded: [before_shell_execute]}
+    cursor_after_shell_execute: {emitted: afterShellExecution, excluded: [after_shell_execute]}
+    cursor_before_mcp_execute: {emitted: beforeMCPExecution, excluded: [before_mcp_execute]}
+    cursor_after_mcp_execute: {emitted: afterMCPExecution, excluded: [after_mcp_execute]}
+    cursor_before_file_read: {emitted: beforeReadFile, excluded: [before_file_read]}
+    devin_before_tool_execute: {emitted: PreToolUse, excluded: [before_tool_execute]}
+    devin_after_tool_execute: {emitted: PostToolUse, excluded: [after_tool_execute]}
+    devin_permission_request: {emitted: PermissionRequest, excluded: [permission_request]}
+    devin_after_compact: {emitted: PostCompaction, excluded: [after_compact]}
+    factory_droid_notification: {emitted: Notification, excluded: [notification]}
+
+- id: TV-HOOK-p
+  spec: "[ACIF-HOOK] Appendix A.1, A.2, §8.1"
+  harness: static
+  description: the shell, MCP and file-read events canonicalize from cursor and from devin Cascade names, and each pair hashes equal; the devin names added to existing rows canonicalize
+  input:
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      cursor_before_shell: {provider: cursor, event: beforeShellExecution}
+      devin_before_shell: {provider: devin, event: pre_run_command}
+      cursor_after_shell: {provider: cursor, event: afterShellExecution}
+      devin_after_shell: {provider: devin, event: post_run_command}
+      cursor_before_mcp: {provider: cursor, event: beforeMCPExecution}
+      devin_before_mcp: {provider: devin, event: pre_mcp_tool_use}
+      cursor_after_mcp: {provider: cursor, event: afterMCPExecution}
+      devin_after_mcp: {provider: devin, event: post_mcp_tool_use}
+      cursor_before_read: {provider: cursor, event: beforeReadFile}
+      devin_before_read: {provider: devin, event: pre_read_code}
+      devin_post_compaction: {provider: devin, event: PostCompaction}
+      devin_post_write_code: {provider: devin, event: post_write_code}
+    body_hash_equal_pairs:
+      - [cursor_before_shell, devin_before_shell]
+      - [cursor_after_shell, devin_after_shell]
+      - [cursor_before_mcp, devin_before_mcp]
+      - [cursor_after_mcp, devin_after_mcp]
+      - [cursor_before_read, devin_before_read]
+  expect:
+    cursor_before_shell: {canonical_event: before_shell_execute}
+    devin_before_shell: {canonical_event: before_shell_execute}
+    cursor_after_shell: {canonical_event: after_shell_execute}
+    devin_after_shell: {canonical_event: after_shell_execute}
+    cursor_before_mcp: {canonical_event: before_mcp_execute}
+    devin_before_mcp: {canonical_event: before_mcp_execute}
+    cursor_after_mcp: {canonical_event: after_mcp_execute}
+    devin_after_mcp: {canonical_event: after_mcp_execute}
+    cursor_before_read: {canonical_event: before_file_read}
+    devin_before_read: {canonical_event: before_file_read}
+    devin_post_compaction: {canonical_event: after_compact}
+    devin_post_write_code: {canonical_event: file_changed}
+    body_hash_equal: true
+
+- id: TV-HOOK-q
+  spec: "[ACIF-HOOK] Appendix A.4, §12.3, §14"
+  harness: static
+  description: degraded renders with acif.hook.event_untranslatable — devin Cascade-only pins emit the Cascade name; the cursor after_model pin emits afterAgentResponse; A.4 rule 4 pairs (a provider in A.1 with no native name for the event) emit the canonical name verbatim
+  input:
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      devin_before_shell: {event: before_shell_execute, target: devin}
+      devin_after_shell: {event: after_shell_execute, target: devin}
+      devin_before_mcp: {event: before_mcp_execute, target: devin}
+      devin_after_mcp: {event: after_mcp_execute, target: devin}
+      devin_before_read: {event: before_file_read, target: devin}
+      devin_file_changed: {event: file_changed, target: devin}
+      claude_code_before_shell: {event: before_shell_execute, target: claude-code}
+      cursor_before_model: {event: before_model, target: cursor}
+      factory_droid_subagent_start: {event: subagent_start, target: factory-droid}
+      cursor_after_model: {event: after_model, target: cursor}
+  expect:
+    devin_before_shell:
+      emitted: pre_run_command
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: devin}
+    devin_after_shell:
+      emitted: post_run_command
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: after_shell_execute, provider: devin}
+    devin_before_mcp:
+      emitted: pre_mcp_tool_use
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_mcp_execute, provider: devin}
+    devin_after_mcp:
+      emitted: post_mcp_tool_use
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: after_mcp_execute, provider: devin}
+    devin_before_read:
+      emitted: pre_read_code
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_file_read, provider: devin}
+    devin_file_changed:
+      emitted: post_write_code
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: file_changed, provider: devin}
+    claude_code_before_shell:
+      emitted: before_shell_execute
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: claude-code}
+    cursor_before_model:
+      emitted: before_model
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_model, provider: cursor}
+    factory_droid_subagent_start:
+      emitted: subagent_start
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: subagent_start, provider: factory-droid}
+    cursor_after_model:
+      emitted: afterAgentResponse
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: after_model, provider: cursor}
+
+- id: TV-HOOK-r
+  spec: "[ACIF-HOOK] §6.2, Appendix A.1"
+  harness: static
+  description: on the shell and MCP events a matcher is a command pattern or server name and passes through untranslated, even where a component spells a tool name; a narrow event never hashes equal to the general tool event with a tool matcher
+  input:
+    provider: cursor
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      shell_command_matcher: {event: beforeShellExecution, matcher: "git push.*|file_search"}
+      mcp_server_matcher: {event: beforeMCPExecution, matcher: "web_search"}
+      general_tool_shell_matcher: {event: preToolUse, matcher: "run_terminal_cmd"}
+    body_hash_distinct_pairs: [[shell_command_matcher, general_tool_shell_matcher]]
+  expect:
+    shell_command_matcher: {canonical_event: before_shell_execute, canonical_matcher: "git push.*|file_search"}
+    mcp_server_matcher: {canonical_event: before_mcp_execute, canonical_matcher: "web_search"}
+    general_tool_shell_matcher: {canonical_event: before_tool_execute}
+    body_hash_distinct: true

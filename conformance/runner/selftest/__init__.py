@@ -34,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
         ("capability-vocabulary sync", check_capability_vocabulary),
         ("diagnostic-ids sync", check_diagnostic_ids),
         ("source-mechanisms sync", check_source_mechanisms),
+        ("hook event tables sync", check_hook_event_tables),
         ("install-entry-points sync", check_install_entry_points),
         ("absent fields never satisfy a relation", check_absent_relations),
         ("render-d structural lossy check", check_render_d_structural),
@@ -500,6 +501,57 @@ def check_source_mechanisms() -> None:
             errors.append(f"{kind}: token drift — yaml {sorted(declared.items())} != spec table {sorted(spec_tokens.items())}")
         if (entry.get("aliases") or {}) != spec_aliases:
             errors.append(f"{kind}: alias drift — yaml {entry.get('aliases')} != spec table {spec_aliases}")
+    if errors:
+        raise AssertionError("; ".join(errors))
+
+
+HOOK_A1_ROW_RE = re.compile(r"^\|\s*`([a-z][a-z0-9_]*)`\s*\|\s*(.+?)\s*\|$")
+HOOK_A1_PAIR_RE = re.compile(r"^([a-z][a-z0-9-]*) `([^`]+)`$")
+HOOK_A4_ROW_RE = re.compile(r"^\|\s*`([a-z][a-z0-9_]*)`\s*\|\s*([a-z][a-z0-9-]*)\s*\|\s*`([^`]+)`\s*\|\s*(lossless|degraded)\b")
+
+
+def check_hook_event_tables() -> None:
+    """The reference adapter's HOOK_NATIVES and HOOK_RENDER_PINS must match
+    [ACIF-HOOK] Appendix A.1 and A.4 row for row. The adapter keeps its own
+    transcription; this parses the spec tables at the authority and diffs."""
+    import importlib.util
+
+    spec_text = (CONFORMANCE_ROOT.parent / "specs" / "hooks-interchange" / "spec.md").read_text(encoding="utf-8")
+    a1 = _spec_section(spec_text, r"^### A\.1 ")
+    a4 = _spec_section(spec_text, r"^### A\.4 ")
+    if a1 is None or a4 is None:
+        raise AssertionError("[ACIF-HOOK] A.1 or A.4 section not found")
+    spec_natives: dict[str, list[tuple[str, str]]] = {}
+    for line in a1.splitlines():
+        match = HOOK_A1_ROW_RE.match(line.strip())
+        if not match:
+            continue
+        pairs = []
+        for raw in match.group(2).split(" · "):
+            pair = HOOK_A1_PAIR_RE.match(raw.strip())
+            if not pair:
+                raise AssertionError(f"A.1 {match.group(1)}: unparseable mapping {raw!r}")
+            pairs.append((pair.group(1), pair.group(2)))
+        spec_natives[match.group(1)] = pairs
+    spec_pins = {
+        (m.group(1), m.group(2)): (m.group(3), m.group(4) == "degraded")
+        for m in (HOOK_A4_ROW_RE.match(line.strip()) for line in a4.splitlines())
+        if m
+    }
+    count = re.search(r"^### A\.1 .*\((\d+) events\)", a1, re.M)
+    errors: list[str] = []
+    if count is None or int(count.group(1)) != len(spec_natives):
+        errors.append(f"A.1 heading count != {len(spec_natives)} parsed rows")
+    module_spec = importlib.util.spec_from_file_location("_acif_reference_adapter", CONFORMANCE_ROOT / "adapters" / "reference.py")
+    reference = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(reference)
+    adapter_natives = {canonical: list(pairs) for canonical, pairs in reference.HOOK_NATIVES.items()}
+    for canonical in sorted(set(spec_natives) | set(adapter_natives)):
+        if spec_natives.get(canonical) != adapter_natives.get(canonical):
+            errors.append(f"A.1 {canonical}: spec {spec_natives.get(canonical)} != reference {adapter_natives.get(canonical)}")
+    for key in sorted(set(spec_pins) | set(reference.HOOK_RENDER_PINS)):
+        if spec_pins.get(key) != reference.HOOK_RENDER_PINS.get(key):
+            errors.append(f"A.4 {key}: spec {spec_pins.get(key)} != reference {reference.HOOK_RENDER_PINS.get(key)}")
     if errors:
         raise AssertionError("; ".join(errors))
 

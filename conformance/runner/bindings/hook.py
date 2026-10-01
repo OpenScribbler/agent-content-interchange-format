@@ -158,6 +158,13 @@ def _canonical_event(response: AdapterResponse) -> Any:
     return ABSENT
 
 
+def _canonical_matcher(response: AdapterResponse) -> Any:
+    canonical = (response.result or {}).get("canonical")
+    if isinstance(canonical, dict):
+        return canonical.get("matcher", ABSENT)
+    return ABSENT
+
+
 def _canonical_handler_type(response: AdapterResponse) -> Any:
     canonical = (response.result or {}).get("canonical")
     if not isinstance(canonical, dict):
@@ -420,4 +427,95 @@ def tv_hook_m(vector: Vector, session: Any, ctx: Any) -> VectorResult:
         )
         assert_output_contains(result, name, response, "emitted", exp[name]["emitted"])
         assert_diagnostic(result, name, response, exp[name]["diagnostic"], exp[name]["params"])
+    return result
+
+
+@binding("TV-HOOK-n")
+def tv_hook_n(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    responses: dict[str, AdapterResponse] = {}
+    for name, case in inp["cases"].items():
+        hook = {"event": case["event"], "handlers": inp["common_handlers"]}
+        response = _send(result, session, ctx, _provider_ingest(inp["provider"], hook))
+        responses[name] = response
+        _assert_value(result, name, "canonical_event", exp[name]["canonical_event"], _canonical_event(response), response)
+    for left, right in inp["body_hash_equal_pairs"]:
+        if _all_ok([responses[left], responses[right]]):
+            hashes = [_body_hash(responses[left]), _body_hash(responses[right])]
+            result.add_check(f"{left}={right}", "body_hash_equal", exp["body_hash_equal"], hashes, hashes[0] == hashes[1] and hashes[0] is not ABSENT)
+    for name, case in inp["rejects"].items():
+        hook = {"event": case["event"], "handlers": inp["common_handlers"]}
+        response = _send(result, session, ctx, _provider_ingest(case.get("provider", inp["provider"]), hook))
+        _assert_error(result, name, response, exp[name]["error"])
+    return result
+
+
+@binding("TV-HOOK-o")
+def tv_hook_o(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        response = _send(result, session, ctx, _render_hook(case["event"], inp["common_handlers"], case["target"]))
+        assert_output_contains(result, name, response, "emitted", exp[name]["emitted"])
+        assert_output_excludes(result, name, response, "excluded", exp[name]["excluded"])
+        _assert_diagnostic_absent(result, name, response, exp["diagnostic_absent"])
+    return result
+
+
+@binding("TV-HOOK-p")
+def tv_hook_p(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    responses: dict[str, AdapterResponse] = {}
+    for name, case in inp["cases"].items():
+        hook = {"event": case["event"], "handlers": inp["common_handlers"]}
+        response = _send(result, session, ctx, _provider_ingest(case["provider"], hook))
+        responses[name] = response
+        _assert_value(result, name, "canonical_event", exp[name]["canonical_event"], _canonical_event(response), response)
+    for left, right in inp["body_hash_equal_pairs"]:
+        if _all_ok([responses[left], responses[right]]):
+            hashes = [_body_hash(responses[left]), _body_hash(responses[right])]
+            result.add_check(f"{left}={right}", "body_hash_equal", exp["body_hash_equal"], hashes, hashes[0] == hashes[1] and hashes[0] is not ABSENT)
+    return result
+
+
+@binding("TV-HOOK-q")
+def tv_hook_q(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        response = send(
+            result,
+            session,
+            ctx,
+            _render_hook(case["event"], inp["common_handlers"], case["target"]),
+            tags={"degradation_path": "hook-event-untranslatable", "paired_diagnostic": exp[name]["diagnostic"]},
+        )
+        assert_output_contains(result, name, response, "emitted", exp[name]["emitted"])
+        assert_diagnostic(result, name, response, exp[name]["diagnostic"], exp[name]["params"])
+    return result
+
+
+@binding("TV-HOOK-r")
+def tv_hook_r(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    responses: dict[str, AdapterResponse] = {}
+    for name, case in inp["cases"].items():
+        hook = {"event": case["event"], "matcher": case["matcher"], "handlers": inp["common_handlers"]}
+        response = _send(result, session, ctx, _provider_ingest(inp["provider"], hook))
+        responses[name] = response
+        _assert_value(result, name, "canonical_event", exp[name]["canonical_event"], _canonical_event(response), response)
+        if "canonical_matcher" in exp[name]:
+            _assert_value(result, name, "canonical_matcher", exp[name]["canonical_matcher"], _canonical_matcher(response), response)
+    for left, right in inp["body_hash_distinct_pairs"]:
+        if _all_ok([responses[left], responses[right]]):
+            hashes = [_body_hash(responses[left]), _body_hash(responses[right])]
+            result.add_check(f"{left}!={right}", "body_hash_distinct", exp["body_hash_distinct"], hashes, hashes[0] != hashes[1] and ABSENT not in hashes)
     return result

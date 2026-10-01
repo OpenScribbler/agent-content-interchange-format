@@ -146,6 +146,7 @@ _HOOK_EVENTS = [
     "agent_stop", "session_start", "session_end", "before_compact",
     "notification", "subagent_start", "subagent_stop", "error_occurred",
     "permission_request", "file_changed", "before_model", "turn_start",
+    "before_shell_execute", "before_file_read",
 ]
 
 # (provider tag, provider-native spelling, canonical) rows transcribed
@@ -155,7 +156,9 @@ _HOOK_EVENT_ALIASES = [
     ("claude-code", "PreToolUse", "before_tool_execute"),
     ("gemini-cli", "BeforeTool", "before_tool_execute"),
     ("opencode", "tool.execute.before", "before_tool_execute"),
-    ("cursor", "PostToolUse", "after_tool_execute"),
+    ("cursor", "postToolUse", "after_tool_execute"),
+    ("cursor", "beforeShellExecution", "before_shell_execute"),
+    ("devin", "pre_read_code", "before_file_read"),
     ("kiro", "postToolUse", "after_tool_execute"),
     ("pi", "tool_result", "after_tool_execute"),
     ("claude-code", "UserPromptSubmit", "before_prompt"),

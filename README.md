@@ -53,7 +53,7 @@ are co-equal and are the units that should be portable.
 | Layer | Spec | Defines |
 |---|---|---|
 | Core | [`specs/core/`](specs/core/spec.md) — **[ACIF-CORE]** | Common envelope, carrier model, identity + `body_hash` change signal, canonicalization disciplines, capability (`requires`) model, canonical tool vocabulary |
-| L1 | [`specs/hooks-interchange/`](specs/hooks-interchange/spec.md) — **[ACIF-HOOK]** | Canonical hook model, event vocabulary (39 events), per-OS script selection, sidecar-only hash preimage |
+| L1 | [`specs/hooks-interchange/`](specs/hooks-interchange/spec.md) — **[ACIF-HOOK]** | Canonical hook model, event vocabulary (44 events), per-OS script selection, sidecar-only hash preimage |
 | L1 | [`specs/skill-interchange/`](specs/skill-interchange/spec.md) — **[ACIF-SKILL]** | Activation model + materialization, body classification, discovery tiers |
 | L1 | [`specs/rule-interchange/`](specs/rule-interchange/spec.md) — **[ACIF-RULE]** | Activation-mode vocabulary (first ACIF-owned enum), glob consistency, prose opacity |
 | L1 | [`specs/command-interchange/`](specs/command-interchange/spec.md) — **[ACIF-COMMAND]** | Argument-placeholder vocabulary + rewrite, passthrough frontmatter surface |
@@ -70,7 +70,7 @@ dependencies and conformance classes explicitly.
 ## Conformance suite
 
 [`conformance/`](conformance/README.md) publishes the test-vector catalog —
-181 vectors across 12 catalogs. **The vectors are normatively authoritative
+186 vectors across 12 catalogs. **The vectors are normatively authoritative
 over prose**: an implementation that contradicts a published vector is
 non-conformant regardless of any prose reading. Post-publication changes
 follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state
@@ -86,12 +86,12 @@ implementation has done that yet.
 | Scope | [syllago](https://github.com/OpenScribbler/syllago) | [acif-ts](https://github.com/OpenScribbler/acif-ts) |
 |---|---|---|
 | core | pass at suite 6 | pass at suite 6 |
-| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 11 |
+| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 11, and TV-HOOK-n through TV-HOOK-r at suite 12 |
 | skill, rule, command, agent, mcp | pass at suite 6 | not claimed |
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
 
-The suite is at 11. Published runs live under
+The suite is at 12. Published runs live under
 [`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
 [`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
 
@@ -110,7 +110,7 @@ The suite is at 11. Published runs live under
 
 ## Design record
 
-`SHAPE.md` is the historical design record — 45 decisions, the open-question
+`SHAPE.md` is the historical design record — 47 decisions, the open-question
 ledger, and the spec-promotion ratifications. Where the record and a spec
 disagree, the spec governs. Deferred work lives in `ROADMAP.md` (roadmap
 items, not version commitments).
@@ -131,7 +131,7 @@ specs/
   render-back/           # [ACIF-RENDER]    (L4)
   install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
-SHAPE.md                 # historical design record (Decisions #1–#45)
+SHAPE.md                 # historical design record (Decisions #1–#47)
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content
 ```

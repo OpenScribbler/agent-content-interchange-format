@@ -286,8 +286,10 @@ Rows are grouped by provider, then content type; order within a group is normati
 | `crush` | skill | project |  | `.crush/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
 | `cursor` | agent | user |  | `~/.cursor/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
 | `cursor` | agent | project |  | `.cursor/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cursor` | hook | user |  | `~/.cursor/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey; installer path table (ADR-0020) |
-| `cursor` | hook | project |  | `.cursor/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
+| `cursor` | hook | user |  | `~/.cursor/hooks.json` | merged_into_shared_file | current | cursor.com/docs/agent/hooks 2026-09-30 |
+| `cursor` | hook | user |  | `~/.cursor/settings.json` | merged_into_shared_file | superseded | cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey; installer path table (ADR-0020)) |
+| `cursor` | hook | project |  | `.cursor/hooks.json` | merged_into_shared_file | current | cursor.com/docs/agent/hooks 2026-09-30 |
+| `cursor` | hook | project |  | `.cursor/settings.json` | merged_into_shared_file | superseded | cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey) |
 | `cursor` | mcp_config | user |  | `~/.cursor/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
 | `cursor` | mcp_config | project |  | `.cursor/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
 | `cursor` | rule | project |  | `.cursor/rules/<content-name>.mdc` | single_file | current | syllago 2026-07 survey |
@@ -416,5 +418,7 @@ Individual vector IDs are assigned in the conformance suite.
 Minted 2026-07-16 as the install-entry-points expansion (SHAPE.md Decision #41; stabilization-plan Phase 4, Gate C: spec-purist + registry-operator, convergent). The Gate C record: home = a dedicated L5 actor document (this one) rather than a [ACIF-REGISTRY] §8 projection (a frozen table is ACIF's assertion, not a registry derivation) or a render-context input ([ACIF-RENDER] §6.1 pins its context closed; placement is the install tool's act, downstream of bytes); polarity = frozen rows under the deterministic-projection discipline with the row-data amendment lane, rather than an observational §8.4-style snapshot (an install-tool MUST cannot cite stale-able data), with the registry-operator's conditions adopted: the A.1 ownership carve-out, supersession-not-deletion, byte-identical re-serving, refresh-over-vendored consumption, and the amendment lane landing on observation without a batch window.
 
 The `os` row field and the `<appdata>` token were added by SHAPE.md Decision #45 (Class C, 2026-09-30), when devin's per-OS user and managed locations became the first verified rows that need them.
+
+Row-data amendment, 2026-09-30: cursor's hook rows moved from `~/.cursor/settings.json` and `.cursor/settings.json` to `~/.cursor/hooks.json` and `.cursor/hooks.json`, verified against Cursor's hooks documentation. The `settings.json` rows are superseded, not deleted (§12). Cursor also reads Claude Code's hook names from `.claude/settings*.json`, which is claude-code's location and is not a cursor row.
 
 The matrix rows derive from the provider survey conducted for the shipping install-tool implementation and were verified against provider builds or documentation as the per-row `as_of` records.

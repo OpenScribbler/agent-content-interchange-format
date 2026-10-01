@@ -123,7 +123,9 @@ hook:
 
 **`event`** — REQUIRED. In canonical form, MUST be a canonical event name from Appendix A, matched by exact byte comparison. Canonicalization translates provider-native event names per the Appendix A mapping; a name that is neither canonical nor a provider-native name appearing in Appendix A MUST be rejected with `acif.hook.event_unrecognized`. *(Informative: restricting recognition to the pinned tables guards against key-injection via crafted event names.)*
 
-**`matcher`** — OPTIONAL. When present, MUST be non-empty ([ACIF-CORE] §8.3). Canonicalization translates matcher components per [ACIF-CORE] Appendix A.3. Absent in canonical form when the source carries no matcher or an empty one.
+**`matcher`** — OPTIONAL. When present, MUST be non-empty ([ACIF-CORE] §8.3). Canonicalization translates matcher components per [ACIF-CORE] Appendix A.3, except on the five narrow events of Appendix A.1. Absent in canonical form when the source carries no matcher or an empty one.
+
+On `before_shell_execute`, `after_shell_execute`, `before_mcp_execute`, `after_mcp_execute`, and `before_file_read`, a matcher is not a tool-name pattern, and canonicalization and render-back MUST carry it through byte for byte, without [ACIF-CORE] Appendix A.3 translation, even where a component spells a tool name. On the two shell events the matcher filters the shell command text. On the two MCP events it filters the MCP server name. On `before_file_read` its meaning is provider-defined. *(Informative: cursor matches it as a regular expression against the full command string, the server name, and the fixed value `Read` respectively.)*
 
 **`handlers`** — REQUIRED, one or more entries; an absent or empty `handlers` array MUST be rejected with `acif.hook.handlers_missing`. Handler order is semantically significant (it is the execution order for the event) and is preserved through canonicalization and serialization. Each entry's `type` MUST be a member of the Appendix B enum in canonical form; the absent-type legacy residual is materialized per §8.2. Fields meaningful per type are listed in Appendix B; a handler carrying a field not meaningful for its type retains it as opaque passthrough ([ACIF-CORE] §8.5).
 
@@ -424,7 +426,7 @@ Reject-class identifiers make canonicalization fail; diagnostic-class identifier
 
 ### 16.2 Informative
 
-- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #6, #19, #21, #23, #29, #33).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #6, #19, #21, #23, #29, #33, #44, #46, #47).
 
 ---
 
@@ -432,24 +434,29 @@ Reject-class identifiers make canonicalization fail; diagnostic-class identifier
 
 This appendix is ACIF-owned normative text; implementations conform to this copy. It is normative for the canonical names, the render-back target of each (canonical, provider) pair (A.1 where the provider carries one native name on the row, A.4 where it carries more than one), and the canonicalize-direction tiebreaker (A.3); which providers carry a name for an event is observational snapshot data.
 
-### A.1 Canonical names and provider mappings (39 events)
+### A.1 Canonical names and provider mappings (44 events)
 
 | Canonical | Provider mappings |
 |---|---|
-| `before_tool_execute` | claude-code `PreToolUse` · gemini-cli `BeforeTool` · copilot-cli `preToolUse` · kiro `preToolUse` · cursor `PreToolUse` · opencode `tool.execute.before` · vs-code-copilot `PreToolUse` · factory-droid `PreToolUse` · pi `tool_call` |
-| `after_tool_execute` | claude-code `PostToolUse` · gemini-cli `AfterTool` · copilot-cli `postToolUse` · kiro `postToolUse` · cursor `PostToolUse` · opencode `tool.execute.after` · vs-code-copilot `PostToolUse` · factory-droid `PostToolUse` · pi `tool_result` |
-| `before_prompt` | claude-code `UserPromptSubmit` · gemini-cli `BeforeAgent` · copilot-cli `userPromptSubmitted` · kiro `userPromptSubmit` · cursor `UserPromptSubmit` · devin `UserPromptSubmit` · devin `pre_user_prompt` · vs-code-copilot `UserPromptSubmit` · factory-droid `UserPromptSubmit` · pi `input` |
-| `agent_stop` | claude-code `Stop` · gemini-cli `AfterAgent` · kiro `stop` · copilot-cli `agentStop` · cursor `Stop` · devin `Stop` · devin `post_cascade_response` · opencode `session.idle` · vs-code-copilot `Stop` · factory-droid `Stop` · pi `agent_end` |
-| `session_start` | claude-code `SessionStart` · gemini-cli `SessionStart` · copilot-cli `sessionStart` · kiro `agentSpawn` · cursor `SessionStart` · devin `SessionStart` · devin `session_start` · opencode `session.created` · vs-code-copilot `SessionStart` · factory-droid `SessionStart` · pi `session_start` |
-| `session_end` | claude-code `SessionEnd` · gemini-cli `SessionEnd` · copilot-cli `sessionEnd` · cursor `SessionEnd` · devin `SessionEnd` · devin `session_end` · factory-droid `SessionEnd` · pi `session_shutdown` |
-| `before_compact` | claude-code `PreCompact` · gemini-cli `PreCompress` · cursor `PreCompact` · vs-code-copilot `PreCompact` · factory-droid `PreCompact` · pi `session_before_compact` |
-| `notification` | claude-code `Notification` · gemini-cli `Notification` |
-| `subagent_start` | claude-code `SubagentStart` · cursor `SubagentStart` · vs-code-copilot `SubagentStart` · factory-droid `SubagentStart` · pi `before_agent_start` |
-| `subagent_stop` | claude-code `SubagentStop` · copilot-cli `subagentStop` · cursor `SubagentStop` · vs-code-copilot `SubagentStop` · factory-droid `SubagentStop` |
+| `before_tool_execute` | claude-code `PreToolUse` · gemini-cli `BeforeTool` · copilot-cli `preToolUse` · kiro `preToolUse` · cursor `preToolUse` · devin `PreToolUse` · opencode `tool.execute.before` · vs-code-copilot `PreToolUse` · factory-droid `PreToolUse` · pi `tool_call` |
+| `after_tool_execute` | claude-code `PostToolUse` · gemini-cli `AfterTool` · copilot-cli `postToolUse` · kiro `postToolUse` · cursor `postToolUse` · devin `PostToolUse` · opencode `tool.execute.after` · vs-code-copilot `PostToolUse` · factory-droid `PostToolUse` · pi `tool_result` |
+| `before_shell_execute` | cursor `beforeShellExecution` · devin `pre_run_command` |
+| `after_shell_execute` | cursor `afterShellExecution` · devin `post_run_command` |
+| `before_mcp_execute` | cursor `beforeMCPExecution` · devin `pre_mcp_tool_use` |
+| `after_mcp_execute` | cursor `afterMCPExecution` · devin `post_mcp_tool_use` |
+| `before_file_read` | cursor `beforeReadFile` · devin `pre_read_code` |
+| `before_prompt` | claude-code `UserPromptSubmit` · gemini-cli `BeforeAgent` · copilot-cli `userPromptSubmitted` · kiro `userPromptSubmit` · cursor `beforeSubmitPrompt` · devin `UserPromptSubmit` · devin `pre_user_prompt` · vs-code-copilot `UserPromptSubmit` · factory-droid `UserPromptSubmit` · pi `input` |
+| `agent_stop` | claude-code `Stop` · gemini-cli `AfterAgent` · kiro `stop` · copilot-cli `agentStop` · cursor `stop` · devin `Stop` · devin `post_cascade_response` · opencode `session.idle` · vs-code-copilot `Stop` · factory-droid `Stop` · pi `agent_end` |
+| `session_start` | claude-code `SessionStart` · gemini-cli `SessionStart` · copilot-cli `sessionStart` · kiro `agentSpawn` · cursor `sessionStart` · devin `SessionStart` · devin `session_start` · opencode `session.created` · vs-code-copilot `SessionStart` · factory-droid `SessionStart` · pi `session_start` |
+| `session_end` | claude-code `SessionEnd` · gemini-cli `SessionEnd` · copilot-cli `sessionEnd` · cursor `sessionEnd` · devin `SessionEnd` · devin `session_end` · factory-droid `SessionEnd` · pi `session_shutdown` |
+| `before_compact` | claude-code `PreCompact` · gemini-cli `PreCompress` · cursor `preCompact` · vs-code-copilot `PreCompact` · factory-droid `PreCompact` · pi `session_before_compact` |
+| `notification` | claude-code `Notification` · gemini-cli `Notification` · factory-droid `Notification` |
+| `subagent_start` | claude-code `SubagentStart` · cursor `subagentStart` · vs-code-copilot `SubagentStart` · pi `before_agent_start` |
+| `subagent_stop` | claude-code `SubagentStop` · copilot-cli `subagentStop` · cursor `subagentStop` · vs-code-copilot `SubagentStop` · factory-droid `SubagentStop` |
 | `error_occurred` | claude-code `ErrorOccurred` · copilot-cli `errorOccurred` · opencode `session.error` |
 | `tool_use_failure` | claude-code `PostToolUseFailure` · cursor `postToolUseFailure` · copilot-cli `errorOccurred` |
-| `permission_request` | claude-code `PermissionRequest` · opencode `permission.asked` |
-| `after_compact` | claude-code `PostCompact` |
+| `permission_request` | claude-code `PermissionRequest` · devin `PermissionRequest` · opencode `permission.asked` |
+| `after_compact` | claude-code `PostCompact` · devin `PostCompaction` |
 | `instructions_loaded` | claude-code `InstructionsLoaded` |
 | `config_change` | claude-code `ConfigChange` |
 | `worktree_create` | claude-code `WorktreeCreate` · devin `post_setup_worktree` |
@@ -459,10 +466,10 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 | `teammate_idle` | claude-code `TeammateIdle` |
 | `task_completed` | claude-code `TaskCompleted` |
 | `stop_failure` | claude-code `StopFailure` |
-| `before_model` | gemini-cli `BeforeModel` · cursor `beforeAgentResponse` |
+| `before_model` | gemini-cli `BeforeModel` |
 | `after_model` | gemini-cli `AfterModel` · cursor `afterAgentResponse` |
-| `before_tool_selection` | gemini-cli `BeforeToolSelection` · cursor `beforeToolSelection` |
-| `file_changed` | claude-code `FileChanged` · cursor `afterFileEdit` · kiro `File Save` · opencode `file.edited` |
+| `before_tool_selection` | gemini-cli `BeforeToolSelection` |
+| `file_changed` | claude-code `FileChanged` · cursor `afterFileEdit` · devin `post_write_code` · kiro `File Save` · opencode `file.edited` |
 | `file_created` | kiro `File Create` |
 | `file_deleted` | kiro `File Delete` |
 | `before_task` | kiro `Pre Task Execution` |
@@ -476,6 +483,16 @@ This appendix is ACIF-owned normative text; implementations conform to this copy
 | `message_start` | pi `message_start` |
 | `message_end` | pi `message_end` |
 
+*(Informative)* The cursor names are the camelCase names `.cursor/hooks.json` accepts. Cursor also reads Claude Code's PascalCase names from `.claude/settings*.json` through a compatibility loader; those spellings remain recognized through the claude-code column, so they canonicalize to the same names and hash equal.
+
+*(Informative)* cursor `afterAgentResponse` on `after_model` is lossy in meaning, so A.4 pins the pair degraded. gemini-cli's `AfterModel` fires per response chunk and may modify the response. cursor's fires once, after the full assistant message, and only observes. A hook that rewrites model output keeps its event name on a cursor render and loses its effect, and the A.4 row makes that loss loud ([ACIF-RENDER] §7).
+
+The shell, MCP, and file-read events (`before_shell_execute` through `before_file_read`) and `before_tool_execute` or `after_tool_execute` with a tool matcher are distinct events. Canonicalization MUST NOT rewrite one into the other, so a hook on a narrow event and a hook on the general tool event never hash equal, whatever matcher either carries. A matcher on a narrow event follows §6.2, not [ACIF-CORE] Appendix A.3.
+
+*(Informative)* Each narrow event fires only for one kind of tool. A provider that has only the general tool events carries no native name for them, and a render to it takes A.4 rule 4. Four Cursor events have no canonical name in this revision and reject per A.2: `afterAgentThought`, and the Tab and app-lifecycle events `beforeTabFileRead`, `afterTabFileEdit`, and `workspaceOpen`.
+
+*(Informative)* The two providers' narrow events differ below the name. Cursor's `beforeReadFile` also fires for context attachments and passes the file content and an `attachments` array; devin's `pre_read_code` passes only `file_path`. Cascade documents no matcher field, so a matcher is not honoured on a render to Cascade. Cursor blocks on exit code 2 or on a JSON `permission: "deny"` response, while Cascade blocks only on exit code 2 and ignores JSON output. A hook that blocks through the JSON response fails open when rendered to Cascade, and the event-name mapping does not carry that difference.
+
 ### A.2 Event-name validity
 
 An event name is recognized if and only if it is a canonical name in A.1 or a provider-native name appearing in A.1. Any other name rejects per §6.2.
@@ -486,11 +503,11 @@ This tiebreaker governs canonicalization only: a provider-native name that appea
 
 copilot-cli maps BOTH `error_occurred` and `tool_use_failure` to `errorOccurred`; reverse translation MUST prefer `error_occurred`. For any other multi-match, the lexicographically smaller canonical name wins ([ACIF-CORE] §8.4).
 
-*(Informative)* Approximately 16 events have single-provider coverage. Coverage is observational; the canonical vocabulary is not relaxed by low coverage.
+*(Informative)* 22 of the 44 events have single-provider coverage. Coverage is observational; the canonical vocabulary is not relaxed by low coverage.
 
 ### A.4 Render-back targets for multi-native providers
 
-An A.1 row that carries more than one native name for one provider does not determine that provider's render-back target on its own. This table pins the target for every such (canonical, provider) pair, and pins the fidelity class ([ACIF-RENDER] §7) of the pairs whose only native name is one the provider's write surface cannot fire. The table is normative on its own authority: an A.1 row-data amendment that adds a native name does not amend this table, and this table does not affect canonicalization (A.2 recognition, A.3 tiebreaker), so every native name in A.1 remains recognized at ingestion.
+An A.1 row that carries more than one native name for one provider does not determine that provider's render-back target on its own. This table pins the target for every such (canonical, provider) pair, and pins the fidelity class ([ACIF-RENDER] §7) of two kinds of single-name pair: those whose only native name is one the write surface this table selects for the provider (for devin, the CLI surface) cannot fire, and those whose native name fires with semantics that lose the hook's effect. The table is normative on its own authority: an A.1 row-data amendment that adds a native name does not amend this table, and this table does not affect canonicalization (A.2 recognition, A.3 tiebreaker), so every native name in A.1 remains recognized at ingestion.
 
 | Canonical | Provider | Render-back target | Fidelity |
 |---|---|---|---|
@@ -500,8 +517,15 @@ An A.1 row that carries more than one native name for one provider does not dete
 | `session_end` | devin | `SessionEnd` | lossless |
 | `worktree_create` | devin | `post_setup_worktree` | degraded (`acif.hook.event_untranslatable`) |
 | `transcript_export` | devin | `post_cascade_response_with_transcript` | degraded (`acif.hook.event_untranslatable`) |
+| `file_changed` | devin | `post_write_code` | degraded (`acif.hook.event_untranslatable`) |
+| `before_shell_execute` | devin | `pre_run_command` | degraded (`acif.hook.event_untranslatable`) |
+| `after_shell_execute` | devin | `post_run_command` | degraded (`acif.hook.event_untranslatable`) |
+| `before_mcp_execute` | devin | `pre_mcp_tool_use` | degraded (`acif.hook.event_untranslatable`) |
+| `after_mcp_execute` | devin | `post_mcp_tool_use` | degraded (`acif.hook.event_untranslatable`) |
+| `before_file_read` | devin | `pre_read_code` | degraded (`acif.hook.event_untranslatable`) |
+| `after_model` | cursor | `afterAgentResponse` | degraded (`acif.hook.event_untranslatable`) |
 
-Render-back of a canonical event name to a target provider resolves in this order:
+Render-back of a canonical event name to a target provider applies the first rule below whose condition holds:
 
 1. The (canonical, provider) pair has a row in this table: emit the render-back target. A `degraded` row additionally emits `acif.hook.event_untranslatable`.
 2. The provider appears in A.1 and the A.1 row carries exactly one native name for the provider: emit that name (lossless).
@@ -511,7 +535,7 @@ Render-back of a canonical event name to a target provider resolves in this orde
 
 `acif.hook.event_untranslatable` carries `params.event` (the canonical name) and `params.provider` (the target provider slug).
 
-*(Informative)* devin has two writable hook surfaces. The Devin CLI reads PascalCase names from `~/.config/devin/config.json` and `.devin/hooks.v1.json`; Cascade (Devin Desktop IDE and the JetBrains plugin) reads snake_case names from `~/.codeium/windsurf/hooks.json`, `~/.codeium/hooks.json`, and `.windsurf/hooks.json`. Neither page on docs.devin.ai mentions the other surface, and nothing forces one choice. The pins select the CLI surface as a policy choice aligned with [ACIF-INSTALL] Appendix A.2, which lists the CLI row first per scope, so the file an install tool writes is the file that reads the emitted name. `worktree_create` and `transcript_export` have Cascade names only, so a devin render emits the Cascade name and discloses that the CLI surface cannot fire it.
+*(Informative)* devin has two writable hook surfaces. The Devin CLI reads PascalCase names from `~/.config/devin/config.json` and `.devin/hooks.v1.json`; Cascade (Devin Desktop IDE and the JetBrains plugin) reads snake_case names from `~/.codeium/windsurf/hooks.json`, `~/.codeium/hooks.json`, and `.windsurf/hooks.json`. Neither page on docs.devin.ai mentions the other surface, and nothing forces one choice. The pins select the CLI surface as a policy choice aligned with [ACIF-INSTALL] Appendix A.2, which lists the CLI row first per scope, so the file an install tool writes is the file that reads the emitted name. `before_tool_execute`, `after_tool_execute`, `permission_request`, and `after_compact` have CLI names only, so their devin renders are lossless under rule 2. Eight events have Cascade names only: `worktree_create`, `transcript_export`, `file_changed`, and the five shell, MCP, and file-read events. A devin render of any of them emits the Cascade name and discloses that the CLI surface cannot fire it.
 
 ## Appendix B — Canonical Handler-Type Enum (Normative)
 
@@ -532,7 +556,7 @@ The provider-native handler-type alias set of this appendix is **empty** in ACIF
 
 The vectors in these families, published in the `conformance/` directory, are normatively authoritative over prose. Family definitions:
 
-**TV-HOOK-\*** (capability model): (a) empty `requires` conformant; (b) orphan-key reject (`requires.handler_types` on a hook); (c) unknown-key three-valued evaluation; (d) `D_K` handler_types — derivable-true on a conforming record; the empty-`handlers` input tests the `acif.hook.handlers_missing` reject, not a derivable-false result (the derivable-false branch is unreachable on valid input, §10.1); (e) `D_K` matcher_patterns; (f) `D_K` async_execution; (g) canonical event-name round-trip, `body_hash` post-translation; (h) canonical handler-type round-trip; (i) missing referenced file — a `type: file` script path with no file at ingestion → `acif.hook.script_file_missing`; (j) invalid referenced path — an absolute path and a `..`-traversing path each → `acif.hook.script_path_invalid`.
+**TV-HOOK-\*** (capability model): (a) empty `requires` conformant; (b) orphan-key reject (`requires.handler_types` on a hook); (c) unknown-key three-valued evaluation; (d) `D_K` handler_types — derivable-true on a conforming record; the empty-`handlers` input tests the `acif.hook.handlers_missing` reject, not a derivable-false result (the derivable-false branch is unreachable on valid input, §10.1); (e) `D_K` matcher_patterns; (f) `D_K` async_execution; (g) canonical event-name round-trip, `body_hash` post-translation; (h) canonical handler-type round-trip; (i) missing referenced file — a `type: file` script path with no file at ingestion → `acif.hook.script_file_missing`; (j) invalid referenced path — an absolute path and a `..`-traversing path each → `acif.hook.script_path_invalid`; (k) A.4 lossless pins — each devin multi-native pair renders its CLI name with no event diagnostic; (l) A.4 never touches canonicalization — devin CLI and Cascade spellings canonicalize to the same name and hash equal; (m) degraded render — a Cascade-only devin pair and a no-native-row event each emit `acif.hook.event_untranslatable` with params; (n) cursor camelCase names canonicalize, the retired PascalCase spellings stay recognized and hash equal, and names no provider defines or A.1 leaves unmapped reject; (o) single-name render targets — cursor camelCase, the devin CLI additions, and factory-droid `Notification`, lossless with no event diagnostic; (p) the shell, MCP, and file-read events canonicalize from both cursor and devin and hash equal, and the devin names added to existing rows canonicalize; (q) degraded renders of the Cascade-only devin pins, the cursor `after_model` pin, and A.4 rule 4 pairs, each with params; (r) a matcher on a shell or MCP event passes through untranslated, and a narrow event never hashes equal to the general tool event with a tool matcher.
 
 **TV-PLATFORM-\*** (per-OS selection, canonicalization, hash coverage): (a) absence=all; (b) constrained-beats-default; (c) empty-list rejects; (d) invalid OS values (`freebsd`; case-variant `Linux`); (e) default ambiguity; (f) constrained overlap with named colliding OS + indices; (g) disjoint set passes; (g′) decoy accept — one default + one `os:[windows]` ACCEPTS (documents that selection determinism is not divergence safety); (h) no-match no-default → defined no-op + diagnostic; (i) per-OS key-map canonicalization to four disjoint entries, `body_hash` post-mapping; (i′) per-OS key map with duplicate executable identity — the §7.4 identity-merge collapses the duplicate-path keys to one constrained entry with sorted `os` union, `body_hash` pinned on the merged form; (j) `osx` never in canonical form; (k) shell-field collapse + MUST `platform_shell_os_proxy` + provenance; (l) extension-convention table incl. `.cmd`/`.bat`, `.xyz` → default + `platform_filename_uninferable`, and the disclosed false mapping (extensionless pwsh shebang infers unix); (m) interpreter-flag exclusion — no `os` synthesized; render-back structured-encodes an injection-shaped passthrough value; (n) `platform_unmappable`; (o) render-back drop + MUST `platform_override_dropped`; (p) no-default render: selected-entry emit when the declared target OS yields a selection; refuse both when no target is declared and when the declared target yields no selection; (q) **hash coverage — flipping one `os` tag with script bytes unchanged MUST move `body_hash`; flipping an interpreter-selection passthrough value likewise** (this vector fails against any implementation that omits §9.3's wiring serialization); (q′) **determinism — two sources differing only in `os` tag order, `scripts[]` entry order, or inline-content line endings MUST yield byte-identical canonical form and identical `body_hash`** (§7.1, §9.3); (r) round-trip identity modulo documented-lossy cases, dead-default preserved; (s) `os_coverage` projection incl. the divergence pair — one entry tagged `[darwin,linux,windows]` → `os_divergent: false` vs three per-OS entries → `true` with identical `os` sets; (t) install coverage-gap — `blocking: true` MUST-refuse vs `blocking: false` SHOULD-warn; (u) **malformed-mechanism split** — for each recognized token, at least one shape-predicate violation (a non-string entrypoint under a per-OS key; passthrough keys without a base `command`; an unrecognized key in `dual-shell-fields`; a missing `file` field) → `acif.hook.platform_mechanism_malformed`, with the vector asserting the **absence** of `acif.hook.platform_unmappable`; envelope faults (content absent; string content that fails to decode) likewise → `platform_mechanism_malformed`; (v) alias membership — ingestion under `per-os-key-map-provider` maps identically to `per-os-key-map` and MUST NOT reject `platform_unmappable`.
 
@@ -553,3 +577,5 @@ Amended after the second independent review (2026-07-11): the §6.2 `async` mate
 Amended 2026-07-16 (SHAPE.md Decision #40, Gate B spec-purist review): the §7.4 mechanism-token vocabulary (closed set, alias, ownership, export naming, `unknown-` reservation), the two-stage recognition/mapping contract with normative evaluation order and per-row shape predicates, and the `platform_unmappable`/`platform_mechanism_malformed` split with the MUST-NOT direction. The split resolves a verified overload in the sole shipping implementation, which emitted the totality-net identifier for malformed instances of recognized mechanisms; no published vector pinned the overloaded behavior, so the expectation-flip inventory is empty and the TV-PLATFORM (u)/(v) vectors are additive.
 
 Amended 2026-07-16, same window (SHAPE.md Decision #42): the §7.4 synthesized-envelope pin (both shipping implementations already synthesized `event: before_tool_execute` with a single `command` handler, and the TV-PLATFORM hash literals implicitly depended on it; no spec sentence required it — a clean-room build had to guess) and the case-insensitive extension comparison in the `filename-extension-convention` row (ratifies shipped case-folding behavior; the path-bytes-never-folded direction is the new normative content). Both ratify shipped, suite-implied behavior; the expectation-flip inventory is empty and the TV-PLATFORM (w) vector is additive.
+
+Amended 2026-09-30 (SHAPE.md Decisions #46 and #47, Class C): Appendix A.1's provider columns were checked against the cursor, factory-droid, and devin documentation. The cursor column takes the camelCase names `.cursor/hooks.json` accepts, two cursor names that no Cursor surface defines (`beforeAgentResponse`, `beforeToolSelection`) and factory-droid `SubagentStart` are removed, and factory-droid `Notification` and five devin names join existing rows. Five canonical events are minted on cursor and devin evidence: `before_shell_execute`, `after_shell_execute`, `before_mcp_execute`, `after_mcp_execute`, and `before_file_read`. A.4 gains degraded pins for the six devin pairs whose only native name is a Cascade name and for cursor `afterAgentResponse` on `after_model`, whose render loses the hook's effect. §6.2 exempts matchers on the five new events from tool-name translation, and A.1 states that they never fold into the general tool events. No canonical bytes move: every retired cursor spelling stays recognized through the claude-code column. The removals shrink A.2's recognized set by the two names no provider defines; no published vector asserted either name. The TV-HOOK (n)–(r) vectors are additive.

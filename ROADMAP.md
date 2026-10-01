@@ -8,7 +8,7 @@ The purpose of this file is to make deferrals visible: when someone asks "why do
 
 ## Known spec conflicts
 
-Eight places where two normative clauses disagree, found in a 2026-09 audit. Each is left as written until an implementation needs it resolved, because each resolution changes normative text and goes through [CHANGE-PROCESS.md](CHANGE-PROCESS.md). The owner is the spec whose text changes; the second column names the clause it conflicts with.
+Nine places where two normative clauses disagree, eight found in a 2026-09 audit and one in the suite 12 review. Each is left as written until an implementation needs it resolved, because each resolution changes normative text and goes through [CHANGE-PROCESS.md](CHANGE-PROCESS.md). The owner is the spec whose text changes; the second column names the clause it conflicts with.
 
 | Conflict | Owner | Conflicts with | Likely resolution |
 |---|---|---|---|
@@ -20,6 +20,7 @@ Eight places where two normative clauses disagree, found in a 2026-09 audit. Eac
 | Rule render-back defers the glob mechanism choice to a per-provider record in [ACIF-RENDER], which keeps no per-type rules | [ACIF-RULE] §11 | [ACIF-RENDER] §1 | Add the per-provider table to [ACIF-RULE], or drop the deferral |
 | The write target is the first `current` row, yet a write resolved through a `superseded` row warns and proceeds, with no rule for when that row is selected | [ACIF-INSTALL] §6 | [ACIF-INSTALL] §11 | State that a superseded row is the write target only when its scope has no current row |
 | Shared-file contributions for hooks are keyed by event wiring, so two hooks on the same event overwrite each other on re-install | [ACIF-INSTALL] §10 | [ACIF-HOOK] §12 | Key a hook contribution by item |
+| A blocking hook whose event renders degraded under A.4 rule 4 is written under a name the provider never fires, so the control fails open silently, which the install rule that a wrong path is a fail-open install forbids | [ACIF-HOOK] A.4, [ACIF-INSTALL] | [ACIF-INSTALL] §11 | Install refuses a blocking hook rendered under rule 4, with an operator override, matching [ACIF-INSTALL] §11 |
 
 ## Deferred items
 
@@ -158,3 +159,11 @@ A vendor rename re-keys a provider's rows under the row-data amendment lane ([CH
 **Why deferred:** carrying a prior slug would add a field to the export, which is a grammar change and therefore Class C, and renames are rare enough that the amendment record has so far been sufficient. Minting a field to describe an event that fires once every few years is the wrong trade while the set of affected consumers is small enough to notify.
 
 **What it would take to revisit:** a second rename lands, or a downstream drift check reports a rename as a provider retirement in a way that misleads an operator rather than merely reading oddly.
+
+### Split `file_changed` by source
+
+`file_changed` carries two kinds of native event on one row: agent writes (cursor `afterFileEdit`, devin `post_write_code`) and filesystem changes from any source (claude-code `FileChanged`, kiro `File Save`, opencode `file.edited`). A hook written for one kind fires on the other after a cross-provider render, and nothing discloses it (SHAPE.md Decision #47).
+
+**Why deferred:** minting an `after_file_write` event would move `afterFileEdit` off `file_changed`, which moves canonical bytes for every existing cursor record that carries it. That is a Class C change with a vector-impact inventory, and no implementation has reported the gap yet.
+
+**What it would take to revisit:** an implementation or publisher reports a hook firing on the wrong kind of change, or a third provider ships a distinct agent-write event, so the split would carry more evidence than the bytes it moves.

@@ -142,6 +142,10 @@ provider evidence** — the concept exists natively in at least two
 providers' formats (a single-provider concept stays in
 `provider_extensions` passthrough).
 
+A change that removes or replaces a native name in a normative mapping
+appendix is Class C whether or not it mints vocabulary; removal shrinks
+the recognized set and replacement changes a render-back target.
+
 Class C follows the mint discipline in full. The ACIF maintainer — not
 the filer — convenes the response:
 
@@ -173,7 +177,7 @@ re-verification of the affected scope is warranted.
 
 ## Suite and report impact
 
-The conformance suite (181 vectors at this writing) is normatively
+The conformance suite (186 vectors at this writing) is normatively
 authoritative over prose, and conformance reports pin the exact catalog
 content hashes and binding-set hash they ran against. Those facts drive
 the impact rules:

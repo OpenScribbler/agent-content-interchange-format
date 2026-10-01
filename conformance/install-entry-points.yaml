@@ -127,8 +127,10 @@ install_entry_points:
       - {scope: user, path_template: "~/.cursor/agents/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
       - {scope: project, path_template: ".cursor/agents/<content-name>.md", layout: single_file, status: current, as_of: "syllago 2026-07 survey"}
     hook:
-      - {scope: user, path_template: "~/.cursor/settings.json", layout: merged_into_shared_file, status: current, as_of: "syllago 2026-07 survey; installer path table (ADR-0020)"}
-      - {scope: project, path_template: ".cursor/settings.json", layout: merged_into_shared_file, status: current, as_of: "syllago 2026-07 survey"}
+      - {scope: user, path_template: "~/.cursor/hooks.json", layout: merged_into_shared_file, status: current, as_of: "cursor.com/docs/agent/hooks 2026-09-30"}
+      - {scope: user, path_template: "~/.cursor/settings.json", layout: merged_into_shared_file, status: superseded, as_of: "cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey; installer path table (ADR-0020))"}
+      - {scope: project, path_template: ".cursor/hooks.json", layout: merged_into_shared_file, status: current, as_of: "cursor.com/docs/agent/hooks 2026-09-30"}
+      - {scope: project, path_template: ".cursor/settings.json", layout: merged_into_shared_file, status: superseded, as_of: "cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey)"}
     mcp_config:
       - {scope: user, path_template: "~/.cursor/mcp.json", layout: merged_into_shared_file, status: current, as_of: "syllago 2026-07 survey"}
       - {scope: project, path_template: ".cursor/mcp.json", layout: merged_into_shared_file, status: current, as_of: "syllago 2026-07 survey"}
