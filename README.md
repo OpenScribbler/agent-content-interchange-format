@@ -77,6 +77,24 @@ follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state
 is pinned in [`conformance/suite-manifest.yaml`](conformance/suite-manifest.yaml). Reference implementations
 under `conformance/reference/` are informative.
 
+### Implementation status
+
+ACIF graduates from Draft when two independent implementations pass every
+scope and a differential run between them is clean. Neither
+implementation has done that yet.
+
+| Scope | [syllago](https://github.com/OpenScribbler/syllago) | [acif-ts](https://github.com/OpenScribbler/acif-ts) |
+|---|---|---|
+| core | pass at suite 6 | pass at suite 6 |
+| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 10 |
+| skill, rule, command, agent, mcp | pass at suite 6 | not claimed |
+| publisher, registry, render | pass at suite 6 | not claimed |
+| install | no published run (scope added at suite 7) | not claimed |
+
+The suite is at 10. Published runs live under
+[`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
+[`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
+
 ## Design principles (short form)
 
 - **`body_hash` is the change signal.** Content identity and change detection ride a pinned content-hash algorithm, not version strings. Version is advisory; hashes are dispositive.

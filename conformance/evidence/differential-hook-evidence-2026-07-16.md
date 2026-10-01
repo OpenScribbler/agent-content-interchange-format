@@ -1,4 +1,4 @@
-# Hook-scope graduation evidence — differential pass at core + hook (acif-5lk)
+# Hook-scope graduation evidence — differential pass at core + hook
 
 **2026-07-16.** Second DESIGN.md §8 differential pass between two
 independent implementations of ACIF 0.1, and the first to cover the
@@ -37,9 +37,8 @@ hook shape-predicate path uses a probe whose trust rests on this pass).
 - **syllago**: all ten scopes pass — 170/170 `pass`, zero
   fail/unsupported/env-blocked/harness-error.
   Report: `syllago-static-report.json`.
-- **acif-ts**: core and hook scopes pass — 170/170 `pass` across all
-  catalogs (core, hook, and platform catalogs assert in-scope;
-  remaining catalogs exercise the shared envelope/requires surface).
+- **acif-ts**: claims core and hook only — 48 `pass` and 122
+  `out-of-scope`, zero fail/unsupported/env-blocked/harness-error.
   Report: `acif-ts-static-report.json`.
 
 ## Differential run

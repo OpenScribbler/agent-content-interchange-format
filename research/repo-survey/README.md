@@ -1,7 +1,7 @@
 # Repo Survey — How AI Agent Content is Structured Today
 
 **Survey date:** 2026-05-12
-**Repos analyzed:** 109 (round 1, by category) + ~90 (round 2, by discovery axis)
+**Repos analyzed:** 111 (round 1, by category) + 105 (round 2, by discovery axis)
 **Purpose:** Empirical grounding for ACIF's carrier model (Decisions #10/#15), pack model (Decision #18), hashing algorithm (Decision #19), and content discovery rules.
 
 **Scope note:** ACIF is provider-agnostic content interchange for the six content types (hook, skill, rule, command, agent, mcp_config). Vendor-specific plugin and marketplace distribution systems are explicitly out of scope and are not analyzed in this survey.
@@ -13,7 +13,7 @@
 | File | Purpose |
 |---|---|
 | [`findings.md`](./findings.md) | Main analysis — cross-category patterns, ACIF implications, spec-text recommendations |
-| [`repos.csv`](./repos.csv) | Flat per-repo structured data (109 rows) |
+| [`repos.csv`](./repos.csv) | Flat per-repo structured data (111 rows) |
 | [`raw/cat1-skills.md`](./raw/cat1-skills.md) | Cat 1: Skills (18) |
 | [`raw/cat2-claude-code.md`](./raw/cat2-claude-code.md) | Cat 2: Commands, agents, subagents (18) |
 | [`raw/cat3-cursor.md`](./raw/cat3-cursor.md) | Cat 3: Cursor rules ecosystem (19) |
@@ -28,7 +28,7 @@ Round 1 ranked by stars only. Round 2 covers Reddit/HN, notable individuals (Poc
 | File | Purpose |
 |---|---|
 | [`round2-findings.md`](./round2-findings.md) | Round 2 synthesis — 10 new findings (numbered #9–#18), spec-text additions R2-1 through R2-8 |
-| [`round2-repos.csv`](./round2-repos.csv) | Flat per-repo structured data (~90 new entries + 8 registry entries) |
+| [`round2-repos.csv`](./round2-repos.csv) | Flat per-repo structured data (105 rows) |
 | [`raw/round2/agent-a-reddit-hn.md`](./raw/round2/agent-a-reddit-hn.md) | Reddit / HN signal (25 entries) |
 | [`raw/round2/agent-b-notable-individuals.md`](./raw/round2/agent-b-notable-individuals.md) | Notable individuals (12 entries) |
 | [`raw/round2/agent-c-longtail-active.md`](./raw/round2/agent-c-longtail-active.md) | Long-tail active including non-shell hooks and vendor skills (37 entries) |

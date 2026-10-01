@@ -1,7 +1,7 @@
 # ADR 0001 — The Differential-Witness Principle
 
 **Status:** Accepted (2026-07-16)
-**Deciders:** Working group, on convergent recommendation of the acif-zgc
+**Deciders:** Working group, on convergent recommendation of a
 review subset (spec-purist, valsorda, registry-operator), ratified
 2026-07-15 under standing trust delegation.
 
@@ -71,9 +71,9 @@ future consumer of class-B verdicts, not only capmon.
   human-gated.
 - The hook scope is the acute case: its §7.4 source mechanisms are
   shape-predicates that cannot be decided from a static export, so a
-  running second witness is load-bearing exactly there (task acif-5lk).
+  running second witness is load-bearing exactly there.
 - The named-token subset of source mechanisms is decidable against a
-  deterministic spec export (task acif-e5z) without invoking any
+  deterministic spec export without invoking any
   implementation; the export path and this principle together bound how
   much trust a canonicalizer readback ever carries.
 - This ADR records the decision. Promoting the principle into

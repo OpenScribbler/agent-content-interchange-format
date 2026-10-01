@@ -1,4 +1,4 @@
-# First graduation evidence — differential pass at core scope (acif-43d)
+# First graduation evidence — differential pass at core scope
 
 **2026-07-14.** First DESIGN.md §8 differential pass between two
 independent implementations of ACIF 0.1: zero disagreements across 171

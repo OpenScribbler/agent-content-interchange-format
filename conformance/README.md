@@ -25,12 +25,49 @@ conformance/
     uri.yaml         # TV-URI-*    ([ACIF-REGISTRY] Appendix A)
     fresh.yaml       # TV-FRESH-*  ([ACIF-REGISTRY] Appendix A)
     render.yaml      # TV-RENDER-* ([ACIF-RENDER] Appendix A)
+    install.yaml     # TV-INSTALL-* ([ACIF-INSTALL] Appendix B)
   reference/         # informative — reference implementation + generator
     acif_hash.py     # body_hash / metadata_hash / sidecar-only preimage reference
     generate_vectors.py  # fills computed hash values into the catalogs
   runner/            # conformance runner; DESIGN.md + PROTOCOL.md
   adapters/          # development adapters
+  evidence/          # published implementation runs and differential reports
+  suite-manifest.yaml        # suite number, catalog hashes, change history
+  capability-vocabulary.yaml # export: capability keys per content type
+  diagnostic-ids.yaml        # export: each L1 spec's diagnostic identifiers by class
+  install-entry-points.yaml  # export: [ACIF-INSTALL] Appendix A.2 matrix
+  source-mechanisms.yaml     # export: hook and rule source-mechanism tokens
 ```
+
+The exports are derived from spec sections and kept in sync by the runner
+selftest; downstream tools diff against them rather than parsing spec prose.
+
+## Quickstart
+
+The runner needs Python 3 with PyYAML. Run it from the repository root.
+
+```bash
+# Check the suite itself: catalog hashes, export sync, runner self-tests.
+python3 -m conformance.runner selftest
+
+# Run the vectors against an implementation's adapter.
+python3 -m conformance.runner --adapter "<command that starts your adapter>" \
+  --report report.json
+
+# Limit the run to some scopes or vectors.
+python3 -m conformance.runner --adapter "<cmd>" --scope core --scope hook
+python3 -m conformance.runner --adapter "<cmd>" --only TV-HOOK-k
+
+# Compare two implementations on generated inputs.
+python3 -m conformance.runner differential --adapter-a "<cmd A>" \
+  --adapter-b "<cmd B>" --report differential.json
+```
+
+An adapter speaks the line protocol in [`runner/PROTOCOL.md`](runner/PROTOCOL.md):
+a `hello` handshake that claims scopes, then one JSON request per line.
+`adapters/reference.py` is a partial development fixture that exercises the
+harness (`--adapter "python3 -m conformance.adapters.reference"`); it is not
+an implementation and fails some vectors by design.
 
 ## Vector format
 
