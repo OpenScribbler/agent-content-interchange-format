@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from .. import bindings
-from ..protocol import AdapterResponse, AdapterSession, encode_request
+from ..protocol import AdapterResponse, AdapterSession, ProtocolError, classify_response, encode_request
 from ..run import RunOptions, run_conformance
 from ..scopes import totality_check
 from ..vectors import load_catalogs
@@ -33,6 +35,13 @@ def main(argv: list[str] | None = None) -> int:
         ("diagnostic-ids sync", check_diagnostic_ids),
         ("source-mechanisms sync", check_source_mechanisms),
         ("install-entry-points sync", check_install_entry_points),
+        ("absent fields never satisfy a relation", check_absent_relations),
+        ("render-d structural lossy check", check_render_d_structural),
+        ("protocol partial-line timeout", check_partial_line_timeout),
+        ("handshake and response strictness", check_handshake_strictness),
+        ("cli exit status", check_exit_status),
+        ("differential clean discipline", check_differential_clean),
+        ("sabotage credits only baseline passes", check_sabotage_baseline),
         ("sabotage", check_sabotage),
     ]
     failures: list[str] = []
@@ -640,12 +649,35 @@ def check_sabotage() -> None:
     missing = sorted(catalog_ids - set(base_rows))
     if missing:
         raise AssertionError("vector ids missing from report: " + ", ".join(missing))
+    killed_by, failures, uncovered = sabotage_kills(base_rows, mutated_rows, catalog_ids)
+    if failures:
+        raise AssertionError("; ".join(failures))
+    counts = {mutator: list(killed_by.values()).count(mutator) for mutator in SABOTAGE_MUTATORS}
+    print(
+        "sabotage kill summary: "
+        + ", ".join(f"{mutator}={counts[mutator]}" for mutator in SABOTAGE_MUTATORS)
+    )
+    print("sabotage kill map: " + ", ".join(f"{vid}={killed_by[vid]}" for vid in sorted(killed_by)))
+    print(f"sabotage uncovered (baseline fail, no kill possible): {len(uncovered)}: " + ", ".join(uncovered))
+
+
+def sabotage_kills(
+    base_rows: dict[str, dict[str, Any]],
+    mutated_rows: dict[str, dict[str, dict[str, Any]]],
+    ids: set[str],
+) -> tuple[dict[str, str], list[str], list[str]]:
+    """A mutator kills a vector only when it turns a baseline pass into a
+    fail. A vector the baseline already fails proves nothing about the
+    mutators, so it is reported as uncovered, never credited."""
     failures: list[str] = []
     killed_by: dict[str, str] = {}
-    skip = {"unsupported", "harness-error", "out-of-scope", "env-blocked"}
-    for vid in sorted(catalog_ids):
+    uncovered: list[str] = []
+    for vid in sorted(ids):
         base_status = base_rows[vid]["status"]
-        if base_status in skip or base_rows[vid].get("vacuous"):
+        if base_status == "fail":
+            uncovered.append(vid)
+            continue
+        if base_status != "pass" or base_rows[vid].get("vacuous"):
             continue
         killers = [
             mutator
@@ -657,11 +689,166 @@ def check_sabotage() -> None:
             failures.append(f"{vid}: no mutator killed vector (baseline {base_status}, mutated {statuses})")
         else:
             killed_by[vid] = killers[0]
-    if failures:
-        raise AssertionError("; ".join(failures))
-    counts = {mutator: list(killed_by.values()).count(mutator) for mutator in SABOTAGE_MUTATORS}
-    print(
-        "sabotage kill summary: "
-        + ", ".join(f"{mutator}={counts[mutator]}" for mutator in SABOTAGE_MUTATORS)
-    )
-    print("sabotage kill map: " + ", ".join(f"{vid}={killed_by[vid]}" for vid in sorted(killed_by)))
+    return killed_by, failures, uncovered
+
+
+STUB_ADAPTER = Path(__file__).resolve().parent / "stub_adapter.py"
+# Vectors an all-empty adapter passed before presence was checked ahead of
+# the relation (PROTOCOL §3: an asserted field absent from result is a fail).
+ABSENT_RELATION_VECTORS = ("TV-MCP-k2", "TV-MCP-l", "TV-RENDER-a", "TV-URI-r", "TV-URI-s", "TV-URI-t")
+
+
+def _stub(mode: str) -> str:
+    return f"{shlex.quote(sys.executable)} {shlex.quote(str(STUB_ADAPTER))} --mode {mode}"
+
+
+def check_absent_relations() -> None:
+    catalogs = load_catalogs()
+    bindings.load_all()
+    passed = []
+    for vid in ABSENT_RELATION_VECTORS:
+        with tempfile.TemporaryDirectory(prefix="acif-selftest-fixtures-") as tmp:
+            result = bindings.get(vid)(catalogs.by_id[vid], _StubSession(), _StubContext(tmp))
+        if result.status == "pass":
+            passed.append(vid)
+    if passed:
+        raise AssertionError("empty results passed: " + ", ".join(passed))
+
+
+def check_render_d_structural() -> None:
+    """[ACIF-RENDER] §9: the round trip must differ from the input only by
+    the declared collapse; declaring the lossy token is not evidence."""
+    catalogs = load_catalogs()
+    bindings.load_all()
+    vector = catalogs.by_id["TV-RENDER-d"]
+    case_1 = [{"body_hash": "h"}, {"output": "x"}, {"body_hash": "h"}]
+    lossy = ["write-edit-distinction"]
+    error = {"__error__": "acif.body.empty"}
+
+    def run(before: dict[str, Any], after: dict[str, Any], first: list[dict[str, Any]] = case_1) -> str:
+        session = _ScriptedSession(first + [before, {"output": "y", "lossy": lossy}, after])
+        with tempfile.TemporaryDirectory(prefix="acif-selftest-fixtures-") as tmp:
+            return bindings.get("TV-RENDER-d")(vector, session, _StubContext(tmp)).status
+
+    def agent(**block: Any) -> dict[str, Any]:
+        return {"canonical": {"agent": block}}
+
+    both = agent(tools=["file_edit", "file_write"])
+    cases = [
+        ("an honest write->edit collapse", both, agent(tools=["file_edit"]), case_1, "pass"),
+        ("a round trip outside the lossy set", both, agent(tools=["shell"]), case_1, "fail"),
+        ("a round trip with no canonical form", both, {}, case_1, "fail"),
+        ("a case-2 round-trip ingest that errors", both, error, case_1, "fail"),
+        ("a case-1 round-trip ingest that errors", both, agent(tools=["file_edit"]), case_1[:2] + [error], "fail"),
+        # Not anchored to the rendered tools field: the collapse values sit
+        # in an unrelated key.
+        ("collapse values outside agent.tools", {"canonical": {"x": ["file_edit", "file_write"]}}, {"canonical": {"x": ["file_edit"]}}, case_1, "fail"),
+        # The collapse must not rewrite opaque fields.
+        ("an opaque agent.model rewritten by the collapse", agent(tools=["file_edit", "file_write"], model="file_write"), agent(tools=["file_edit"], model="file_edit"), case_1, "fail"),
+    ]
+    wrong = [f"{name}: {status} (expected {want})" for name, pre, post, first, want in cases if (status := run(pre, post, first)) != want]
+    if wrong:
+        raise AssertionError("; ".join(wrong))
+
+
+class _ScriptedSession(_VerdictSession):
+    """_VerdictSession whose script may also answer {"__error__": id}."""
+
+    def __init__(self, results: list[dict[str, Any]]):
+        super().__init__(2, results)
+
+    def request(self, request: dict[str, Any]) -> AdapterResponse:
+        if "__error__" in self._results[0]:
+            raw = {"ok": False, "error": self._results.pop(0)["__error__"]}
+            return classify_response(raw, encode_request(request), str(raw))
+        return super().request(request)
+
+
+def check_partial_line_timeout() -> None:
+    """Both halves of a request fall under one deadline: a half-written
+    response line, and a request the adapter stops reading (sized past
+    the pipe buffer so the write itself would block)."""
+    for mode, request in (
+        ("partial", {"op": "ingest", "input": {}}),
+        ("no-read", {"op": "ingest", "input": {"pad": "x" * (4 * 1024 * 1024)}}),
+    ):
+        session = AdapterSession(_stub(mode), timeout=0.5)
+        try:
+            session.start()
+            started = time.monotonic()
+            response = session.request(request)
+            elapsed = time.monotonic() - started
+        finally:
+            session.close()
+        if response.kind != "harness-error" or "timed out" not in (response.harness_error or ""):
+            raise AssertionError(f"{mode}: must time out as harness-error, got {response.kind}: {response.harness_error}")
+        if elapsed > 5:
+            raise AssertionError(f"{mode}: held the request for {elapsed:.1f}s past a 0.5s timeout")
+
+
+def check_handshake_strictness() -> None:
+    for mode in ("bool-protocol", "float-protocol", "unknown-scope"):
+        session = AdapterSession(_stub(mode), timeout=10)
+        try:
+            session.start()
+        except ProtocolError:
+            pass
+        else:
+            raise AssertionError(f"handshake accepted a {mode} hello")
+        finally:
+            session.close()
+    ambiguous = [
+        {"ok": True, "result": {}, "error": "acif.core.invalid"},
+        {"ok": False, "error": "acif.core.invalid", "result": {}},
+    ]
+    for raw in ambiguous:
+        if classify_response(raw, "{}", None).kind != "harness-error":
+            raise AssertionError(f"ambiguous response classified as non-error: {raw}")
+
+
+def check_exit_status() -> None:
+    from ..__main__ import exit_status
+
+    def report(statuses: list[str], hello_error: str | None = None) -> dict[str, Any]:
+        adapter: dict[str, Any] = {"hello_error": hello_error} if hello_error else {}
+        return {"adapter": adapter, "vectors": [{"status": s} for s in statuses]}
+
+    cases = [
+        (report(["pass", "out-of-scope", "unsupported"]), 0),
+        (report(["pass", "fail"]), 1),
+        (report(["pass", "harness-error"]), 1),
+        (report(["out-of-scope"], hello_error="adapter hello failed"), 1),
+    ]
+    for rep, expected in cases:
+        if exit_status(rep) != expected:
+            raise AssertionError(f"exit_status({rep}) != {expected}")
+
+
+def check_differential_clean() -> None:
+    from ..differential import FAMILY_SCOPES, required_families, run_differential
+
+    core = {f for f, s in FAMILY_SCOPES.items() if s == "core"}
+    if required_families(["core", "hook"], ["core"]) != core:
+        raise AssertionError("hook families must not be required unless both adapters claim hook")
+    if "normalize_uri" not in required_families(["registry"], ["core", "registry"]):
+        raise AssertionError("normalize_uri must be required when both adapters claim registry")
+    for count in (0, 20):
+        diff = run_differential(adapter_a=_stub("empty"), adapter_b=_stub("empty"), seed=0, count=count)["differential"]
+        if diff["clean"]:
+            raise AssertionError(f"two empty adapters over {count} trials must not be clean")
+    # Two adapters omitting the same hash fields agree on nothing.
+    diff = run_differential(adapter_a=_stub("partial-fields"), adapter_b=_stub("partial-fields"), seed=0, count=60)["differential"]
+    if diff["clean"] or not diff["summary"]["incomplete"]:
+        raise AssertionError("adapters omitting the same answer fields must be incomplete, not clean")
+    agreeing = sorted(f for f, s in diff["families"].items() if s.get("agree") and f != "envelope")
+    if agreeing:
+        raise AssertionError("families agreed without their answer fields: " + ", ".join(agreeing))
+
+
+def check_sabotage_baseline() -> None:
+    ids = {"TV-A", "TV-B"}
+    base = {"TV-A": {"status": "fail"}, "TV-B": {"status": "pass"}}
+    mutated = {m: {"TV-A": {"status": "fail"}, "TV-B": {"status": "fail"}} for m in SABOTAGE_MUTATORS}
+    killed_by, failures, uncovered = sabotage_kills(base, mutated, ids)
+    if "TV-A" in killed_by or uncovered != ["TV-A"] or set(killed_by) != {"TV-B"} or failures:
+        raise AssertionError(f"baseline-fail vector credited: killed={killed_by} uncovered={uncovered}")

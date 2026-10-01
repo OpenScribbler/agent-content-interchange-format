@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 11
+  date: 2026-09-30
+  change_class: repair
+  supersedes: 10
+  note: "Repair: the runner credited passes no conforming-or-not observation supported. (1) Presence before relation (PROTOCOL §3, an asserted field absent from `result` is a fail): `assert_relation` now fails any check whose observed values contain an absent field, so an absent field equal to another absent field no longer satisfies an equality or distinctness relation. Repaired vectors an all-empty adapter passed: TV-MCP-k2, TV-MCP-l, TV-RENDER-a, TV-URI-r, TV-URI-s, TV-URI-t; the rule applies to every vector asserted through `assert_relation`. TV-URI-s keeps one spec-defined exception: [ACIF-REGISTRY] §6 makes `metadata_hash` REQUIRED iff `publisher_section` is present, so both records omitting both on its frontmatter-less fixture is identical; `body_hash` must still be present. (2) TV-RENDER-d: a round-trip leg (ingest, render, re-ingest) that answers with a spec error fails the case's check instead of skipping it, in both cases. case_2 checks [ACIF-RENDER] §9 structurally: the adapter's pre-render canonical `agent.tools` must equal the rendered vector's tool list, the round-tripped `agent.tools` must equal it after the write-edit collapse (applied to that tool-name field only), and every field outside `agent.tools` must round-trip unchanged; the adapter's `lossy` declaration alone no longer passes. Runner-side, outside the binding set: the request write and the response read share one per-request deadline, covering partial response lines and adapters that stop reading stdin; hello rejects any `adapter_protocol` that is not an exact integer (boolean `true`, float `2.0`) and unknown scopes; ok responses carrying `error` and error responses carrying `result` are harness errors; the CLI exits 1 on any fail, harness-error, or failed handshake; the differential's `clean` requires agreeing observations in every family both adapters' claimed scopes require, and a trial counts as agreement only when both answers carry the family's answer fields (hash, identity or verdict), otherwise it is `incomplete`; hook_mechanism compares whole canonical bytes ([ACIF-HOOK] §7.4) rather than handlers only; sabotage kills count only against baseline passes. Catalogs unchanged; expectation-flip inventory: EMPTY."
+  vectors: 181
+  binding_set: 959ca41a91013171288493e1708978f4c7f16b08a6ae4f3c6c9e4d3434c7f694
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: 6ee229fcee55cce883a6a1b01e30140304eb9043e580a7a13727edcc83f49dc8
+    fresh.yaml: 643cb8ad306dc09d397d85f3d7caaf6a3fc8e055a92f1cf2e783fc2fc5c93fdf
+    hook.yaml: 8956aa17acad4f1ec79e5ab9424107a8d84eccb54886eae514d6e2dcb652aa82
+    install.yaml: f6b378e2e4cab6a9e010ec565a09c092c22ddaad7bcd0f445c6677dd5d45784d
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: e473be422f5634a33d7c614a700fd95cbfae47354ba3e1719ded274c05dda44d
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 10
   date: 2026-09-30
   change_class: c
@@ -38,7 +59,7 @@
   date: 2026-08-26
   change_class: c
   supersedes: 8
-  note: "acif-43b Class C (SHAPE.md Decision #44): [ACIF-HOOK] Appendix A.4 pins the render-back target per (canonical, provider) pair for providers carrying more than one native name on an A.1 row, and mints `acif.hook.event_untranslatable` (diagnostic, MUST-emit; params `event`, `provider`, pinned in PROTOCOL Appendix A). devin's Devin CLI names (PascalCase) join its Cascade names in A.1; the pins select the CLI surface, aligned with [ACIF-INSTALL] A.2 row order. Additive vectors: TV-HOOK-k (four lossless pins, diagnostic absent), TV-HOOK-l (both spellings canonicalize and hash equal), TV-HOOK-m (degraded Cascade-only pair and no-native-row event, both diagnosed). Expectation-flip inventory: EMPTY — no existing vector renders a hook to an A.1 provider, and passthrough to targets absent from A.1 is unchanged."
+  note: "Class C (SHAPE.md Decision #44): [ACIF-HOOK] Appendix A.4 pins the render-back target per (canonical, provider) pair for providers carrying more than one native name on an A.1 row, and mints `acif.hook.event_untranslatable` (diagnostic, MUST-emit; params `event`, `provider`, pinned in PROTOCOL Appendix A). devin's Devin CLI names (PascalCase) join its Cascade names in A.1; the pins select the CLI surface, aligned with [ACIF-INSTALL] A.2 row order. Additive vectors: TV-HOOK-k (four lossless pins, diagnostic absent), TV-HOOK-l (both spellings canonicalize and hash equal), TV-HOOK-m (degraded Cascade-only pair and no-native-row event, both diagnosed). Expectation-flip inventory: EMPTY — no existing vector renders a hook to an A.1 provider, and passthrough to targets absent from A.1 is unchanged."
   vectors: 180
   binding_set: b2b654090c4b0168b59ef97e436d7a810d243aa0e51f01ca5cdaa80ed4278508
   catalogs:
@@ -59,7 +80,7 @@
   date: 2026-08-21
   change_class: repair
   supersedes: 7
-  note: "acif-b42 row-data amendment (provider identity): the `windsurf` provider slug is re-keyed to `devin` after Cognition rebranded Windsurf to Devin Desktop on 2026-06-02, atomically across [ACIF-INSTALL] Appendix A.2 and its export and the [ACIF-HOOK]/[ACIF-CORE] crosswalk provider columns. The retired slug `windsurf` is never reused. Path templates are NOT renamed: `~/.codeium/windsurf/`, `.windsurf/`, and `.windsurfrules` remain live paths under the renamed product, and their rows carry across with their original `status` and `as_of`. Additive devin-native rows (agent, hook, mcp_config, rule, skill) land on docs.devin.ai verification 2026-08-21. Suite change is one repair: TV-INSTALL-e case_1 moved its `acif.install.no_entry_point` exemplar from windsurf/hook to cline/hook, because devin gains hook rows and the old exemplar no longer witnesses its own condition. Expectation-flip inventory: EMPTY (the vector expects the same diagnostic and params; only the input provider moved)."
+  note: "Row-data amendment (provider identity): the `windsurf` provider slug is re-keyed to `devin` after Cognition rebranded Windsurf to Devin Desktop on 2026-06-02, atomically across [ACIF-INSTALL] Appendix A.2 and its export and the [ACIF-HOOK]/[ACIF-CORE] crosswalk provider columns. The retired slug `windsurf` is never reused. Path templates are NOT renamed: `~/.codeium/windsurf/`, `.windsurf/`, and `.windsurfrules` remain live paths under the renamed product, and their rows carry across with their original `status` and `as_of`. Additive devin-native rows (agent, hook, mcp_config, rule, skill) land on docs.devin.ai verification 2026-08-21. Suite change is one repair: TV-INSTALL-e case_1 moved its `acif.install.no_entry_point` exemplar from windsurf/hook to cline/hook, because devin gains hook rows and the old exemplar no longer witnesses its own condition. Expectation-flip inventory: EMPTY (the vector expects the same diagnostic and params; only the input provider moved)."
   vectors: 177
   binding_set: b77ea08f5051dc293176c017b6b5cdd655f2030f5174e181a341f9f2f981bbba
   catalogs:
@@ -80,7 +101,7 @@
   date: 2026-07-16
   change_class: mixed
   supersedes: 6
-  note: "Decision #41 (acif-hbz / Gate C): install-entry-points mint — new [ACIF-INSTALL] L5 document (install-target matrix, scope/layout enums, path-template grammar, shared-file merge contract, acif.install.* identifiers), conformance/install-entry-points.yaml export + selftest sync check, PROTOCOL op 4.14 resolve_install_targets + install scope, TV-INSTALL-a..f (additive). Expectation-flip inventory: EMPTY (new catalog; no existing vector touches install resolution). Plus Decision #42 (acif-mz7, Class-B-flavored): [ACIF-HOOK] §7.4 synthesized-envelope pin + case-insensitive extension comparison (both ratify shipped, suite-implied behavior; TV-PLATFORM-w additive; no expectation flips)."
+  note: "Decision #41 (Gate C): install-entry-points mint — new [ACIF-INSTALL] L5 document (install-target matrix, scope/layout enums, path-template grammar, shared-file merge contract, acif.install.* identifiers), conformance/install-entry-points.yaml export + selftest sync check, PROTOCOL op 4.14 resolve_install_targets + install scope, TV-INSTALL-a..f (additive). Expectation-flip inventory: EMPTY (new catalog; no existing vector touches install resolution). Plus Decision #42 (Class-B-flavored): [ACIF-HOOK] §7.4 synthesized-envelope pin + case-insensitive extension comparison (both ratify shipped, suite-implied behavior; TV-PLATFORM-w additive; no expectation flips)."
   vectors: 177
   binding_set: b77ea08f5051dc293176c017b6b5cdd655f2030f5174e181a341f9f2f981bbba
   catalogs:
@@ -101,7 +122,7 @@
   date: 2026-07-16
   change_class: c
   supersedes: 5
-  note: "Decision #40 (acif-7eg / Gate B): source-mechanism token vocabulary normalized into [ACIF-RULE] Appendix A.2 and [ACIF-HOOK] §7.4 (closed token sets, per-os-key-map-provider alias, per-row shape predicates, normative evaluation order); mints acif.hook.platform_mechanism_malformed splitting the overloaded platform_unmappable (totality net only, MUST NOT fire for member tokens); rule provider-config envelope faults routed to activation_mode_missing; legacy interior mapping pinned (typed field participation, always-branch glob discard — ratifies shipped behavior). Expectation-flip inventory: EMPTY (decision row); TV-RULE-n/o and TV-PLATFORM-u/v are additive, the reject vectors asserting exact-match against the new id (simultaneous absence of the totality-net id)"
+  note: "Decision #40 (Gate B): source-mechanism token vocabulary normalized into [ACIF-RULE] Appendix A.2 and [ACIF-HOOK] §7.4 (closed token sets, per-os-key-map-provider alias, per-row shape predicates, normative evaluation order); mints acif.hook.platform_mechanism_malformed splitting the overloaded platform_unmappable (totality net only, MUST NOT fire for member tokens); rule provider-config envelope faults routed to activation_mode_missing; legacy interior mapping pinned (typed field participation, always-branch glob discard — ratifies shipped behavior). Expectation-flip inventory: EMPTY (decision row); TV-RULE-n/o and TV-PLATFORM-u/v are additive, the reject vectors asserting exact-match against the new id (simultaneous absence of the totality-net id)"
   vectors: 170
   binding_set: 10ac14ad6ed1d62e1a6777c5a64bd65e9bdc29f7f7a81d5880b81b3cf5e6694c
   catalogs:

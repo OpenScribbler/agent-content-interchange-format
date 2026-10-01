@@ -369,7 +369,15 @@ def tv_uri_s(vector: Vector, session: Any, ctx: Any):
         body_hashes = [hash_value(response, "body_hash") for response in responses]
         metadata_hashes = [hash_value(response, "metadata_hash") for response in responses]
         assert_relation(result, "records", "body_hash_identical", vector.data["expect"]["body_hash_identical"], body_hashes, len(set(body_hashes)) == 1)
-        assert_relation(result, "records", "metadata_hash_identical", vector.data["expect"]["metadata_hash_identical"], metadata_hashes, len(set(metadata_hashes)) == 1)
+        publisher_sections = [hash_value(response, "publisher_section") for response in responses]
+        if all(value is ABSENT for value in metadata_hashes + publisher_sections):
+            # [ACIF-REGISTRY] §6: metadata_hash is REQUIRED iff a
+            # publisher_section is present. A frontmatter-less body yields
+            # neither on either record, which is identical by definition;
+            # body_hash above still has to be present.
+            result.add_check("records", "metadata_hash_identical", vector.data["expect"]["metadata_hash_identical"], {"absent_without_publisher_section": metadata_hashes}, vector.data["expect"]["metadata_hash_identical"] is True)
+        else:
+            assert_relation(result, "records", "metadata_hash_identical", vector.data["expect"]["metadata_hash_identical"], metadata_hashes, len(set(metadata_hashes)) == 1)
     else:
         for idx, response in enumerate(responses, start=1):
             assert_result_field(result, f"record_{idx}", response, "body_hash", "present")

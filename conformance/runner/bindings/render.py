@@ -8,6 +8,7 @@ import yaml
 from . import binding
 from .common import (
     ABSENT,
+    _blocked_for_result_assertion,
     assert_relation,
     diagnostics_for,
     hash_value,
@@ -118,29 +119,77 @@ def tv_render_d(vector: Vector, session: Any, ctx: Any):
             ctx,
             ingest(case["type"], provider_config=provider_config(case["target"], "rendered", output_value(rendered))),
         )
-        if "roundtrip_body_hash_identical" in expected and all(response.kind == "ok" for response in (before, rendered, roundtrip)):
-            assert_relation(
-                result,
-                f"case_{idx}",
-                "roundtrip_body_hash_identical",
-                expected["roundtrip_body_hash_identical"],
-                [hash_value(before, "body_hash"), hash_value(roundtrip, "body_hash")],
-                hash_value(before, "body_hash") == hash_value(roundtrip, "body_hash"),
-            )
-        if "differences_within_lossy_set" in expected:
+        case_id = f"case_{idx}"
+        responses = (before, rendered, roundtrip)
+        for field_name in ("roundtrip_body_hash_identical", "differences_within_lossy_set"):
+            if field_name not in expected:
+                continue
+            # Every leg of the round trip is part of the property: a leg
+            # that errors fails the check rather than skipping it.
+            if any(_blocked_for_result_assertion(result, case_id, response, field_name, expected[field_name]) for response in responses):
+                continue
+            if field_name == "roundtrip_body_hash_identical":
+                pre_hash, post_hash = hash_value(before, "body_hash"), hash_value(roundtrip, "body_hash")
+                assert_relation(result, case_id, field_name, expected[field_name], [pre_hash, post_hash], pre_hash == post_hash)
+                continue
             lossy = hash_value(rendered, "lossy")
             observed = sorted(lossy) if isinstance(lossy, list) else ABSENT
-            expected_lossy = sorted(case["lossy_set"])
-            result.add_check(f"case_{idx}", "lossy_set", case["lossy_set"], observed, observed == expected_lossy)
-            assert_relation(
-                result,
-                f"case_{idx}",
-                "differences_within_lossy_set",
-                expected["differences_within_lossy_set"],
-                observed,
-                observed == expected_lossy,
-            )
+            result.add_check(case_id, "lossy_set", case["lossy_set"], observed, observed == sorted(case["lossy_set"]))
+            # [ACIF-RENDER] §9: canonicalize(render(C, p)) == C modulo
+            # LOSSY(type, p). The declaration above is not evidence of the
+            # property; compare the canonical forms structurally.
+            pre = hash_value(before, "canonical")
+            post = hash_value(roundtrip, "canonical")
+            within = _within_lossy_set(case["type"], canonical, pre, post, case["lossy_set"])
+            assert_relation(result, case_id, field_name, expected[field_name], [pre, post], within)
     return result
+
+
+# Each documented-lossy token's collapse ([ACIF-CORE] Appendix A.2): the
+# canonical tool names the target cannot distinguish, mapped onto the one
+# reverse translation prefers. The collapse applies to the canonical
+# tool-name field only; every other field must round-trip unchanged.
+LOSSY_COLLAPSES = {
+    "write-edit-distinction": {"file_write": "file_edit"},
+}
+TOOL_FIELD = {"agent": ("agent", "tools")}
+
+
+def _within_lossy_set(kind: str, source: Any, pre: Any, post: Any, lossy_set: list[str]) -> bool:
+    """pre is the adapter's canonical form of `source`, post its canonical
+    form of the rendered output. pre's tool list must be the vector's own
+    (anchoring it to what was rendered), post's must equal pre's after the
+    collapse, and nothing outside the tool field may differ."""
+    path = TOOL_FIELD[kind]
+    source_tools, pre_tools, post_tools = (_at(value, path) for value in (source, pre, post))
+    if not all(isinstance(tools, list) for tools in (source_tools, pre_tools, post_tools)):
+        return False
+    mapping: dict[str, str] = {}
+    for token in lossy_set:
+        mapping.update(LOSSY_COLLAPSES[token])
+    return (
+        sorted(pre_tools) == sorted(source_tools)
+        and {mapping.get(t, t) for t in pre_tools} == {mapping.get(t, t) for t in post_tools}
+        and _without(pre, path) == _without(post, path)
+    )
+
+
+def _at(value: Any, path: tuple[str, ...]) -> Any:
+    for key in path:
+        if not isinstance(value, dict) or key not in value:
+            return ABSENT
+        value = value[key]
+    return value
+
+
+def _without(value: Any, path: tuple[str, ...]) -> Any:
+    if not path or not isinstance(value, dict):
+        return value
+    head, rest = path[0], path[1:]
+    out = {key: child for key, child in value.items() if key != head}
+    if rest and head in value:
+        out[head] = _without(value[head], rest)
+    return out
 
 
 def _paired_degradation_invariant(observations: list[Any], vector_results: list[VectorResult]) -> None:

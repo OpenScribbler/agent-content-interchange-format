@@ -86,12 +86,12 @@ implementation has done that yet.
 | Scope | [syllago](https://github.com/OpenScribbler/syllago) | [acif-ts](https://github.com/OpenScribbler/acif-ts) |
 |---|---|---|
 | core | pass at suite 6 | pass at suite 6 |
-| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 10 |
+| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 11 |
 | skill, rule, command, agent, mcp | pass at suite 6 | not claimed |
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
 
-The suite is at 10. Published runs live under
+The suite is at 11. Published runs live under
 [`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
 [`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
 

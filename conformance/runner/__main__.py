@@ -19,7 +19,11 @@ def main(argv: list[str] | None = None) -> int:
 
         return differential_main(argv[1:])
 
-    parser = argparse.ArgumentParser(prog="python -m runner")
+    parser = argparse.ArgumentParser(
+        prog="python -m runner",
+        epilog="Exit status: 0 when no vector failed or harness-errored; 1 when any did, "
+        "or the adapter handshake failed; 2 on a usage error.",
+    )
     parser.add_argument("--adapter", required=True, help="adapter command to spawn")
     parser.add_argument("--scope", action="append", default=[], help="scope to run; may be repeated")
     parser.add_argument("--only", action="append", default=[], help="vector id to run; may be repeated")
@@ -45,6 +49,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.report:
         write_report(args.report, report)
     print(human_report(report))
+    return exit_status(report)
+
+
+def exit_status(report: dict) -> int:
+    """1 when the run is not a clean claim: any vector failed or
+    harness-errored, or the handshake itself failed (which, with no
+    claimed scopes, leaves every vector out-of-scope)."""
+    if report["adapter"].get("hello_error"):
+        return 1
+    if any(row["status"] in {"fail", "harness-error"} for row in report["vectors"]):
+        return 1
     return 0
 
 

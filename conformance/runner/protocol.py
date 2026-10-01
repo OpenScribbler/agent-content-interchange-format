@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import selectors
 import shlex
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from . import RUNNER_PROTOCOL, SUPPORTED_ADAPTER_PROTOCOLS
+from .scopes import SCOPE_ORDER
 
 MAX_LINE_BYTES = 16 * 1024 * 1024
 SPEC_ERROR_RE = re.compile(r"^acif\.[a-z0-9_]+(\.[a-z0-9_]+)+$")
@@ -58,6 +61,8 @@ def classify_response(raw: Any, request_line: str, response_line: str | None) ->
         return AdapterResponse(kind="unsupported", request_line=request_line, response_line=response_line, raw=raw)
 
     if raw.get("ok") is True:
+        if "error" in raw:
+            return AdapterResponse.harness(request_line, "ambiguous ok response carrying error", response_line)
         result = raw.get("result")
         if not isinstance(result, dict):
             return AdapterResponse.harness(request_line, "ok response missing object result", response_line)
@@ -70,6 +75,8 @@ def classify_response(raw: Any, request_line: str, response_line: str | None) ->
         )
 
     if raw.get("ok") is False:
+        if "result" in raw:
+            return AdapterResponse.harness(request_line, "ambiguous error response carrying result", response_line)
         error = raw.get("error")
         if not isinstance(error, str) or not SPEC_ERROR_RE.match(error):
             return AdapterResponse.harness(
@@ -101,6 +108,7 @@ class AdapterSession:
         self.hello: dict[str, Any] | None = None
         self.hello_response: AdapterResponse | None = None
         self._selector: selectors.BaseSelector | None = None
+        self._buffer = bytearray()
 
     def start(self) -> dict[str, Any]:
         argv = shlex.split(self.command)
@@ -115,6 +123,11 @@ class AdapterSession:
         )
         if self.process.stdout is None:
             raise ProtocolError("adapter stdout was not captured")
+        if self.process.stdin is None:
+            raise ProtocolError("adapter stdin was not captured")
+        # Non-blocking stdin: an adapter that stops reading must not stall
+        # the write past the per-request deadline.
+        os.set_blocking(self.process.stdin.fileno(), False)
         self._selector = selectors.DefaultSelector()
         self._selector.register(self.process.stdout, selectors.EVENT_READ)
         response = self.request({"op": "hello", "runner_protocol": RUNNER_PROTOCOL})
@@ -123,7 +136,10 @@ class AdapterSession:
             raise ProtocolError("adapter hello failed", response)
         result = response.result or {}
         adapter_protocol = result.get("adapter_protocol")
-        if adapter_protocol not in SUPPORTED_ADAPTER_PROTOCOLS:
+        # Exact int only: True == 1 and 2.0 == 2 both match the tuple, but
+        # bindings gate protocol-2 assertions on an int and would silently
+        # treat either as protocol 1.
+        if type(adapter_protocol) is not int or adapter_protocol not in SUPPORTED_ADAPTER_PROTOCOLS:
             raise ProtocolError(
                 f"unsupported adapter_protocol {adapter_protocol!r}; expected one of {SUPPORTED_ADAPTER_PROTOCOLS}",
                 response,
@@ -131,6 +147,9 @@ class AdapterSession:
         scopes = result.get("scopes")
         if not isinstance(scopes, list) or not all(isinstance(s, str) for s in scopes):
             raise ProtocolError("adapter hello scopes must be a string array", response)
+        unknown = sorted(set(scopes) - set(SCOPE_ORDER))
+        if unknown:
+            raise ProtocolError(f"adapter hello claims unknown scope(s): {', '.join(unknown)}", response)
         self.hello = result
         return result
 
@@ -144,32 +163,19 @@ class AdapterSession:
         if self.process.poll() is not None:
             return AdapterResponse.harness(request_line, f"adapter process exited with {self.process.returncode}")
 
-        try:
-            self.process.stdin.write(request_bytes)
-            self.process.stdin.flush()
-        except (BrokenPipeError, OSError) as exc:
-            return AdapterResponse.harness(request_line, f"adapter write failed: {exc}")
+        deadline = time.monotonic() + self.timeout
+        failure = self._write_all(request_line, request_bytes, deadline)
+        if failure is not None:
+            return failure
 
-        assert self._selector is not None
-        events = self._selector.select(self.timeout)
-        if not events:
-            self._kill()
-            return AdapterResponse.harness(request_line, f"adapter request timed out after {self.timeout:g}s")
-
-        try:
-            line = self.process.stdout.readline(MAX_LINE_BYTES + 1)
-        except OSError as exc:
-            self._kill()
-            return AdapterResponse.harness(request_line, f"adapter read failed: {exc}")
-
-        if line == b"":
-            code = self.process.poll()
-            return AdapterResponse.harness(request_line, f"adapter process exited with {code}")
+        line = self._read_line(request_line, deadline)
+        if isinstance(line, AdapterResponse):
+            return line
         if len(line) > MAX_LINE_BYTES:
             self._kill()
             return AdapterResponse.harness(request_line, "adapter response exceeds 16 MiB line limit")
         try:
-            response_line = line.decode("utf-8").rstrip("\n")
+            response_line = line.decode("utf-8")
         except UnicodeDecodeError as exc:
             self._kill()
             return AdapterResponse.harness(request_line, f"adapter response is not UTF-8: {exc}")
@@ -179,6 +185,59 @@ class AdapterSession:
             self._kill()
             return AdapterResponse.harness(request_line, f"malformed JSON response: {exc}", response_line)
         return classify_response(raw, request_line, response_line)
+
+    def _write_all(self, request_line: str, data: bytes, deadline: float) -> "AdapterResponse | None":
+        """Write the request on the non-blocking stdin fd, charging every
+        partial write to the per-request deadline."""
+        assert self.process is not None and self.process.stdin is not None
+        fd = self.process.stdin.fileno()
+        view = memoryview(data)
+        with selectors.DefaultSelector() as writer:
+            writer.register(fd, selectors.EVENT_WRITE)
+            while view:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 or not writer.select(remaining):
+                    self._kill()
+                    return AdapterResponse.harness(request_line, f"adapter request timed out after {self.timeout:g}s (adapter not reading stdin)")
+                try:
+                    written = os.write(fd, view)
+                except BlockingIOError:
+                    continue
+                except OSError as exc:
+                    return AdapterResponse.harness(request_line, f"adapter write failed: {exc}")
+                view = view[written:]
+        return None
+
+    def _read_line(self, request_line: str, deadline: float) -> "bytes | AdapterResponse":
+        """Read one response line under a single per-request deadline.
+
+        Selector readiness only promises that some bytes are available, so a
+        blocking readline() after it hangs forever on a partial line. Read the
+        raw fd incrementally instead and charge every partial read to the same
+        deadline."""
+        assert self._selector is not None and self.process is not None and self.process.stdout is not None
+        fd = self.process.stdout.fileno()
+        while b"\n" not in self._buffer:
+            if len(self._buffer) > MAX_LINE_BYTES:
+                self._kill()
+                return AdapterResponse.harness(request_line, "adapter response exceeds 16 MiB line limit")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not self._selector.select(remaining):
+                self._kill()
+                return AdapterResponse.harness(request_line, f"adapter request timed out after {self.timeout:g}s")
+            try:
+                chunk = os.read(fd, 65536)
+            except OSError as exc:
+                self._kill()
+                return AdapterResponse.harness(request_line, f"adapter read failed: {exc}")
+            if chunk == b"":
+                code = self.process.poll()
+                return AdapterResponse.harness(request_line, f"adapter process exited with {code}")
+            self._buffer.extend(chunk)
+        index = self._buffer.index(b"\n")
+        line = bytes(self._buffer[:index])
+        del self._buffer[: index + 1]
+        return line
 
     def close(self) -> None:
         if self._selector is not None:

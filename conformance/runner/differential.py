@@ -13,14 +13,22 @@ spawned; the same seed and count reproduce the same run byte-for-byte
 (modulo fixture paths).
 
 Family discipline:
-- required families (body, sidecar, envelope, pack_id, and the four
-  hook_* families) mirror request forms the static vectors already force
-  both adapters to serve; an `unsupported` there breaks the run. The
-  hook_* families became required when both implementations declared the
-  hook scope (acif-5lk).
-- the normalize_uri family is informative until both implementations
-  claim registry scope: either side answering `unsupported` marks the
-  trial uncomparable, never a disagreement.
+- each family belongs to the conformance scope whose static vectors force
+  its request form (FAMILY_SCOPES). A family is required when both
+  adapters claim its scope (prerequisites included); an `unsupported` in
+  a required family breaks the run.
+- a family outside the shared claims is informative: either side
+  answering `unsupported` marks the trial uncomparable, never a
+  disagreement.
+
+Clean discipline: `clean` is graduation evidence, so it requires real
+observations, not just the absence of failures. Each family names the
+observed fields that carry its answer (FAMILY_OBSERVED_FIELDS); a trial in
+which both adapters answer `ok` but either omits one of them is
+`incomplete`, never `agree` — two adapters omitting the same hash agree on
+nothing. A clean run has at least one agreeing trial, no incomplete,
+disagreeing, unsupported or harness-error trials, a non-empty required
+family set, and at least one agreeing trial in every required family.
 
 Hook-family equivalence discipline ([ACIF-HOOK]):
 - hook_sidecar / hook_body generate only inputs whose answer the spec
@@ -29,11 +37,11 @@ Hook-family equivalence discipline ([ACIF-HOOK]):
 - hook_provider_event exercises the Appendix A.1 provider event-name
   mappings (including the copilot-cli `errorOccurred` multi-match, whose
   §8.1 lexicographic tiebreak is pinned) and unrecognized spellings.
-- hook_mechanism exercises the §7.4 shape predicates. The canonical
-  EVENT of a mechanism-only ingest is deliberately NOT compared: the
-  synthesized-envelope event is an identified spec-precision gap, so the
-  family compares `canonical.handlers`, provenance, and diagnostic ids
-  instead of whole canonical bytes.
+- hook_mechanism exercises the §7.4 shape predicates. §7.4 pins the
+  synthesized envelope around mechanism-mapped entries, so the family
+  compares whole canonical bytes, plus provenance and diagnostic ids. It
+  does not compare body_hash: the generated `type: file` entries point at
+  scripts no body_root carries, so the §9 preimage is not computable.
 """
 
 from __future__ import annotations
@@ -47,6 +55,7 @@ from . import RUNNER_PROTOCOL, RUNNER_VERSION
 from .fixtures import EnvBlocked, FixtureContext, probe_environment
 from .protocol import AdapterSession
 from .report import write_report
+from .scopes import scope_closure
 
 ABSENT = "<absent>"
 
@@ -62,9 +71,34 @@ FORBIDDEN_FIELDS = [
     "resolved_version",
 ]
 
-REQUIRED_FAMILIES = {
-    "body", "sidecar", "envelope", "pack_id",
-    "hook_sidecar", "hook_provider_event", "hook_mechanism", "hook_body",
+# The scope whose static vectors force each family's request form
+# (scopes.yaml): skill-body hashing, sidecar metadata hashing, envelope
+# verdicts and pack-id inference are core vectors (TV-1..TV-13);
+# normalize_uri is registry (TV-URI-*); the hook_* families are hook.
+FAMILY_SCOPES = {
+    "body": "core",
+    "sidecar": "core",
+    "envelope": "core",
+    "pack_id": "core",
+    "normalize_uri": "registry",
+    "hook_sidecar": "hook",
+    "hook_provider_event": "hook",
+    "hook_mechanism": "hook",
+    "hook_body": "hook",
+}
+# The fields an `ok` answer must carry for a trial to count as agreement:
+# each family's hash, identity or verdict field. Fields left out here
+# (envelope `params.field`, diagnostics) are legitimately conditional.
+FAMILY_OBSERVED_FIELDS = {
+    "body": ["body_hash", "classification"],
+    "sidecar": ["metadata_hash", "canonical_bytes"],
+    "envelope": ["conformant", "reason"],
+    "pack_id": ["inferred_pack_id"],
+    "normalize_uri": ["source_uri"],
+    "hook_sidecar": ["body_hash", "canonical_bytes"],
+    "hook_provider_event": ["body_hash", "canonical_bytes"],
+    "hook_mechanism": ["canonical_bytes", "provenance"],
+    "hook_body": ["body_hash", "canonical_bytes"],
 }
 FAMILY_WEIGHTS = [
     ("body", 35),
@@ -461,11 +495,11 @@ def _gen_hook_mechanism(rng: random.Random) -> dict[str, Any]:
             "kind": "hook",
             "provider_config": {"provider": provider, "path": "hooks.json", "content": content},
         },
-        # No canonical_bytes here: the synthesized-envelope event of a
-        # mechanism-only ingest is an identified spec-precision gap. No
-        # `conformant` either — same provider_config field-optionality
-        # rationale as hook_provider_event.
-        "compare": ["canonical.handlers", "provenance", "diagnostics_ids"],
+        # [ACIF-HOOK] §7.4 pins the synthesized envelope, so whole bytes
+        # compare. No `conformant` — same provider_config field-optionality
+        # rationale as hook_provider_event. No body_hash — see the module
+        # docstring.
+        "compare": ["canonical_bytes", "provenance", "diagnostics_ids"],
     }
 
 
@@ -581,14 +615,43 @@ def _observe(response: Any, fields: list[str]) -> dict[str, Any]:
     return {"class": "ok", "fields": observed}
 
 
-def _trial_status(a: dict[str, Any], b: dict[str, Any], family: str) -> str:
+def _incomplete(observation: dict[str, Any], family: str) -> bool:
+    """An ok answer missing a field that carries the family's answer."""
+    if observation["class"] != "ok":
+        return False
+    return any(observation["fields"].get(f, ABSENT) == ABSENT for f in FAMILY_OBSERVED_FIELDS[family])
+
+
+def required_families(scopes_a: list[str], scopes_b: list[str]) -> set[str]:
+    shared = scope_closure(set(scopes_a)) & scope_closure(set(scopes_b))
+    return {family for family, scope in FAMILY_SCOPES.items() if scope in shared}
+
+
+def _trial_status(a: dict[str, Any], b: dict[str, Any], family: str, required: set[str]) -> str:
     if a["class"] == "harness-error" or b["class"] == "harness-error":
         return "harness-error"
     if a["class"] == "unsupported" or b["class"] == "unsupported":
-        if family in REQUIRED_FAMILIES:
+        if family in required:
             return "disagree" if a["class"] != b["class"] else "unsupported"
         return "uncomparable"
-    return "agree" if a == b else "disagree"
+    if a != b:
+        return "disagree"
+    if _incomplete(a, family) or _incomplete(b, family):
+        return "incomplete"
+    return "agree"
+
+
+def clean_problems(counts: dict[str, int], family_counts: dict[str, dict[str, int]], required: set[str]) -> list[str]:
+    """Why a run is not graduation evidence; empty means clean."""
+    problems = [f"{counts[status]} {status} trial(s)" for status in ("disagree", "harness-error", "unsupported", "incomplete") if counts.get(status)]
+    if counts.get("agree", 0) == 0:
+        problems.append("no agreeing trials")
+    if not required:
+        problems.append("adapters share no claimed scope with a differential family")
+    for family in sorted(required):
+        if family_counts.get(family, {}).get("agree", 0) == 0:
+            problems.append(f"required family {family} has no agreeing trial")
+    return problems
 
 
 def run_differential(
@@ -604,10 +667,11 @@ def run_differential(
     ctx = FixtureContext(env, keep_fixtures=keep_fixtures)
 
     rows: list[dict[str, Any]] = []
-    counts = {"agree": 0, "disagree": 0, "uncomparable": 0, "unsupported": 0, "harness-error": 0, "env-skipped": 0}
+    counts = {"agree": 0, "disagree": 0, "incomplete": 0, "uncomparable": 0, "unsupported": 0, "harness-error": 0, "env-skipped": 0}
     family_counts: dict[str, dict[str, int]] = {}
 
     with AdapterSession(adapter_a) as session_a, AdapterSession(adapter_b) as session_b:
+        required = required_families((session_a.hello or {}).get("scopes", []), (session_b.hello or {}).get("scopes", []))
         for trial in trials:
             row: dict[str, Any] = {
                 "index": trial["index"],
@@ -627,7 +691,7 @@ def run_differential(
                 b = _observe(response_b, trial["compare"])
                 row["a"] = a
                 row["b"] = b
-                row["status"] = _trial_status(a, b, trial["family"])
+                row["status"] = _trial_status(a, b, trial["family"], required)
             counts[row["status"]] += 1
             fam = family_counts.setdefault(trial["family"], {})
             fam[row["status"]] = fam.get(row["status"], 0) + 1
@@ -643,17 +707,15 @@ def run_differential(
         for root in ctx.roots:
             shutil.rmtree(root, ignore_errors=True)
 
-    clean = (
-        counts["disagree"] == 0
-        and counts["harness-error"] == 0
-        and counts["unsupported"] == 0
-    )
+    problems = clean_problems(counts, family_counts, required)
     return {
         "differential": {
             "design": "DESIGN.md §8 differential pass (graduation evidence)",
             "seed": seed,
             "count": count,
-            "clean": clean,
+            "clean": not problems,
+            "not_clean_because": problems,
+            "required_families": sorted(required),
             "summary": counts,
             "families": family_counts,
         },
@@ -677,12 +739,13 @@ def human_summary(report: dict[str, Any]) -> str:
         f"  A: {a.get('implementation')} {a.get('version')} (protocol {a.get('adapter_protocol')})",
         f"  B: {b.get('implementation')} {b.get('version')} (protocol {b.get('adapter_protocol')})",
         "  " + ", ".join(f"{k}={v}" for k, v in diff["summary"].items() if v),
-        f"  clean: {diff['clean']}",
+        f"  clean: {diff['clean']}" + (f" ({'; '.join(diff['not_clean_because'])})" if diff["not_clean_because"] else ""),
+        f"  required families: {', '.join(diff['required_families']) or 'none'}",
     ]
     for family, statuses in sorted(diff["families"].items()):
         detail = ", ".join(f"{k}={v}" for k, v in sorted(statuses.items()))
         lines.append(f"    {family}: {detail}")
-    problems = [row for row in report["trials"] if row["status"] in {"disagree", "harness-error", "unsupported"}]
+    problems = [row for row in report["trials"] if row["status"] in {"disagree", "harness-error", "unsupported", "incomplete"}]
     if problems:
         lines.append("  Problem trials:")
         for row in problems:

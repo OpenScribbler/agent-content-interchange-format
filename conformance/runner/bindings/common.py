@@ -268,6 +268,18 @@ def assert_value(
     result.add_check(case, field_name, expected, observed, observed == expected)
 
 
+def contains_absent(values: Any) -> bool:
+    """True when an observed operand of a relation is missing from the
+    response. PROTOCOL §3: an asserted field absent from `result` is a
+    fail — two missing fields are not "equal", and one missing field is
+    not "different"."""
+    if values is ABSENT:
+        return True
+    if isinstance(values, (list, tuple)):
+        return any(contains_absent(value) for value in values)
+    return False
+
+
 def assert_relation(
     result: VectorResult,
     case: str,
@@ -276,6 +288,9 @@ def assert_relation(
     values: Any,
     relation: bool,
 ) -> None:
+    if contains_absent(values):
+        result.add_check(case, field_name, expected, {"missing_field": values}, False)
+        return
     result.add_check(case, field_name, expected, values, relation == bool(expected))
 
 
