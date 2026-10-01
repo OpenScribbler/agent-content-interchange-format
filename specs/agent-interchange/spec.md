@@ -86,6 +86,8 @@ agent:
 
 **`permission_mode`**, **`background`** — OPTIONAL opaque passthrough in ACIF 0.1: carried verbatim for round-trip fidelity, no canonical enum minted. An owned enum with a total mapping is the recorded promotion path if these are ever made capability-bearing.
 
+*(Informative)* Roo Code's mode `whenToUse`, which its orchestrator reads when choosing a mode, is likewise carried as opaque passthrough and never merged into `description`. Other providers put that selection guidance in `description` itself, so it is single-provider and not a promotion candidate.
+
 **`requires`** — OPTIONAL. The recognized `requires` vocabulary for agents is empty in ACIF 0.1 (§9); any key present is non-conformant ([ACIF-CORE] §9.4).
 
 ### 6.3 Declarative, not enforced *(informative)*

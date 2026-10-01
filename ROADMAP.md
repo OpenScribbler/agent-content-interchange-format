@@ -6,6 +6,21 @@ The purpose of this file is to make deferrals visible: when someone asks "why do
 
 ---
 
+## Known spec conflicts
+
+Eight places where two normative clauses disagree, found in a 2026-09 audit. Each is left as written until an implementation needs it resolved, because each resolution changes normative text and goes through [CHANGE-PROCESS.md](CHANGE-PROCESS.md). The owner is the spec whose text changes; the second column names the clause it conflicts with.
+
+| Conflict | Owner | Conflicts with | Likely resolution |
+|---|---|---|---|
+| `pack_id` must be a UUIDv4, but inferred packs are UUIDv5, so no item can declare membership of an inferred pack | [ACIF-CORE] §5 | [ACIF-PUBLISHER] §9.4 | Accept either form in `pack_id` |
+| The four reserved version fields are forbidden in the envelope, but MAY appear on pack records with no defined meaning | [ACIF-PUBLISHER] §5.4 | [ACIF-CORE] §5.2 | Forbid them on packs too |
+| The reciprocal skill-side entry for a hook-declared activation names a hook-side `source_path`, which the same clause bars because the skill record does not contain it | [ACIF-SKILL] §13.2 | [ACIF-REGISTRY] §9 | Let a reciprocal entry name the declaring record's path |
+| Stripping an explicit MCP `type: sse` restores as `streamable-http`, so strip-and-restore is not identity for every value | [ACIF-MCP] §7 | [ACIF-RENDER] §9 | Strip only values the default rule restores |
+| A diagnosed degraded render is conforming, but the round-trip law admits only losses in the documented-lossy set | [ACIF-RENDER] §9 | [ACIF-RENDER] §7 | State the round-trip law per fidelity class |
+| Rule render-back defers the glob mechanism choice to a per-provider record in [ACIF-RENDER], which keeps no per-type rules | [ACIF-RULE] §11 | [ACIF-RENDER] §1 | Add the per-provider table to [ACIF-RULE], or drop the deferral |
+| The write target is the first `current` row, yet a write resolved through a `superseded` row warns and proceeds, with no rule for when that row is selected | [ACIF-INSTALL] §6 | [ACIF-INSTALL] §11 | State that a superseded row is the write target only when its scope has no current row |
+| Shared-file contributions for hooks are keyed by event wiring, so two hooks on the same event overwrite each other on re-install | [ACIF-INSTALL] §10 | [ACIF-HOOK] §12 | Key a hook contribution by item |
+
 ## Deferred items
 
 ### Single-file aggregations

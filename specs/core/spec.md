@@ -217,7 +217,7 @@ Any registry-generated sidecar file stored inside the content directory is exclu
 
 In ACIF 0.1 the registry-generated sidecar filename is `acif-sidecar.yaml`; the §7.2 and §7.5 exclusions match exactly this name. A registry that stores sidecars inside content directories MUST use this name — an unpinned name would make the exclusion, and therefore `body_hash`, implementation-dependent.
 
-### 7.6 Hash-then-canonicalize ordering
+### 7.6 Canonicalize-before-hash ordering
 
 `body_hash` is computed over the **post-canonicalization** form: after vocabulary translation (§8.2), default materialization (§8.1), and any L1-defined body rewrites. This ordering is normative for every content type.
 

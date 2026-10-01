@@ -166,6 +166,8 @@ Each predicate produces `{derivable-true, derivable-false}` per the boolean disc
 
 Latent frontmatter fields observed in provider skill formats (allowed-tools, model, bundled hook declarations) are carried as opaque passthrough where present and are roadmap candidates for canonical promotion; their presence MUST NOT soften the orphan-key reject below.
 
+Claude Code's `when_to_use` is carried the same way, verbatim and never merged into `description`. It supplements the description as selection guidance, a job `description` already does in every other surveyed provider, so it is a single-provider field rather than a promotion candidate. Merging it would change declared `description` bytes and could not be reversed at render-back.
+
 ### 10.3 Orphan keys
 
 Any `requires.<key>` on a skill item — including the keys named in §10.1 and §10.2, keys recognized for other content types, and keys matching a latent passthrough field — is non-conformant ([ACIF-CORE] §9.4). An unrecognized key evaluated by a consumer follows the three-valued rule ([ACIF-CORE] §9.5).

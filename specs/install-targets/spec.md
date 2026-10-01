@@ -108,11 +108,13 @@ Growing the token set is a Class C change ([CHANGE-PROCESS]). Tokens beginning `
 - **skill** — `<content-name>` names the skill directory; the entry file inside it is `SKILL.md` ([ACIF-SKILL] §9). The template resolves to the directory (§9).
 - **all types** — where discovery derived a name (the URL-derived filename, [ACIF-REGISTRY] §10.5), an install tool SHOULD offer it as the default; `display_name` MUST NOT be used as a content name ([ACIF-CORE] §5.1 bars it from identity use).
 
+*(Informative)* Some providers derive an item's invocation name from its installed filename, so a command installed as `commit.md` is invoked as `/commit`. That is provider discovery behaviour downstream of placement: the content name chosen here becomes the invocation name on those providers, and ACIF carries no separate canonical key for it.
+
 **Validity predicate.** A content name MUST be a non-empty string containing no `/`, no `\`, no NUL, and no segment equal to `.` or `..` after substitution. A violation rejects with `acif.install.content_name_invalid` before any path is formed. Substitution is byte-exact: no trimming, no case folding, no encoding.
 
 ### 8.3 Anchors and resolution
 
-Resolution is a function: identical `(entry-point row, content name, target OS, home directory, application-data directory, project root)` MUST produce a byte-identical resolved path, across invocations and across conforming implementations. The target OS is a REQUIRED input; the application-data directory is REQUIRED only when a row that survives OS filtering carries `<appdata>`.
+Resolution is a function: identical `(entry-point row, content name, target OS, home directory, application-data directory, project root)` MUST produce a byte-identical resolved path, across invocations and across conforming implementations. The target OS is REQUIRED whenever a candidate row carries `os`; when no candidate row carries `os` the result cannot depend on it, and the input MAY be omitted. The application-data directory is REQUIRED only when a row that survives OS filtering carries `<appdata>`.
 
 - A template beginning `~/` is **home-anchored**: `~` resolves to the invoking user's home directory — the platform's native notion (`$HOME` on POSIX systems, `%USERPROFILE%` on Windows). `~` carries no other meaning and appears only as the leading segment.
 - A template beginning `<appdata>/` is **application-data-anchored**: `<appdata>` resolves to the invoking user's roaming application-data directory, the platform's `%APPDATA%`. The token appears only as the leading segment, and only on a row whose `os` is exactly `[windows]`; anywhere else it is a publication defect. It is a token rather than a home-anchored path because `%APPDATA%` is relocatable and is not always `~/AppData/Roaming`.
@@ -183,7 +185,7 @@ That split sets the maintenance model:
 
 ## 14. Error Identifiers
 
-All identifiers follow the [ACIF-CORE] §12 naming discipline, family `acif.install.*`. This document is their owning specification. None uses the `_unmappable` suffix: that suffix is reserved for L1 canonicalization totality nets whose firing is Class B evidence, and no install condition is one — the matrix's amendment signal is observation, not a diagnostic (§12).
+All identifiers follow the [ACIF-CORE] §8.7 naming discipline, family `acif.install.*`. This document is their owning specification. None uses the `_unmappable` suffix: that suffix is reserved for L1 canonicalization totality nets whose firing is Class B evidence, and no install condition is one — the matrix's amendment signal is observation, not a diagnostic (§12).
 
 | Identifier | Class | Condition |
 |---|---|---|
@@ -227,7 +229,7 @@ Rows are grouped by provider, then content type; order within a group is normati
 
 *(Informative)* cline's MCP settings file remains omitted. It lives under the host editor's per-OS application-data directory (`globalStorage` of whichever editor hosts the extension), so its location depends on an input the row model does not carry: the host editor, not the OS.
 
-*(Informative)* A second class of omission is deliberate and worth naming, because a reader comparing the matrix to a provider's own documentation will notice it. Some providers *read* another provider's configuration for compatibility: `devin` loads hooks, commands, and subagents from `~/.claude.json`, `~/.claude/settings.json`, and `.claude/settings.json` in addition to its own locations. Those are not entry-point rows. An entry point is where a conforming install tool *writes* so that this provider picks the item up (§4), and writing into a path another provider's rows already claim would install the item into that provider too, which no caller asked for. A compatibility read is a fact about the reading provider's loader, not a location ACIF directs anyone to write. The matrix therefore carries only the provider's own namespace, and a shared-convention path (`AGENTS.md`, `.agents/skills/`) counts as its own namespace because no single provider owns it.
+*(Informative)* A second class of omission is deliberate and worth naming, because a reader comparing the matrix to a provider's own documentation will notice it. Some providers *read* another provider's configuration for compatibility: `devin` loads hooks, commands, and subagents from `~/.claude.json`, `~/.claude/settings.json`, and `.claude/settings.json` in addition to its own locations. Those are not entry-point rows. An entry point is where a conforming install tool *writes* so that this provider picks the item up (§3), and writing into a path another provider's rows already claim would install the item into that provider too, which no caller asked for. A compatibility read is a fact about the reading provider's loader, not a location ACIF directs anyone to write. The matrix therefore carries only the provider's own namespace, and a shared-convention path (`AGENTS.md`, `.agents/skills/`) counts as its own namespace because no single provider owns it.
 
 | Provider | Type | Scope | OS | Path template | Layout | Status | as_of *(informative)* |
 |---|---|---|---|---|---|---|---|

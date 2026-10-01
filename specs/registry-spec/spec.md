@@ -72,7 +72,8 @@ registry_section:
   provider_capability_coverage: {...} # §8.4
   install_scope_capabilities: {...}   # §8.5
   inferred_pack_id: "b2c3d4e5-..."   # OPTIONAL — [ACIF-PUBLISHER] §9; present iff
-                                      # publisher pack_id absent AND a pack was inferred
+                                      # a pack was inferred; MAY coexist with a declared
+                                      # pack_id, which wins ([ACIF-PUBLISHER] §8.3)
   pack_resolution: "inferred"         # OPTIONAL — declared | inferred | unresolved
   inference_version: "v0.1"           # REQUIRED when inferred_pack_id present
   fetched_at: "2026-05-11T18:00:00Z"  # REQUIRED — RFC 3339 with explicit offset, crawl time
@@ -252,7 +253,7 @@ The attestation trust tier is `{attested, unattested}`, consumer-evaluated. A la
 
 ### 11.4 Consumer lanes
 
-Staleness is a state flag on the warn lane: consumers SHOULD warn on stale items — the warning is `acif.registry.stale`, `params` carrying `expires` (the effective `E_sidecar` of §11.2 as an RFC 3339 timestamp); install MAY proceed. Install tools MUST provide an operator opt-in that escalates staleness to refuse. Silent-block by default and silent-ignore are both non-conformant. *(Informative: the stale-plus-attested combination warrants the stronger consumer diagnostic — staleness is the window in which an upstream-revoked attestation can still read valid; a content-revocation feed keyed on `body_hash` is the roadmap item.)*
+Staleness is a state flag on the warn lane: consumers MUST warn on stale items — the warning is `acif.registry.stale`, `params` carrying `expires` (the effective `E_sidecar` of §11.2 as an RFC 3339 timestamp); install MAY proceed. Install tools MUST provide an operator opt-in that escalates staleness to refuse. Silent-block by default and silent-ignore are both non-conformant. *(Informative: the stale-plus-attested combination warrants the stronger consumer diagnostic — staleness is the window in which an upstream-revoked attestation can still read valid; a content-revocation feed keyed on `body_hash` is the roadmap item.)*
 
 ## 12. Error Identifiers
 
