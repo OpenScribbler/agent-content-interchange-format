@@ -85,8 +85,8 @@ implementation has done that yet.
 
 | Scope | [syllago](https://github.com/OpenScribbler/syllago) | [acif-ts](https://github.com/OpenScribbler/acif-ts) |
 |---|---|---|
-| core | pass at suite 6 | pass at suite 6 |
-| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 11, and TV-HOOK-n through TV-HOOK-r at suite 12 |
+| core | pass at suite 6 | pass at suite 12 |
+| hook | pass at suite 6 | pass at suite 12 |
 | skill, rule, command, agent, mcp | pass at suite 6 | not claimed |
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
