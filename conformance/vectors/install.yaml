@@ -157,3 +157,160 @@
         - {scope: managed, path: "C:/ProgramData/Windsurf/skills/review/", layout: directory_of_files, status: current, write_target: false}
     case_5: {error: acif.install.no_entry_point}
     case_6: {error: acif.install.no_entry_point}
+
+- id: TV-INSTALL-h
+  spec: "[ACIF-INSTALL] §6.1, §8.3, §11"
+  harness: static
+  description: "operator overlay — an overlay row precedes its scope's matrix rows and becomes the write target, matrix rows still listed for read; an overlay fills a pair or a scope the matrix has no rows for (matrix_write_target null); every overlaid scope carries exactly one entry_point_overridden naming its scope, and a matrix-resolved scope carries none; absolute overlay templates carry os and resolve verbatim; the anchor is read off the template, so a content name of C: or ~ stays project-anchored; a row field named overlay confers no overlay origin; an overlaid scope whose matrix write row carries an unknown token refuses; an overlay over a superseded-only matrix scope names the superseded row and carries no supersession warning; no other install diagnostic rides a resolution, and a refusal carries no overridden warning; content_name_invalid and placeholder_unrecognized hold for overlay rows; an absent, other-scope, or OS-filtered overlay leaves the absence refusals unchanged, and a pair whose only rows are overlay rows takes the same lanes; each overlay_invalid reason refuses with its row index, a backslash, a non-leading ~ segment, a home-anchored project row, and non-string scope and layout values included"
+  input:
+    cases:
+      - {provider: claude-code, content_type: skill, content_name: review, home_dir: /h, project_root: /p, scope: user,
+         overlay: [{scope: user, path_template: "~/dotfiles/claude/skills/<content-name>/", layout: directory_of_files, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, os: linux, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, os: [darwin, linux], path_template: "/opt/cline-hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: kiro, content_type: rule, content_name: style, home_dir: /h, project_root: /p, scope: user,
+         overlay: [{scope: user, path_template: "~/.kiro/steering/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: copilot-cli, content_type: agent, content_name: reviewer, home_dir: /home/u, project_root: /proj,
+         overlay: [{scope: project, path_template: ".team/agents/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: claude-code, content_type: command, content_name: "..", home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "~/commands/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p}
+      - {provider: kiro, content_type: rule, content_name: style, home_dir: /h, project_root: /p, scope: user,
+         overlay: [{scope: project, path_template: ".kiro/steering/team/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, os: linux, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, os: [windows], path_template: "C:/Tools/cline-hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: claude-code, content_type: command, content_name: deploy, home_dir: /h, project_root: /p, scope: user,
+         overlay: [{scope: user, path_template: "~/<unknown-dir>/commands/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p, scope: user,
+         overlay: [{scope: project, path_template: ".team/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: copilot-cli, content_type: agent, content_name: reviewer, home_dir: /home/u, project_root: /proj,
+         overlay: [{scope: user, path_template: "~/team/agents/<content-name>.md", layout: single_file, status: current},
+                   {scope: project, path_template: ".team/agents/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, os: windows, home_dir: "C:/Users/u", project_root: "C:/src/p",
+         overlay: [{scope: user, os: [windows], path_template: "C:/Tools/cline-hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: "C:", home_dir: /h, project_root: /p, scope: project,
+         overlay: [{scope: project, path_template: "<content-name>/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: claude-code, content_type: skill, content_name: "~", home_dir: /h, project_root: /p, scope: project,
+         overlay: [{scope: project, path_template: "<content-name>/", layout: directory_of_files, status: current}]}
+      - {provider: claude-code, content_type: skill, content_name: review, home_dir: /h, project_root: /p,
+         entry: {scope: project, path_template: ".agents/skills/<content-name>/", layout: directory_of_files, status: current, overlay: true}}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: {scope: user, path_template: "~/hooks/<content-name>.json", layout: single_file, status: current}}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: global, path_template: "~/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "~/hooks/<content-name>.json", layout: single_file, status: superseded}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, os: [darwin, linux], path_template: "<appdata>/cline/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, os: [darwin, linux], path_template: "//server/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "~/hooks/../<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "/opt/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "~/", layout: directory_of_files, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "~/hooks/<content-name>.json", layout: single_file, status: current},
+                   {scope: user, path_template: "~/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: claude-code, content_type: command, content_name: d, home_dir: /h, project_root: /p,
+         entry: {scope: user, path_template: "~/old/<content-name>.md", layout: single_file, status: superseded},
+         overlay: [{scope: user, path_template: "~/new/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, os: windows, home_dir: "C:/Users/u", project_root: "C:/src/p",
+         overlay: [{scope: project, path_template: ".team\\..\\..\\x/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: project, path_template: "~/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: [], path_template: "~/hooks/<content-name>.json", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: user, path_template: "~/hooks/<content-name>.json", layout: {}, status: current}]}
+      - {provider: claude-code, content_type: command, content_name: d, home_dir: /h, project_root: /p, scope: user,
+         entry: {scope: user, path_template: "~/<unknown-dir>/<content-name>.md", layout: single_file, status: current},
+         overlay: [{scope: user, path_template: "~/new/<content-name>.md", layout: single_file, status: current}]}
+      - {provider: cline, content_type: hook, content_name: guard, home_dir: /h, project_root: /p,
+         overlay: [{scope: project, path_template: "a/~/<content-name>.json", layout: single_file, status: current}]}
+  expect:
+    case_1:
+      targets:
+        - {scope: user, path: /h/dotfiles/claude/skills/review/, layout: directory_of_files, status: current, write_target: true}
+        - {scope: user, path: /h/.claude/skills/review/, layout: directory_of_files, status: current, write_target: false}
+      overridden:
+        - {scope: user, overlay_path: /h/dotfiles/claude/skills/review/, matrix_write_target: /h/.claude/skills/review/}
+    case_2:
+      targets:
+        - {scope: user, path: /opt/cline-hooks/guard.json, layout: single_file, status: current, write_target: true}
+      overridden:
+        - {scope: user, overlay_path: /opt/cline-hooks/guard.json, matrix_write_target: null}
+    case_3:
+      targets:
+        - {scope: user, path: /h/.kiro/steering/style.md, layout: single_file, status: current, write_target: true}
+      overridden:
+        - {scope: user, overlay_path: /h/.kiro/steering/style.md, matrix_write_target: null}
+    case_4:
+      targets:
+        - {scope: project, path: /proj/.team/agents/reviewer.md, layout: single_file, status: current, write_target: true}
+        - {scope: user, path: /home/u/.github/agents/reviewer.md, layout: single_file, status: current, write_target: true}
+        - {scope: project, path: /proj/.copilot/agents/reviewer.md, layout: single_file, status: current, write_target: false}
+        - {scope: project, path: /proj/.github/agents/reviewer.md, layout: single_file, status: current, write_target: false}
+      overridden:
+        - {scope: project, overlay_path: /proj/.team/agents/reviewer.md, matrix_write_target: /proj/.copilot/agents/reviewer.md}
+    case_5: {error: acif.install.content_name_invalid}
+    case_6: {error: acif.install.no_entry_point}
+    case_7: {error: acif.install.scope_unavailable, params: {available_scopes: [project]}}
+    case_8: {error: acif.install.no_entry_point}
+    case_9: {error: acif.install.placeholder_unrecognized}
+    case_10: {error: acif.install.scope_unavailable, params: {available_scopes: [project]}}
+    case_11:
+      targets:
+        - {scope: user, path: /home/u/team/agents/reviewer.md, layout: single_file, status: current, write_target: true}
+        - {scope: project, path: /proj/.team/agents/reviewer.md, layout: single_file, status: current, write_target: true}
+        - {scope: user, path: /home/u/.github/agents/reviewer.md, layout: single_file, status: current, write_target: false}
+        - {scope: project, path: /proj/.copilot/agents/reviewer.md, layout: single_file, status: current, write_target: false}
+        - {scope: project, path: /proj/.github/agents/reviewer.md, layout: single_file, status: current, write_target: false}
+      overridden:
+        - {scope: user, overlay_path: /home/u/team/agents/reviewer.md, matrix_write_target: /home/u/.github/agents/reviewer.md}
+        - {scope: project, overlay_path: /proj/.team/agents/reviewer.md, matrix_write_target: /proj/.copilot/agents/reviewer.md}
+    case_12:
+      targets:
+        - {scope: user, path: "C:/Tools/cline-hooks/guard.json", layout: single_file, status: current, write_target: true}
+      overridden:
+        - {scope: user, overlay_path: "C:/Tools/cline-hooks/guard.json", matrix_write_target: null}
+    case_13:
+      targets:
+        - {scope: project, path: "/p/C:/C:.json", layout: single_file, status: current, write_target: true}
+      overridden:
+        - {scope: project, overlay_path: "/p/C:/C:.json", matrix_write_target: null}
+    case_14:
+      targets:
+        - {scope: project, path: /p/~/, layout: directory_of_files, status: current, write_target: true}
+        - {scope: project, path: /p/.claude/skills/~/, layout: directory_of_files, status: current, write_target: false}
+      overridden:
+        - {scope: project, overlay_path: /p/~/, matrix_write_target: /p/.claude/skills/~/}
+    case_15:
+      targets:
+        - {scope: project, path: /p/.agents/skills/review/, layout: directory_of_files, status: current, write_target: true}
+      overridden: []
+    case_16: {error: acif.install.overlay_invalid, params: {reason: overlay_not_list, row_index: null}}
+    case_17: {error: acif.install.overlay_invalid, params: {reason: field_invalid, row_index: 0}}
+    case_18: {error: acif.install.overlay_invalid, params: {reason: status_not_current, row_index: 0}}
+    case_19: {error: acif.install.overlay_invalid, params: {reason: anchor_misplaced, row_index: 0}}
+    case_20: {error: acif.install.overlay_invalid, params: {reason: leading_double_slash, row_index: 0}}
+    case_21: {error: acif.install.overlay_invalid, params: {reason: dot_segment, row_index: 0}}
+    case_22: {error: acif.install.overlay_invalid, params: {reason: anchor_scope_mismatch, row_index: 0}}
+    case_23: {error: acif.install.overlay_invalid, params: {reason: absolute_os_mismatch, row_index: 0}}
+    case_24: {error: acif.install.overlay_invalid, params: {reason: content_name_placement, row_index: 0}}
+    case_25: {error: acif.install.overlay_invalid, params: {reason: duplicate_row, row_index: 1}}
+    case_26:
+      targets:
+        - {scope: user, path: /h/new/d.md, layout: single_file, status: current, write_target: true}
+        - {scope: user, path: /h/old/d.md, layout: single_file, status: superseded, write_target: false}
+      overridden:
+        - {scope: user, overlay_path: /h/new/d.md, matrix_write_target: /h/old/d.md}
+    case_27: {error: acif.install.overlay_invalid, params: {reason: backslash, row_index: 0}}
+    case_28: {error: acif.install.overlay_invalid, params: {reason: anchor_scope_mismatch, row_index: 0}}
+    case_29: {error: acif.install.overlay_invalid, params: {reason: field_invalid, row_index: 0}}
+    case_30: {error: acif.install.overlay_invalid, params: {reason: field_invalid, row_index: 0}}
+    case_31: {error: acif.install.placeholder_unrecognized}
+    case_32: {error: acif.install.overlay_invalid, params: {reason: anchor_misplaced, row_index: 0}}

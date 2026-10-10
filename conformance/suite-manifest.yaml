@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 13
+  date: 2026-10-09
+  change_class: c
+  supersedes: 12
+  note: "Class C (SHAPE.md Decision #49). [ACIF-INSTALL] §6.1 adds the operator overlay: operator-supplied entry-point rows for one (provider, content type), validated before resolution and resolved ahead of the matrix rows, so a scope with an overlay row writes through its first overlay row and its matrix rows stay read/discovery locations. An overlay template MAY be absolute at any scope if it carries os (§8.3); anchors are read off the template, never the substituted path; origin travels beside the row, never in a row field. Mints acif.install.entry_point_overridden (diagnostic, warn; params scope, overlay_path, matrix_write_target) and acif.install.overlay_invalid (refuse; params reason, row_index), both payload-pinned in PROTOCOL Appendix A. PROTOCOL §4.14 gains an optional overlay input; targets entries gain no field. Additive vector: TV-INSTALL-h (32 cases: overlay moves the write target, including over a superseded-only matrix scope; fills a pair and a scope the matrix lacks; one and two overlaid scopes with every overridden warning matched one to one; a drive-letter overlay on windows; content names C: and ~ stay project-anchored; an entry field named overlay confers no origin; content_name_invalid, placeholder_unrecognized, and the absence refusals hold, including for an overlay-only pair; one case per overlay_invalid reason, plus a home-anchored project row, a non-leading ~ segment, and non-string scope and layout values; an overlaid scope whose matrix write row carries an unknown token refuses; every resolution carries no other install diagnostic, and every refusal carries no overridden warning). Vector-impact inventory: EMPTY — the install.yaml diff only appends TV-INSTALL-h; no existing vector supplies overlay, so every existing request is unchanged. Binding changes: assert_diagnostic requires each expected param key to be present, which changes a verdict only for an expected null, and no vector before TV-INSTALL-h expects a null param; the one-to-one overridden match is in the TV-INSTALL-h binding only. The reference adapter classifies anchors on the template for every row; no existing vector uses a template beginning <content-name> with a name that starts ~/ or a drive letter, and TV-INSTALL-a through g pass unchanged."
+  vectors: 187
+  binding_set: 3265ddbe08614218ac9234b2273ff10d1a743799d4d9f38246d710557fa9d3f4
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: 6ee229fcee55cce883a6a1b01e30140304eb9043e580a7a13727edcc83f49dc8
+    fresh.yaml: 643cb8ad306dc09d397d85f3d7caaf6a3fc8e055a92f1cf2e783fc2fc5c93fdf
+    hook.yaml: bba7247704cc295fae7d202295ebb3754719fd4683f6e8b675edfc6522fc4241
+    install.yaml: 4e4342c27808e4d873af32957e4ff852f5ffb2754609bfdb452a517ffaa63b3c
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: e473be422f5634a33d7c614a700fd95cbfae47354ba3e1719ded274c05dda44d
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 12
   date: 2026-09-30
   change_class: c

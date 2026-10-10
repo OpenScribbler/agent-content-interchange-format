@@ -614,6 +614,87 @@ def _install_matrix() -> dict[tuple[str, str], list[dict[str, Any]]]:
     return matrix
 
 
+INSTALL_SCOPES = {"user", "project", "managed"}
+INSTALL_LAYOUTS = {"single_file", "directory_of_files", "merged_into_shared_file"}
+INSTALL_OSES = {"darwin", "linux", "windows"}
+
+
+def _install_anchor(template: str) -> str:
+    """[ACIF-INSTALL] §8.3: the anchor is read off the template, before
+    substitution, so a content name never changes it."""
+    if template.startswith("~/"):
+        return "home"
+    if template.startswith("<appdata>/"):
+        return "appdata"
+    if template.startswith("/") or re.match(r"^[A-Za-z]:/", template):
+        return "absolute"
+    return "project"
+
+
+def _overlay_row_reason(row: Any) -> str | None:
+    """[ACIF-INSTALL] §6.1 overlay row validity; the first failing check,
+    in the §6.1 order, names the overlay_invalid reason."""
+    if not isinstance(row, dict):
+        return "field_invalid"
+    template = row.get("path_template")
+    scope, layout = row.get("scope"), row.get("layout")
+    if not isinstance(scope, str) or scope not in INSTALL_SCOPES:
+        return "field_invalid"
+    if not isinstance(layout, str) or layout not in INSTALL_LAYOUTS:
+        return "field_invalid"
+    if not isinstance(template, str) or not template:
+        return "field_invalid"
+    os_set = row.get("os")
+    if "os" in row and not (
+        isinstance(os_set, list)
+        and os_set
+        and all(isinstance(value, str) for value in os_set)
+        and os_set == sorted(set(os_set))
+        and set(os_set) < INSTALL_OSES
+    ):
+        return "field_invalid"
+    if row.get("status") != "current":
+        return "status_not_current"
+    if "~" in template.split("/")[1:] or (
+        "<appdata>" in template
+        and (not template.startswith("<appdata>/") or template.count("<appdata>") != 1 or os_set != ["windows"])
+    ):
+        return "anchor_misplaced"
+    if template.startswith("//"):
+        return "leading_double_slash"
+    if "\\" in template:
+        return "backslash"
+    if any(segment in {".", ".."} for segment in template.split("/")):
+        return "dot_segment"
+    anchor = _install_anchor(template)
+    if (
+        (scope == "managed" and anchor != "absolute")
+        or (scope == "user" and anchor == "project")
+        or (scope == "project" and anchor in {"home", "appdata"})
+    ):
+        return "anchor_scope_mismatch"
+    if anchor == "absolute":
+        if template.startswith("/"):
+            if os_set is None or "windows" in os_set:
+                return "absolute_os_mismatch"
+        elif os_set != ["windows"]:
+            return "absolute_os_mismatch"
+    final_segment = template.removesuffix("/").rsplit("/", 1)[-1]
+    if layout == "merged_into_shared_file":
+        if "<content-name>" in template:
+            return "content_name_placement"
+    elif "<content-name>" not in final_segment:
+        return "content_name_placement"
+    return None
+
+
+def _overlay_invalid(reason: str, row_index: int | None) -> SpecError:
+    return SpecError(
+        "acif.install.overlay_invalid",
+        [{"id": "acif.install.overlay_invalid", "params": {"reason": reason, "row_index": row_index}}],
+    )
+
+
 def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
     content_name = inp.get("content_name")
     if (
@@ -625,23 +706,40 @@ def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
         or content_name in {".", ".."}
     ):
         raise SpecError("acif.install.content_name_invalid")
+    # [ACIF-INSTALL] §6.1: every overlay row is validated before resolution.
+    overlay: list[dict[str, Any]] = []
+    if "overlay" in inp:
+        if not isinstance(inp["overlay"], list):
+            raise _overlay_invalid("overlay_not_list", None)
+        seen: set[tuple[str, str]] = set()
+        for index, row in enumerate(inp["overlay"]):
+            reason = _overlay_row_reason(row)
+            if reason is None and (row["scope"], row["path_template"]) in seen:
+                reason = "duplicate_row"
+            if reason is not None:
+                raise _overlay_invalid(reason, index)
+            seen.add((row["scope"], row["path_template"]))
+            overlay.append(dict(row))
     entry = inp.get("entry")
     if isinstance(entry, dict):
-        rows = [dict(entry)]
+        matrix_rows = [dict(entry)]
     else:
-        rows = [dict(row) for row in _install_matrix().get((_str(inp.get("provider")), _str(inp.get("content_type"))), [])]
+        matrix_rows = [dict(row) for row in _install_matrix().get((_str(inp.get("provider")), _str(inp.get("content_type"))), [])]
+    # §6.1: overlay rows, in overlay order, precede the matrix rows. Origin
+    # travels beside the row, never inside it, so a row field cannot claim it.
+    rows: list[tuple[dict[str, Any], bool]] = [(row, True) for row in overlay] + [(row, False) for row in matrix_rows]
     # [ACIF-INSTALL] §6 OS filtering precedes precedence and every §11 lane.
     target_os = inp.get("os")
     if isinstance(target_os, str):
-        rows = [row for row in rows if "os" not in row or target_os in row["os"]]
-    elif any("os" in row for row in rows):
+        rows = [(row, origin) for row, origin in rows if "os" not in row or target_os in row["os"]]
+    elif any("os" in row for row, _ in rows):
         raise Unsupported()
     if not rows:
         raise SpecError("acif.install.no_entry_point")
     requested_scope = inp.get("scope")
     if isinstance(requested_scope, str):
-        available = sorted({row["scope"] for row in rows})
-        rows = [row for row in rows if row["scope"] == requested_scope]
+        available = sorted({row["scope"] for row, _ in rows})
+        rows = [(row, origin) for row, origin in rows if row["scope"] == requested_scope]
         if not rows:
             raise SpecError(
                 "acif.install.scope_unavailable",
@@ -651,17 +749,19 @@ def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
     diagnostics: list[dict[str, Any]] = []
     write_scopes: set[str] = set()
     superseded_scopes: set[str] = set()
-    for row in rows:
+    for row, from_overlay in rows:
         template = str(row["path_template"])
         for token in re.findall(r"<[^>]*>", template):
             if token not in {"<content-name>", "<appdata>"}:
                 raise SpecError("acif.install.placeholder_unrecognized")
+        anchor = _install_anchor(template)
         substituted = template.replace("<content-name>", content_name)
-        if substituted.startswith("~/"):
+        if anchor == "home":
             path = _str(inp.get("home_dir")).rstrip("/") + substituted[1:]
-        elif substituted.startswith("<appdata>/"):
+        elif anchor == "appdata":
             path = _str(inp.get("appdata_dir")).rstrip("/") + substituted[len("<appdata>"):]
-        elif row["scope"] == "managed":
+        elif row["scope"] == "managed" or (from_overlay and anchor == "absolute"):
+            # §8.3: managed templates, and absolute overlay templates, resolve verbatim.
             path = substituted
         else:
             path = _str(inp.get("project_root")).rstrip("/") + "/" + substituted
@@ -670,12 +770,38 @@ def handle_resolve_install_targets(inp: dict[str, Any]) -> dict[str, Any]:
             write_scopes.add(row["scope"])
         if row["status"] == "superseded":
             superseded_scopes.add(row["scope"])
+        row["path"] = path
         targets.append(
             {"scope": row["scope"], "path": path, "layout": row["layout"], "status": row["status"], "write_target": write_target}
         )
     for scope in sorted(superseded_scopes - write_scopes):
         diagnostics.append({"id": "acif.install.entry_point_superseded", "params": {"scope": scope}})
+    # §6.1 disclosure: a scope with an overlay row writes through its first
+    # overlay row and carries entry_point_overridden, naming the row the
+    # matrix alone would write.
+    for scope in sorted({row["scope"] for row, from_overlay in rows if from_overlay}):
+        overlay_row = next(row for row, from_overlay in rows if from_overlay and row["scope"] == scope)
+        matrix_row = _install_write_row([row for row, from_overlay in rows if not from_overlay and row["scope"] == scope])
+        diagnostics.append(
+            {
+                "id": "acif.install.entry_point_overridden",
+                "params": {
+                    "scope": scope,
+                    "overlay_path": overlay_row["path"],
+                    "matrix_write_target": matrix_row["path"] if matrix_row is not None else None,
+                },
+            }
+        )
     return ok({"targets": targets, "diagnostics": diagnostics})
+
+
+def _install_write_row(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The row a scope's matrix rows write: its first current row, else its
+    first row (the §11 supersession lane), else None."""
+    for row in rows:
+        if row["status"] == "current":
+            return row
+    return rows[0] if rows else None
 
 
 def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:

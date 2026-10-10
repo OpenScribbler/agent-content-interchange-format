@@ -22,6 +22,8 @@
 # deleted. List order within a (provider, content type) is normative
 # precedence: the first current row for a scope is the write target.
 # The informative as_of names the survey basis a row was verified against.
+# Operator overlay rows ([ACIF-INSTALL] §6.1) are invocation input that
+# resolves ahead of these rows; they are never part of this export.
 #
 # This export is a deterministic projection of the Appendix A.2 table: it
 # carries NO crawl date and NO observational provenance — determinism is
