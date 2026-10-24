@@ -30,6 +30,11 @@ decides whether you need a suite bump, a manifest entry, or a decision row
 in `SHAPE.md`. Editing a vector or a hashed catalog without a manifest entry
 fails the selftest.
 
+## Rules
+
+- No mutation testing while the first implementation of the OpenScribbler stack is built (the `OpenScribbler/stack` repo's README defines it), which overrides the global rule to mutation-test each stage.
+- Merge a PR without asking once its CI checks pass and both second-opinion rounds are done, with the second round's fixes pushed. Ask before merging a Class C change: `CHANGE-PROCESS.md` has the maintainer convene its review, and its vector-impact inventory is checked at review time.
+
 ## Non-Interactive Shell Commands
 
 **ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
