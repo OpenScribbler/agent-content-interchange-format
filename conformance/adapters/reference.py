@@ -708,18 +708,24 @@ def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:
         provider = inp.get("install_target_provider")
         if target is None and provider is None:
             raise Unsupported()
+        install, diagnostics = "proceed", []
         if target is not None:
             if not isinstance(target, str):
                 raise Unsupported()
-            selection, diagnostics = _script_selection(hook, [target])
+            selection, os_diagnostics = _script_selection(hook, [target])
             if selection.get(target) == "none":
                 install = UNRESOLVED_INSTALL if hook.get("blocking") is True else "proceed"
-                return ok({"install": install, "diagnostics": diagnostics})
+                diagnostics.extend(os_diagnostics)
         if provider is not None:
             if not isinstance(provider, str):
                 raise Unsupported()
-            return ok(_event_install_disposition(hook, provider, inp.get("install_operator_override") is True))
-        return ok({"install": "proceed", "diagnostics": []})
+            # Both axes are evaluated so each disposition is disclosed; the
+            # operator override reaches only the degraded-event refusal.
+            event = _event_install_disposition(hook, provider, inp.get("install_operator_override") is True)
+            diagnostics.extend(event["diagnostics"])
+            if event["install"] != "proceed":
+                install = event["install"]
+        return ok({"install": install, "diagnostics": diagnostics})
     raise Unsupported()
 
 

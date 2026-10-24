@@ -407,13 +407,14 @@
 - id: TV-HOOK-s
   spec: "[ACIF-HOOK] §11, Appendix A.4, §14"
   harness: static
-  description: install disposition of a hook's event per target provider — a blocking hook on a degraded A.4 render or to a provider absent from A.1 is refused, an operator override proceeds and is still disclosed, a non-blocking degraded hook proceeds with disclosure, and a lossless render proceeds silently
+  description: install disposition of a hook's event per target provider — a blocking hook on a degraded A.4 render (a degraded pin or rule 4) or to a provider absent from A.1 is refused, an operator override proceeds and is still disclosed, a non-blocking degraded hook proceeds with disclosure, and a lossless render proceeds silently
   input:
-    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    common_handlers: [{type: command, async: false, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
     cases:
       degraded_blocking: {event: worktree_create, provider: devin, blocking: true}
       degraded_blocking_override: {event: worktree_create, provider: devin, blocking: true, operator_override: true}
       degraded_non_blocking: {event: worktree_create, provider: devin, blocking: false}
+      no_native_name_blocking: {event: before_shell_execute, provider: claude-code, blocking: true}
       unsurveyed_provider_blocking: {event: before_tool_execute, provider: unknown-provider, blocking: true}
       lossless_blocking: {event: before_tool_execute, provider: claude-code, blocking: true}
   expect:
@@ -429,6 +430,12 @@
       install: proceed
       diagnostic: acif.hook.event_untranslatable
       params: {event: worktree_create, provider: devin, disposition: proceeded}
+    # A.4 rule 4: claude-code is in A.1 but has no native name for the
+    # event, so the render is degraded and a blocking hook is refused.
+    no_native_name_blocking:
+      install: refuse-unless-operator-opt-in
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: claude-code, disposition: refused}
     # A.4 rule 5: render is silent passthrough, but a blocking hook is
     # refused at install because no evidence shows the name fires there.
     unsurveyed_provider_blocking:

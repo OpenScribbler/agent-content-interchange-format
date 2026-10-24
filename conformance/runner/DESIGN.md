@@ -9,7 +9,7 @@ document governs.
 ## 1. Goal and non-goals
 
 The runner executes the published conformance vectors
-(`conformance/vectors/*.yaml`: 188 vectors — 176 static, 10 mock-transport,
+(`conformance/vectors/*.yaml`: 189 vectors — 177 static, 10 mock-transport,
 2 mock-crawl — across 12 catalogs) against an **implementation under test
 (IUT)** and produces a conformance report. The specs graduate from Draft
 when two independent implementations pass all vectors in their claimed
@@ -123,8 +123,8 @@ Every response is exactly one of:
   `harness-error` (adapter bug), never `fail` — this is the reserved
   channel for adapter-internal errors, and top-level exception handlers
   should emit a non-`acif.*` string deliberately.
-- **Non-error non-conformance verdicts** (the ~23 vectors expecting
-  `conformant: false` with a `reason`, whose reasons are not spec-minted
+- **Non-error non-conformance verdicts** (the 22 sites, in 11 vectors,
+  expecting `conformant: false` with a `reason`, whose reasons are not spec-minted
   identifiers): the adapter returns
   `{"ok": true, "result": {"conformant": false, "reason": "…"}}`. Bindings
   assert the boolean; `reason` is **informative diagnostic text**, never
@@ -304,7 +304,7 @@ Three families (the suite README's "Two harness families exist" line is a
 known one-word defect, fixed alongside this design; [ACIF-REGISTRY] §5
 counts per-surface and is consistent as written).
 
-- **static** (176) — request/response only.
+- **static** (177) — request/response only.
 - **mock-transport** (10) — the vectors' semantics are `https://`-URL
   semantics: downgrade detection distinguishes an `http://` **hop**, and a
   runner that rewrote URLs to `http://127.0.0.1` would emit requests that

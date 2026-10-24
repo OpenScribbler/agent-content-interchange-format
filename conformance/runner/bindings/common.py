@@ -454,13 +454,22 @@ def assert_diagnostic(
         # Any matching instance may carry the expected params: an install tool
         # can emit the same id at render time and again at install time
         # ([ACIF-HOOK] §11, §12.3), and order between them is not pinned.
+        # Every instance that carries an expected key must agree with it, so
+        # contradictory instances (refused beside proceeded) still fail.
         all_params = [m.get("params", {}) for m in matches]
         satisfying = [
             params for params in all_params
             if isinstance(params, dict) and all(params.get(k) == v for k, v in expected_params.items())
         ]
-        passed = bool(satisfying)
-        observed = satisfying[0] if satisfying else (all_params[0] if len(all_params) == 1 else all_params)
+        conflicting = [
+            params for params in all_params
+            if isinstance(params, dict) and any(k in params and params[k] != v for k, v in expected_params.items())
+        ]
+        passed = bool(satisfying) and not conflicting
+        if conflicting:
+            observed = all_params
+        else:
+            observed = satisfying[0] if satisfying else (all_params[0] if len(all_params) == 1 else all_params)
     if passed:
         family = diagnostic_family(expected_id)
         unexpected = [

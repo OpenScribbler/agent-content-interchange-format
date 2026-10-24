@@ -28,6 +28,7 @@ def main(argv: list[str] | None = None) -> int:
         ("anti-softening", check_anti_softening),
         ("appendix-a payload pins", check_appendix_payload_pins),
         ("verdict-reason gating", check_verdict_reason_gating),
+        ("diagnostic params agree across instances", check_diagnostic_param_agreement),
         ("protocol round-trip", check_protocol_roundtrip),
         ("scopes totality", check_scopes_totality),
         ("suite manifest", check_suite_manifest),
@@ -230,6 +231,41 @@ def check_verdict_reason_gating() -> None:
         raise AssertionError("protocol-2 adapter omitting the pinned field param must fail TV-6")
     if not run("TV-6", 1, without_params):
         raise AssertionError("protocol-1 adapter must stay unasserted on verdict params")
+
+
+def check_diagnostic_param_agreement() -> None:
+    """assert_diagnostic accepts any instance of the expected id carrying the
+    expected params, but fails when another instance of that id carries a
+    pinned key with a different value: an adapter reporting both refused and
+    proceeded for one provider must not pass TV-HOOK-s."""
+    catalogs = load_catalogs()
+    bindings.load_all()
+    vector = catalogs.by_id["TV-HOOK-s"]
+    exp = vector.data["expect"]
+
+    def honest(name: str) -> dict[str, Any]:
+        if "diagnostic" in exp[name]:
+            return {"install": exp[name]["install"], "diagnostics": [{"id": exp[name]["diagnostic"], "params": dict(exp[name]["params"])}]}
+        return {"install": exp[name]["install"], "diagnostics": []}
+
+    def run(first_diagnostics: list[dict[str, Any]]) -> bool:
+        names = list(vector.data["input"]["cases"])
+        results = [honest(name) for name in names]
+        results[0] = {"install": exp[names[0]]["install"], "diagnostics": first_diagnostics}
+        session = _VerdictSession(2, results)
+        with tempfile.TemporaryDirectory(prefix="acif-selftest-fixtures-") as tmp:
+            result = bindings.get("TV-HOOK-s")(vector, session, _StubContext(tmp))
+        return result.status == "pass" and all(check["pass"] for check in result.checks)
+
+    refused = {"id": "acif.hook.event_untranslatable", "params": dict(exp["degraded_blocking"]["params"])}
+    render_time = {"id": "acif.hook.event_untranslatable", "params": {"event": refused["params"]["event"], "provider": refused["params"]["provider"]}}
+    proceeded = {"id": "acif.hook.event_untranslatable", "params": {**refused["params"], "disposition": "proceeded"}}
+    if not run([refused]):
+        raise AssertionError("an adapter reporting the expected disposition must pass TV-HOOK-s")
+    if not run([render_time, refused]):
+        raise AssertionError("a render-time instance without disposition beside the install-time instance must pass TV-HOOK-s")
+    if run([refused, proceeded]):
+        raise AssertionError("contradictory refused and proceeded instances for one provider must fail TV-HOOK-s")
 
 
 class _StubContext:

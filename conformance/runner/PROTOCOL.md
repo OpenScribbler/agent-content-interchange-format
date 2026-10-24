@@ -322,8 +322,11 @@ canonical record), optional `install_target_os`, optional
 `install_target_provider` (the provider slug the install writes the hook
 to; the adapter evaluates the [ACIF-HOOK] §11 degraded-event rule for
 that one provider), optional `install_operator_override` (`true` when the
-operator has opted in to override a refusal for that item and provider;
-absent means no override) → `result`: `install` (disposition string,
+operator has opted in to override the [ACIF-HOOK] §11 degraded-event
+refusal for that item and provider; it never overrides the OS
+coverage-gap refusal; absent means no override). With both
+`install_target_os` and `install_target_provider` present, the adapter
+evaluates both rules and discloses each → `result`: `install` (disposition string,
 e.g. `refuse-unless-operator-opt-in`, `proceed`), `diagnostics`. Both
 provider fields are additive and need no protocol bump (§1).
 

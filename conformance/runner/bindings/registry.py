@@ -463,6 +463,7 @@ def tv_fresh_a(vector: Vector, session: Any, ctx: Any):
 
 
 @binding("TV-FRESH-b")
+@binding("TV-FRESH-l")
 def tv_fresh_b(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]

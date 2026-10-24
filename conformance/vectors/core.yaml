@@ -329,61 +329,82 @@
 - id: TV-L3-e
   spec: "[ACIF-REGISTRY] §6, §12"
   harness: static
-  description: attestation_hash must equal the attestation input digest derived from the record's body_hash and metadata_hash at record-emit; any other value, a copy of body_hash, another algorithm, a digest that omits a present metadata_hash, or the field on a pack record rejects
+  description: attestation_hash must equal the attestation input digest derived from the record's body_hash and metadata_hash at record-emit; any other value, a copy of body_hash, another algorithm, a digest that omits a present metadata_hash, or the field on a pack record rejects; a pack record without the field accepts
   input:
     cases:
       - kind: skill
         record:
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            body_size_bytes: 32
             attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+            publisher_declared: false
       - kind: skill
         record:
           publisher_section: {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo Skill"}
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            body_size_bytes: 32
             metadata_hash: {algorithm: sha256, value: "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316"}
             attestation_hash: {algorithm: sha256, value: "fd47d05d539e9e2034eab62fe5274cf950fd5a271d9d2b9ea9f5b0e0ef8e0f22"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+            publisher_declared: true
       - kind: skill
         record:
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            body_size_bytes: 32
             attestation_hash: {algorithm: sha256, value: "3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8550"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+            publisher_declared: false
       - kind: skill
         record:
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            body_size_bytes: 32
             attestation_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+            publisher_declared: false
       - kind: skill
         record:
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            body_size_bytes: 32
             attestation_hash: {algorithm: sha512, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+            publisher_declared: false
       - kind: skill
         record:
           publisher_section: {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo Skill"}
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            body_size_bytes: 32
             metadata_hash: {algorithm: sha256, value: "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316"}
             attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+            publisher_declared: true
       - kind: pack
         record:
           registry_section:
             attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/"
+            publisher_declared: false
+            items: ["f47ac10b-58cc-4372-a567-0e02b2c3d479"]
+      - kind: pack
+        record:
+          registry_section:
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/"
+            publisher_declared: false
+            items: ["f47ac10b-58cc-4372-a567-0e02b2c3d479"]
   expect:
     case_1: {conformant: true}
     case_2: {conformant: true}
@@ -392,3 +413,4 @@
     case_5: {error: acif.registry.attestation_hash_mismatch}
     case_6: {error: acif.registry.attestation_hash_mismatch}
     case_7: {error: acif.registry.attestation_hash_mismatch}
+    case_8: {conformant: true}
