@@ -33,6 +33,7 @@ hook:
   - TV-HOOK-p
   - TV-HOOK-q
   - TV-HOOK-r
+  - TV-HOOK-s
   - TV-PLATFORM-a
   - TV-PLATFORM-b
   - TV-PLATFORM-c
@@ -202,6 +203,7 @@ registry:
   - TV-L3-b
   - TV-L3-c
   - TV-L3-d
+  - TV-L3-e
 install:
   - TV-INSTALL-a
   - TV-INSTALL-b

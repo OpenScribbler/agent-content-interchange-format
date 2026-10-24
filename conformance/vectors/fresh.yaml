@@ -6,7 +6,7 @@
   harness: static
   description: sidecar past + attestation valid — stale, tier attested, default policy warns, no combined scalar
   input:
-    record: {fetched_at: "2026-05-01T00:00:00Z", expires: "2026-05-04T00:00:00Z", attestation_hash: {algorithm: sha256, value: "ab12"}}
+    record: {fetched_at: "2026-05-01T00:00:00Z", expires: "2026-05-04T00:00:00Z", body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}, attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}}
     consumer_clock: "2026-05-10T00:00:00Z"
     attestation_evaluation: valid
   expect:
@@ -21,7 +21,7 @@
   harness: static
   description: sidecar fresh + attestation lapsed — fresh, tier unattested, staleness bit not set
   input:
-    record: {fetched_at: "2026-05-09T00:00:00Z", attestation_hash: {algorithm: sha256, value: "ab12"}}
+    record: {fetched_at: "2026-05-09T00:00:00Z", body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}, attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}}
     consumer_clock: "2026-05-10T00:00:00Z"
     attestation_evaluation: lapsed
   expect:
@@ -33,7 +33,7 @@
   harness: static
   description: attestation manifest unreachable — response byte-identical to the reachable case
   input:
-    record: {fetched_at: "2026-05-09T00:00:00Z", attestation_hash: {algorithm: sha256, value: "ab12"}}
+    record: {fetched_at: "2026-05-09T00:00:00Z", body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}, attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}}
     attestation_system: [reachable, unreachable]
   expect:
     registry_response_byte_identical: true

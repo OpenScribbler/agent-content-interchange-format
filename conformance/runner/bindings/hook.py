@@ -11,6 +11,7 @@ from .common import (
     assert_relation,
     assert_verdict_reason,
     diagnostics_for,
+    evaluate_install,
     render,
     send,
 )
@@ -518,4 +519,25 @@ def tv_hook_r(vector: Vector, session: Any, ctx: Any) -> VectorResult:
         if _all_ok([responses[left], responses[right]]):
             hashes = [_body_hash(responses[left]), _body_hash(responses[right])]
             result.add_check(f"{left}!={right}", "body_hash_distinct", exp["body_hash_distinct"], hashes, hashes[0] != hashes[1] and ABSENT not in hashes)
+    return result
+
+
+@binding("TV-HOOK-s")
+def tv_hook_s(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        item = {"hook": {"event": case["event"], "blocking": case["blocking"], "handlers": inp["common_handlers"]}}
+        request = evaluate_install(
+            item,
+            install_target_provider=case["provider"],
+            install_operator_override=case.get("operator_override", False),
+        )
+        response = send(result, session, ctx, request)
+        _assert_result_field(result, name, response, "install", exp[name]["install"])
+        if "diagnostic" in exp[name]:
+            assert_diagnostic(result, name, response, exp[name]["diagnostic"], exp[name]["params"])
+        else:
+            _assert_diagnostic_absent(result, name, response, exp[name]["diagnostic_absent"])
     return result

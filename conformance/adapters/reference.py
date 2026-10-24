@@ -248,6 +248,12 @@ def handle_ingest(inp: dict[str, Any]) -> dict[str, Any]:
         registry = inp.get("sidecar", {}).get("registry_section") if isinstance(inp.get("sidecar"), dict) else None
         if not isinstance(registry, dict) or "source_uri" not in registry:
             raise SpecError("acif.source_uri.missing")
+        if "attestation_hash" in registry:
+            # [ACIF-REGISTRY] §6: attestation_hash equals the attestation input
+            # digest derived from the record's own hashes; packs never carry it.
+            expected = None if kind == "pack" else attestation_input_digest(registry)
+            if expected is None or registry["attestation_hash"] != expected:
+                raise SpecError("acif.registry.attestation_hash_mismatch")
         return ok({"conformant": True})
     if kind == "pack":
         return handle_pack_ingest(inp)
@@ -256,6 +262,18 @@ def handle_ingest(inp: dict[str, Any]) -> dict[str, Any]:
     if kind in FRONTMATTER_KINDS:
         return handle_frontmatter_ingest(kind, inp)
     raise Unsupported()
+
+
+def attestation_input_digest(registry: dict[str, Any]) -> dict[str, str] | None:
+    """[ACIF-REGISTRY] §6 attestation input digest over body_hash and metadata_hash."""
+    body = registry.get("body_hash")
+    if not isinstance(body, dict):
+        return None
+    bh = f"{body.get('algorithm')}:{body.get('value')}"
+    meta = registry.get("metadata_hash")
+    mh = f"{meta.get('algorithm')}:{meta.get('value')}" if isinstance(meta, dict) else "null"
+    preimage = b"acif-attestation-input-v1\n" + bh.encode("utf-8") + b"\n" + mh.encode("utf-8") + b"\n"
+    return {"algorithm": "sha256", "value": hashlib.sha256(preimage).hexdigest()}
 
 
 def handle_pack_manifests(manifests: list[dict[str, Any]]) -> dict[str, Any]:
@@ -687,14 +705,42 @@ def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:
     if isinstance(item, dict) and ("hook" in item or "event" in item):
         hook = _extract_hook(item)
         target = inp.get("install_target_os")
-        if not isinstance(target, str):
+        provider = inp.get("install_target_provider")
+        if target is None and provider is None:
             raise Unsupported()
-        selection, diagnostics = _script_selection(hook, [target])
-        if selection.get(target) == "none":
-            install = UNRESOLVED_INSTALL if hook.get("blocking") is True else "proceed"
-            return ok({"install": install, "diagnostics": diagnostics})
+        if target is not None:
+            if not isinstance(target, str):
+                raise Unsupported()
+            selection, diagnostics = _script_selection(hook, [target])
+            if selection.get(target) == "none":
+                install = UNRESOLVED_INSTALL if hook.get("blocking") is True else "proceed"
+                return ok({"install": install, "diagnostics": diagnostics})
+        if provider is not None:
+            if not isinstance(provider, str):
+                raise Unsupported()
+            return ok(_event_install_disposition(hook, provider, inp.get("install_operator_override") is True))
         return ok({"install": "proceed", "diagnostics": []})
     raise Unsupported()
+
+
+def _event_install_disposition(hook: dict[str, Any], provider: str, override: bool) -> dict[str, Any]:
+    """[ACIF-HOOK] §11 degraded event render: per-provider install disposition."""
+    event = hook.get("event")
+    if not isinstance(event, str):
+        raise Unsupported()
+    blocking = hook.get("blocking") is True
+    _, degraded = render_hook_event(event, provider)
+    unsurveyed = provider not in HOOK_PROVIDERS and (event, provider) not in HOOK_RENDER_PINS
+    if not degraded and not (blocking and unsurveyed):
+        return {"install": "proceed", "diagnostics": []}
+    if not blocking:
+        install, disposition = "proceed", "proceeded"
+    elif override:
+        install, disposition = "proceed", "overridden"
+    else:
+        install, disposition = UNRESOLVED_INSTALL, "refused"
+    params = {"event": event, "provider": provider, "disposition": disposition}
+    return {"install": install, "diagnostics": [{"id": "acif.hook.event_untranslatable", "params": params}]}
 
 
 def handle_reconcile_frontmatter(inp: dict[str, Any]) -> dict[str, Any]:
@@ -877,7 +923,8 @@ def handle_evaluate_freshness(inp: dict[str, Any]) -> dict[str, Any]:
         stale = consumer_clock > stale_threshold
     staleness = "stale" if stale else "fresh"
     attestation_eval = inp.get("attestation_evaluation")
-    trust_tier = "attested" if attestation_eval == "valid" else "unattested"
+    # [ACIF-REGISTRY] §11.3: no attestation_hash on the record means unattested.
+    trust_tier = "attested" if attestation_eval == "valid" and "attestation_hash" in record else "unattested"
     policies = inp.get("policies") if isinstance(inp.get("policies"), list) else ["default"]
     install = "refuse" if stale and "freshness-enforcement-opt-in" in policies else "proceed"
     warnings = (

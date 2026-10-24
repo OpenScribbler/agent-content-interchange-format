@@ -130,10 +130,20 @@ def resolve_reference(item: Any, registry_state: dict[str, Any]) -> dict[str, An
     }
 
 
-def evaluate_install(item: Any, install_target_os: str | None = None) -> dict[str, Any]:
+def evaluate_install(
+    item: Any,
+    install_target_os: str | None = None,
+    *,
+    install_target_provider: str | None = None,
+    install_operator_override: bool = False,
+) -> dict[str, Any]:
     request_input: dict[str, Any] = {"item": item}
     if install_target_os is not None:
         request_input["install_target_os"] = install_target_os
+    if install_target_provider is not None:
+        request_input["install_target_provider"] = install_target_provider
+    if install_operator_override:
+        request_input["install_operator_override"] = True
     return {"op": "evaluate_install", "input": request_input}
 
 

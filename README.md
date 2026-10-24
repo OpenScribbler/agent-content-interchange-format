@@ -70,7 +70,7 @@ dependencies and conformance classes explicitly.
 ## Conformance suite
 
 [`conformance/`](conformance/README.md) publishes the test-vector catalog —
-186 vectors across 12 catalogs. **The vectors are normatively authoritative
+188 vectors across 12 catalogs. **The vectors are normatively authoritative
 over prose**: an implementation that contradicts a published vector is
 non-conformant regardless of any prose reading. Post-publication changes
 follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state
@@ -131,7 +131,7 @@ specs/
   render-back/           # [ACIF-RENDER]    (L4)
   install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
-SHAPE.md                 # historical design record (Decisions #1–#47)
+SHAPE.md                 # historical design record (Decisions #1–#51)
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content
 ```

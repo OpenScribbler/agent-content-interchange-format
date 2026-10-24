@@ -325,3 +325,68 @@
           diagnostic: "target a1b2c3d4-... revoked by its registry"
   expect:
     install: refuse-unless-operator-opt-in
+
+- id: TV-L3-e
+  spec: "[ACIF-REGISTRY] §6, §12"
+  harness: static
+  description: attestation_hash must equal the attestation input digest derived from the record's body_hash and metadata_hash at record-emit; any other value, a copy of body_hash, another algorithm, a digest that omits a present metadata_hash, or the field on a pack record rejects
+  input:
+    cases:
+      - kind: skill
+        record:
+          registry_section:
+            body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+      - kind: skill
+        record:
+          registry_section:
+            body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            metadata_hash: {algorithm: sha256, value: "68a08fba15d30c2a490b9f6321840f63d662291c2b7fa67398494d11bd00a902"}
+            attestation_hash: {algorithm: sha256, value: "04a3947059cc5cdd6293de12a8259bcaae09a3827abf360c978adc56a0c10b08"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+      - kind: skill
+        record:
+          registry_section:
+            body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            attestation_hash: {algorithm: sha256, value: "3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8550"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+      - kind: skill
+        record:
+          registry_section:
+            body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            attestation_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+      - kind: skill
+        record:
+          registry_section:
+            body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            attestation_hash: {algorithm: sha512, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+      - kind: skill
+        record:
+          registry_section:
+            body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
+            metadata_hash: {algorithm: sha256, value: "68a08fba15d30c2a490b9f6321840f63d662291c2b7fa67398494d11bd00a902"}
+            attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/tree/main/my-skill/"
+      - kind: pack
+        record:
+          registry_section:
+            attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
+            fetched_at: "2026-07-11T00:00:00+00:00"
+            source_uri: "https://github.com/example/skills/"
+  expect:
+    case_1: {conformant: true}
+    case_2: {conformant: true}
+    case_3: {error: acif.registry.attestation_hash_mismatch}
+    case_4: {error: acif.registry.attestation_hash_mismatch}
+    case_5: {error: acif.registry.attestation_hash_mismatch}
+    case_6: {error: acif.registry.attestation_hash_mismatch}
+    case_7: {error: acif.registry.attestation_hash_mismatch}

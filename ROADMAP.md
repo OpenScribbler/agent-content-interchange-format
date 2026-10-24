@@ -8,7 +8,7 @@ The purpose of this file is to make deferrals visible: when someone asks "why do
 
 ## Known spec conflicts
 
-Nine places where two normative clauses disagree, eight found in a 2026-09 audit and one in the suite 12 review. Each is left as written until an implementation needs it resolved, because each resolution changes normative text and goes through [CHANGE-PROCESS.md](CHANGE-PROCESS.md). The owner is the spec whose text changes; the second column names the clause it conflicts with.
+Eight places where two normative clauses disagree, seven found in a 2026-09 audit and one in the SHAPE.md Decision #51 review. Each is left as written until an implementation needs it resolved, because each resolution changes normative text and goes through [CHANGE-PROCESS.md](CHANGE-PROCESS.md). The owner is the spec whose text changes; the second column names the clause it conflicts with.
 
 | Conflict | Owner | Conflicts with | Likely resolution |
 |---|---|---|---|
@@ -19,8 +19,7 @@ Nine places where two normative clauses disagree, eight found in a 2026-09 audit
 | A diagnosed degraded render is conforming, but the round-trip law admits only losses in the documented-lossy set | [ACIF-RENDER] §9 | [ACIF-RENDER] §7 | State the round-trip law per fidelity class |
 | Rule render-back defers the glob mechanism choice to a per-provider record in [ACIF-RENDER], which keeps no per-type rules | [ACIF-RULE] §11 | [ACIF-RENDER] §1 | Add the per-provider table to [ACIF-RULE], or drop the deferral |
 | The write target is the first `current` row, yet a write resolved through a `superseded` row warns and proceeds, with no rule for when that row is selected | [ACIF-INSTALL] §6 | [ACIF-INSTALL] §11 | State that a superseded row is the write target only when its scope has no current row |
-| Shared-file contributions for hooks are keyed by event wiring, so two hooks on the same event overwrite each other on re-install | [ACIF-INSTALL] §10 | [ACIF-HOOK] §12 | Key a hook contribution by item |
-| A blocking hook whose event renders degraded under A.4 rule 4 is written under a name the provider never fires, so the control fails open silently, which the install rule that a wrong path is a fail-open install forbids | [ACIF-HOOK] A.4, [ACIF-INSTALL] | [ACIF-INSTALL] §11 | Install refuses a blocking hook rendered under rule 4, with an operator override, matching [ACIF-INSTALL] §11 |
+| devin's user and project hook rows name Cascade files, which read snake_case event names, while A.4 judges devin by its CLI names, so a blocking hook can render "lossless" for devin, pass the §11 degraded-event rule, and never fire from the file it is written to | [ACIF-HOOK] A.4, §11 | [ACIF-INSTALL] A.2 | Decide degradation per resolved install row rather than per provider, or prune devin's Cascade hook rows as its managed rows already were |
 
 ## Deferred items
 
@@ -143,6 +142,14 @@ Entry-point rows ([ACIF-INSTALL] Appendix A.2) can now carry a per-OS `os` set a
 **Why deferred:** two conforming tools producing byte-different-but-contract-satisfying shared files is tolerable; pinning bytes per target format is a large surface with no current cross-tool interop demand.
 
 **What it would take to revisit:** two install tools need to hand off management of the same shared file, or a verification tool needs byte-reproducible merged files.
+
+### Stateless sequence operation for shared-file merge vectors
+
+[ACIF-INSTALL] §10's per-item hook contribution key, the install record, and `acif.install.contribution_not_found` have no vectors, because the adapter protocol has no merge, re-install, or uninstall operation.
+
+**Why deferred:** a merge vector needs a protocol operation that takes a shared file and an ordered list of install and uninstall steps and returns the resulting file and diagnostics. It stays stateless, because the steps and their install records travel in one request, but it is a new operation with its own result shape, and SHAPE.md Decision #50 settled the contract without it.
+
+**What it would take to revisit:** a second install tool implements §10, so two implementations could disagree on a merge outcome, or a reported merge bug escapes review.
 
 ### Version-conditional install-target rows
 

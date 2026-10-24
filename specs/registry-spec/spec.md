@@ -62,9 +62,10 @@ registry_section:
   metadata_hash:                      # REQUIRED iff publisher_section present ([ACIF-PUBLISHER] §6)
     algorithm: sha256
     value: "def456..."
-  attestation_hash:                   # OPTIONAL — slot for an external integrity/attestation
-    algorithm: sha256                 # system; which system fills it is out of ACIF's scope
-    value: "ghi789..."
+  attestation_hash:                   # OPTIONAL — the attestation input digest an external
+    algorithm: sha256                 # attestation system signs, derived from body_hash and
+    value: "ghi789..."                # metadata_hash (below). Which system signs it is out
+                                      # of ACIF's scope.
   cross_references: [...]             # OPTIONAL — §9
   derived_capabilities:               # OPTIONAL — §8.1/§8.2
     from_canonical: {...}
@@ -86,9 +87,21 @@ registry_section:
   max_staleness: "PT1H"               # OPTIONAL — advertised freshness contract (ISO 8601 duration)
 ```
 
+**`attestation_hash`.** The field carries the item's **attestation input digest**: the one value an external attestation system signs to attest the item. The digest binds both of the item's hashes. `body_hash` alone is not enough, because for frontmatter-bearing types it excludes the stripped frontmatter, which carries the item's tool, model, and MCP grants and is covered by `metadata_hash` ([ACIF-CORE] §7.8); an attestation over `body_hash` alone would let those grants change under an `attested` tier. The digest is computed from the record's own hashes:
+
+```
+BH = body_hash.algorithm ":" body_hash.value
+MH = metadata_hash.algorithm ":" metadata_hash.value, or "null" when absent
+preimage = UTF8("acif-attestation-input-v1") || 0x0A || UTF8(BH) || 0x0A || UTF8(MH) || 0x0A
+attestation_hash.algorithm = sha256
+attestation_hash.value = lowercase-hex(SHA-256(preimage))
+```
+
+When present, `attestation_hash` MUST equal the attestation input digest computed from the record's own `body_hash` and `metadata_hash`: the same `algorithm` and the same `value`. A registry MUST NOT emit a record whose `attestation_hash` differs from that digest in either member; the condition is `acif.registry.attestation_hash_mismatch` (§12). Presence is OPTIONAL and carries meaning of its own: it is the registry's statement that an attestation over this item may exist, which is what the §11.3 trust tier is evaluated against. An external system that computes its own digest over different bytes (a separate directory hash, an archive hash, a manifest hash) does not fill this field, and such a digest is still not `body_hash` and not interchangeable with it; an attestation that does not sign the attestation input digest does not attest the record (§11.3). *(Informative: a signer computes the digest through ACIF's hashing, not over the bytes of the file it fetched. `body_hash` strips frontmatter and normalizes line endings ([ACIF-CORE] §7.3), so a SHA-256 over a fetched file is a different value and attests nothing here. The field is a distinct derived digest rather than a copy of `body_hash`, so one signature covers body and declared metadata together, and two registries serving the same item cannot disagree about what was attested.)*
+
 `publisher_metadata: declared` means the registry observed a declaration surface at crawl time; it does not mean the publisher cryptographically attested anything. Registries MUST NOT write to source files; all registry-generated metadata lives in sidecars, and the root-only sidecar exclusion of [ACIF-CORE] §7.5 governs hashing.
 
-**Pack-record variant.** For `kind: pack` records the schema above is modified: `body_hash` and `body_size_bytes` MUST be absent (packs carry no canonical body, [ACIF-PUBLISHER] §8.2); `metadata_hash` follows [ACIF-PUBLISHER] §8.2 (present for declared packs, absent for inferred packs); and the section additionally carries `items` — the computed member list, one entry per item satisfying the membership predicate ([ACIF-PUBLISHER] §8.3), each entry the member's `id`. `items` is OUTPUT of the predicate, recomputed on every relevant change; publishers never author it. The provenance and freshness fields (`source_uri`, `source_status`, `fetched_at`, `expires`, `publisher_declared`, `generated_at`, `max_staleness`) apply to pack records as to item records.
+**Pack-record variant.** For `kind: pack` records the schema above is modified: `body_hash`, `body_size_bytes`, and `attestation_hash` MUST be absent (packs carry no canonical body, [ACIF-PUBLISHER] §8.2, so no `body_hash` exists for an attestation input digest; a pack record carrying `attestation_hash` is `acif.registry.attestation_hash_mismatch`); `metadata_hash` follows [ACIF-PUBLISHER] §8.2 (present for declared packs, absent for inferred packs); and the section additionally carries `items` — the computed member list, one entry per item satisfying the membership predicate ([ACIF-PUBLISHER] §8.3), each entry the member's `id`. `items` is OUTPUT of the predicate, recomputed on every relevant change; publishers never author it. The provenance and freshness fields (`source_uri`, `source_status`, `fetched_at`, `expires`, `publisher_declared`, `generated_at`, `max_staleness`) apply to pack records as to item records.
 
 ## 7. Change-Signal Surfaces
 
@@ -251,6 +264,8 @@ An item is **stale** at consumer time `T` (UTC) iff `T > E_sidecar`, where `E_si
 
 The attestation trust tier is `{attested, unattested}`, consumer-evaluated. A lapsed, unreachable, or unverifiable attestation degrades the tier and MUST NOT set the staleness bit — content bytes are unchanged; losing attestation means the extra assurance cannot be proven, never that content went stale. The registry MUST NOT parse the external attestation manifest, MUST NOT bake any combined value, and its item response MUST be **byte-identical whether or not the attestation system is reachable**. Fresh-but-unattested is the normal state: no warning, no error.
 
+A consumer evaluating the tier MUST recompute `body_hash` and `metadata_hash` over the bytes it installs and derive the attestation input digest (§6) from them. An attestation contributes to the `attested` tier only if one of its signed subject digests equals that derived digest in `algorithm` and `value`, and the recomputed `body_hash` and `metadata_hash` equal the record's. An attestation with no such digest contributes nothing. A consumer MUST evaluate the tier as `unattested` when `attestation_hash` is absent. The tier is per item: an attestation attests only the item whose derived digest it signs. The check binds the attestation to the bytes the consumer installs, not to fields the registry served; the registry plays no part in it, so the no-parse and byte-identical rules above are unchanged.
+
 ### 11.4 Consumer lanes
 
 Staleness is a state flag on the warn lane: consumers MUST warn on stale items — the warning is `acif.registry.stale`, `params` carrying `expires` (the effective `E_sidecar` of §11.2 as an RFC 3339 timestamp); install MAY proceed. Install tools MUST provide an operator opt-in that escalates staleness to refuse. Silent-block by default and silent-ignore are both non-conformant. *(Informative: the stale-plus-attested combination warrants the stronger consumer diagnostic — staleness is the window in which an upstream-revoked attestation can still read valid; a content-revocation feed keyed on `body_hash` is the roadmap item.)*
@@ -269,6 +284,7 @@ Staleness is a state flag on the warn lane: consumers MUST warn on stale items �
 | `acif.source_uri.direct_file_trailing_slash` | reject (record-emit) | Single-file item URL path ends in `/` (§10.5) |
 | `acif.source_uri.filename_conflict` | diagnostic (MUST-emit) | URL-derived filename ≠ frontmatter-declared name; both recorded (§10.5) |
 | `acif.registry.expires_before_fetched_at` | reject (record-emit) | Malformed freshness window (§11.2) |
+| `acif.registry.attestation_hash_mismatch` | reject (record-emit) | `attestation_hash` present and not equal, in `algorithm` and `value`, to the attestation input digest computed from the record's `body_hash` and `metadata_hash`, or present on a pack record (§6) |
 | `acif.registry.stale` | diagnostic (MUST-emit) | Item evaluates stale under the §11.2 predicate, default consumer lane; params: `expires` — the effective `E_sidecar` as an RFC 3339 timestamp (§11.4) |
 | `acif.registry.reference_unresolved` | diagnostic (MUST-emit) | Cross-reference resolution lands `unresolved` or `revoked`; params: `declared_name` (the declared reference string as written) (§9) |
 | `acif.registry.method_stamp_missing` | reject (verdict) | Advisory-tier entry emitted without its REQUIRED method-version stamp (§8.3) |
@@ -285,7 +301,7 @@ Reject-class identifiers here bind the registry at the record-emit boundary: a r
 
 **The registry is a chosen trust root.** Everything in `registry_section` is the registry's assertion. This document constrains those assertions to be deterministic and testable (the pipeline, the invariant, the clock separation) precisely so consumers can hold registries to them; nothing here makes a registry honest.
 
-**`attestation_hash` is a slot, not a system.** ACIF names no external integrity system and evaluates no attestation. The byte-identical-response rule (§11.3) exists so an attestation-service outage cannot flip a served index stale — and so no registry can quietly couple its availability to a third party's.
+**`attestation_hash` names an input, not a system.** ACIF names no external integrity system and evaluates no attestation. It fixes what an attestation must sign to attest a record, the attestation input digest derived from the item's `body_hash` and `metadata_hash` (§6). An attestation over any other digest would let a signer vouch for bytes no consumer can tie to the bytes it installs, and one over `body_hash` alone would leave the frontmatter grants that `metadata_hash` covers outside the attestation. The byte-identical-response rule (§11.3) exists so an attestation-service outage cannot flip a served index stale — and so no registry can quietly couple its availability to a third party's.
 
 **The query prohibition is credential hygiene by construction.** Signed URLs, capability tokens, and presigned parameters cannot appear in conforming records (§10.3), and temporary-redirect targets — where signing injections live — are never persisted (§10.4).
 
@@ -310,7 +326,7 @@ Reject-class identifiers here bind the registry at the record-emit boundary: a r
 ### 14.2 Informative
 
 - [ACIF-RENDER] "ACIF Render-Back Specification", version 0.1.x. `../render-back/spec.md`.
-- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #13, #17, #26, #27, #28, #32, #34).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #13, #17, #26, #27, #28, #32, #34, #49).
 
 ---
 
@@ -322,7 +338,7 @@ The vectors in these families, published in the `conformance/` directory, are no
 
 **TV-FRESH-\*** — static vectors with an injected consumer clock `T`, plus one mock-crawl vector: (a) sidecar past + attestation valid → stale, tier attested, default policy warns (`acif.registry.stale` with `expires`, not refuses), no combined scalar anywhere in the record; (b) sidecar fresh + attestation lapsed → fresh, tier degrades to unattested, staleness bit NOT set; (c) `attestation_hash` present + manifest unreachable → tier unattested, freshness unaffected, response **byte-identical** to the reachable case; (d) `expires` absent → `fetched_at + 72h`; `T` at +71h fresh, +73h stale; (e) `expires < fetched_at` → `acif.registry.expires_before_fetched_at`, vs. already-past `expires` → well-formed, stale, conforming to serve; (f) offsetless timestamp in any freshness field → malformed; (g) fail-closed skew — `T` within declared tolerance of `E_sidecar` ⇒ stale; (h) lanes — stale + default policy → warn (`acif.registry.stale` with the default-window `expires`) + state flag, install proceeds; operator opt-in → refuse; (i) fresh-but-unattested → no warning, no error; (j) *(mock-crawl)* unchanged `body_hash`, `fetched_at` advanced → fresh again on the crawl axis while a lapsed attestation still degrades the tier; (k) staleness computed from `generated_at` → non-conforming.
 
-**TV-L3 additions** *(promotion-time)*: (a) tuple endpoint shape — `(item_id, body_hash, metadata_hash_if_present, version_if_declared)`; `metadata_hash` null exactly when `publisher_section` absent; (b) `install_scope_capabilities` entry without a `source` tag → non-conformant; (c) advisory entry without a `method` stamp → non-conformant; (d) *(review-time)* revoked-reference refusal — an item carrying a `revoked` cross-reference → install MUST refuse without operator opt-in ([ACIF-CORE] §10).
+**TV-L3 additions** *(promotion-time)*: (a) tuple endpoint shape — `(item_id, body_hash, metadata_hash_if_present, version_if_declared)`; `metadata_hash` null exactly when `publisher_section` absent; (b) `install_scope_capabilities` entry without a `source` tag → non-conformant; (c) advisory entry without a `method` stamp → non-conformant; (d) *(review-time)* revoked-reference refusal — an item carrying a `revoked` cross-reference → install MUST refuse without operator opt-in ([ACIF-CORE] §10); (e) attestation input digest — an emitted record whose `attestation_hash` equals the §6 digest is conformant, both for an item with `metadata_hash` absent (`MH` is `null`) and for one with it present; each of these → `acif.registry.attestation_hash_mismatch` (§6): a differing value, a copy of `body_hash`, the correct value under a different `algorithm`, a digest computed from `body_hash` alone on an item that carries `metadata_hash`, and the field on a pack record. The consumer-side rule of §11.3 (recompute, derive, and match a signed subject digest) is not vectored: the adapter protocol injects the attestation evaluation as a verdict rather than an attestation to verify.
 
 Individual vector IDs are assigned in the conformance suite.
 
@@ -335,3 +351,5 @@ Preserved positions recorded for future revision: post-redirect **final-URL reco
 Newly minted at spec-promotion time (not present in the design record; flagged for review): the §7 tuple-endpoint amendment adding `metadata_hash_if_present` (Decision #17 defined the tuple before the [ACIF-CORE] §7.8 coverage model existed; without the member, declared-metadata re-targets are invisible on the one polled surface — the spec-purist hash-boundary consult recommended the addition); the §8.5 rule that a provenance-tag-less `install_scope_capabilities` entry is non-conformant (the design record described the tag without the reject); the §8.3 rule that an advisory entry without a method stamp is non-conformant; and the TV-L3 vectors. These items were ratified back into the design record (SHAPE.md, Spec-Promotion Ratifications section) at promotion time.
 
 Amended after the second independent review (2026-07-11): the `body_size_bytes` definition pinned per body classification (§7); the §10.5 record-both rule made concrete (declared name stays in `publisher_section`; URL-derived name is the tier-2 input and named in the diagnostic); and the TV-URI (v) / TV-L3 (d) vectors.
+
+Amended 2026-10-24 (SHAPE.md Decision #49, Class C): `attestation_hash` changes from a slot whose filler is out of scope to the attestation input digest an external attestation system signs, a domain-separated SHA-256 over the item's `body_hash` and `metadata_hash` (§6). When present it MUST equal that digest computed from the record's own hashes; a mismatch, or the field on a pack record, is the new record-emit reject `acif.registry.attestation_hash_mismatch` (§12). A consumer MUST recompute both hashes over the bytes it installs, derive the digest, and count an attestation toward the `attested` tier only when one of its signed subject digests equals it; an absent `attestation_hash` evaluates `unattested` (§11.3). No external system is named, the registry still never parses an attestation, and the byte-identical-response rule is unchanged. TV-L3 (e) is added.
