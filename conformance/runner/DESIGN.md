@@ -304,8 +304,8 @@ Three families (the suite README's "Two harness families exist" line is a
 known one-word defect, fixed alongside this design; [ACIF-REGISTRY] §5
 counts per-surface and is consistent as written).
 
-- **static** (153) — request/response only.
-- **mock-transport** (4) — the vectors' semantics are `https://`-URL
+- **static** (176) — request/response only.
+- **mock-transport** (10) — the vectors' semantics are `https://`-URL
   semantics: downgrade detection distinguishes an `http://` **hop**, and a
   runner that rewrote URLs to `http://127.0.0.1` would emit requests that
   are themselves `scheme_forbidden` — untestable as transport behavior and

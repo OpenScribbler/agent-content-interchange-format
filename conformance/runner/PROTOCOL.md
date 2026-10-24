@@ -183,6 +183,18 @@ pack-identity reconciliation ([ACIF-PUBLISHER] §9.1) →
 (`acif.publisher.pack_source_conflict` with Appendix A params on
 conflict).
 
+Registry-emit form: `context.validation_surface: "registry_emit"` asks
+the adapter to validate `sidecar` as a registry-emitted record
+(`publisher_section` and `registry_section`) at the record-emit boundary,
+applying every `reject (record-emit)` condition of [ACIF-REGISTRY] §12
+(for example `acif.source_uri.missing` and
+`acif.registry.attestation_hash_mismatch`). A failing record returns the
+error response with that identifier; a passing one returns
+`result.conformant: true`. On this surface `kind` may be `"pack"` with
+the pack record carried as `sidecar` (no `manifests`), and the adapter
+applies the [ACIF-REGISTRY] §6 pack-record variant. The context key is
+additive and needs no protocol bump (§1).
+
 Rejections use the error response with the spec-minted identifier
 (`acif.body.symlink`, `acif.body.path_collision`, `acif.body.empty`,
 `acif.hook.script_file_missing`, `acif.hook.script_path_invalid`, …).

@@ -91,7 +91,7 @@ implementation has done that yet.
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
 
-The suite is at 12. Published runs live under
+The suite is at 13. Published runs live under
 [`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
 [`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
 
@@ -105,7 +105,7 @@ The suite is at 12. Published runs live under
 
 ## Relationship to other projects
 
-- **MOAT** — the informative provenance of the `body_hash` algorithm ([ACIF-CORE] §7 restates it as ACIF-owned normative text) and one candidate filler of the registry-layer attestation slot. ACIF names no external integrity system normatively; the slot is deliberately agnostic.
+- **MOAT** — the informative provenance of the `body_hash` algorithm ([ACIF-CORE] §7 restates it as ACIF-owned normative text) and one external attestation system that can sign the [ACIF-REGISTRY] §6 attestation input digest. ACIF names no external attestation system normatively; it fixes only the digest an attestation must sign.
 - **capmon** — a provider capability matrix that publishes per-provider facts *conforming to* ACIF's canonical vocabularies (the caniuse-to-MDN analogy). Authority direction: ACIF owns the vocabularies; capmon and the syllago converter conform to ACIF's copies, not the reverse.
 
 ## Design record

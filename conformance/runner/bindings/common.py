@@ -451,9 +451,16 @@ def assert_diagnostic(
     observed = diagnostics
     passed = bool(matches)
     if expected_params is not None and matches:
-        params = matches[0].get("params", {})
-        passed = isinstance(params, dict) and all(params.get(k) == v for k, v in expected_params.items())
-        observed = params
+        # Any matching instance may carry the expected params: an install tool
+        # can emit the same id at render time and again at install time
+        # ([ACIF-HOOK] §11, §12.3), and order between them is not pinned.
+        all_params = [m.get("params", {}) for m in matches]
+        satisfying = [
+            params for params in all_params
+            if isinstance(params, dict) and all(params.get(k) == v for k, v in expected_params.items())
+        ]
+        passed = bool(satisfying)
+        observed = satisfying[0] if satisfying else (all_params[0] if len(all_params) == 1 else all_params)
     if passed:
         family = diagnostic_family(expected_id)
         unexpected = [

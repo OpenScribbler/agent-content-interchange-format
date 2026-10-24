@@ -341,10 +341,11 @@
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
       - kind: skill
         record:
+          publisher_section: {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo Skill"}
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
-            metadata_hash: {algorithm: sha256, value: "68a08fba15d30c2a490b9f6321840f63d662291c2b7fa67398494d11bd00a902"}
-            attestation_hash: {algorithm: sha256, value: "04a3947059cc5cdd6293de12a8259bcaae09a3827abf360c978adc56a0c10b08"}
+            metadata_hash: {algorithm: sha256, value: "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316"}
+            attestation_hash: {algorithm: sha256, value: "fd47d05d539e9e2034eab62fe5274cf950fd5a271d9d2b9ea9f5b0e0ef8e0f22"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
       - kind: skill
@@ -370,9 +371,10 @@
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
       - kind: skill
         record:
+          publisher_section: {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo Skill"}
           registry_section:
             body_hash: {algorithm: sha256, value: "916e570331167c16f8112573d1b6020c134cc3d4019e8011693676d019b88ffe"}
-            metadata_hash: {algorithm: sha256, value: "68a08fba15d30c2a490b9f6321840f63d662291c2b7fa67398494d11bd00a902"}
+            metadata_hash: {algorithm: sha256, value: "b68bf2e4cbd6b9123d23de684498157adeaf4915e65435a95a556ac27ec50316"}
             attestation_hash: {algorithm: sha256, value: "27af3dc088e0020d172ad172e73ff6a85f098f1267529ca046133823916b1cdc"}
             fetched_at: "2026-07-11T00:00:00+00:00"
             source_uri: "https://github.com/example/skills/tree/main/my-skill/"
