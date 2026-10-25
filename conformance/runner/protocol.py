@@ -16,6 +16,11 @@ from . import RUNNER_PROTOCOL, SUPPORTED_ADAPTER_PROTOCOLS
 from .scopes import SCOPE_ORDER
 
 MAX_LINE_BYTES = 16 * 1024 * 1024
+READ_CHUNK_BYTES = 64 * 1024
+# The stdout pump stops reading once this many chunks wait unconsumed, so an
+# adapter that floods stdout blocks on its pipe instead of filling memory.
+# 320 full chunks is 20 MiB, above the 16 MiB line limit.
+MAX_QUEUED_CHUNKS = 320
 SPEC_ERROR_RE = re.compile(r"^acif\.[a-z0-9_]+(\.[a-z0-9_]+)+$")
 
 
@@ -108,7 +113,8 @@ class AdapterSession:
         self.process: subprocess.Popen[bytes] | None = None
         self.hello: dict[str, Any] | None = None
         self.hello_response: AdapterResponse | None = None
-        self._chunks: queue.Queue[bytes | OSError] = queue.Queue()
+        self._chunks: queue.Queue[bytes | OSError] = queue.Queue(maxsize=MAX_QUEUED_CHUNKS)
+        self._stop_pump = threading.Event()
         self._eof = False
         self._buffer = bytearray()
 
@@ -128,8 +134,12 @@ class AdapterSession:
         if self.process.stdin is None:
             raise ProtocolError("adapter stdin was not captured")
         # Pipes cannot be polled with select() on Windows, so a daemon thread
-        # reads stdout and the request path waits on its queue instead.
-        threading.Thread(target=_pump, args=(self.process.stdout.fileno(), self._chunks), daemon=True).start()
+        # reads stdout and the request path waits on its queue instead. The
+        # pump owns the stdout file object and alone closes it: on Windows a
+        # close from this thread waits on the pump's blocked read, which never
+        # returns while an orphaned adapter descendant holds the pipe open.
+        stdout, self.process.stdout = self.process.stdout, None
+        threading.Thread(target=_pump, args=(stdout, self._chunks, self._stop_pump), daemon=True).start()
         response = self.request({"op": "hello", "runner_protocol": RUNNER_PROTOCOL})
         self.hello_response = response
         if response.kind != "ok":
@@ -158,7 +168,7 @@ class AdapterSession:
         request_bytes = (request_line + "\n").encode("utf-8")
         if len(request_bytes) > MAX_LINE_BYTES:
             return AdapterResponse.harness(request_line, "request exceeds 16 MiB line limit")
-        if self.process is None or self.process.stdin is None or self.process.stdout is None:
+        if self.process is None or self.process.stdin is None:
             return AdapterResponse.harness(request_line, "adapter process is not running")
         if self.process.poll() is not None:
             return AdapterResponse.harness(request_line, f"adapter process exited with {self.process.returncode}")
@@ -244,6 +254,7 @@ class AdapterSession:
         return line
 
     def close(self) -> None:
+        self._stop_pump.set()
         if self.process is None:
             return
         if self.process.poll() is None:
@@ -270,15 +281,26 @@ class AdapterSession:
         self.close()
 
 
-def _pump(fd: int, chunks: "queue.Queue[bytes | OSError]") -> None:
+def _pump(stdout: Any, chunks: "queue.Queue[bytes | OSError]", stop: threading.Event) -> None:
     """Copy the adapter's stdout into the queue until EOF, which arrives as
-    b"". A read error is queued in place of the chunk and ends the pump."""
-    while True:
-        try:
-            chunk = os.read(fd, 65536)
-        except OSError as exc:
-            chunks.put(exc)
-            return
-        chunks.put(chunk)
-        if not chunk:
-            return
+    b"". A read error is queued in place of the chunk and ends the pump.
+    The pump closes stdout itself when it ends. A full queue blocks it until
+    the request path drains a chunk or the session closes."""
+    try:
+        fd = stdout.fileno()
+        while True:
+            try:
+                chunk: bytes | OSError = os.read(fd, READ_CHUNK_BYTES)
+            except OSError as exc:
+                chunk = exc
+            while True:
+                try:
+                    chunks.put(chunk, timeout=0.1)
+                    break
+                except queue.Full:
+                    if stop.is_set():
+                        return
+            if isinstance(chunk, OSError) or not chunk:
+                return
+    finally:
+        stdout.close()
