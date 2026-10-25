@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import re
-import selectors
 import shlex
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -107,7 +108,8 @@ class AdapterSession:
         self.process: subprocess.Popen[bytes] | None = None
         self.hello: dict[str, Any] | None = None
         self.hello_response: AdapterResponse | None = None
-        self._selector: selectors.BaseSelector | None = None
+        self._chunks: queue.Queue[bytes | OSError] = queue.Queue()
+        self._eof = False
         self._buffer = bytearray()
 
     def start(self) -> dict[str, Any]:
@@ -125,11 +127,9 @@ class AdapterSession:
             raise ProtocolError("adapter stdout was not captured")
         if self.process.stdin is None:
             raise ProtocolError("adapter stdin was not captured")
-        # Non-blocking stdin: an adapter that stops reading must not stall
-        # the write past the per-request deadline.
-        os.set_blocking(self.process.stdin.fileno(), False)
-        self._selector = selectors.DefaultSelector()
-        self._selector.register(self.process.stdout, selectors.EVENT_READ)
+        # Pipes cannot be polled with select() on Windows, so a daemon thread
+        # reads stdout and the request path waits on its queue instead.
+        threading.Thread(target=_pump, args=(self.process.stdout.fileno(), self._chunks), daemon=True).start()
         response = self.request({"op": "hello", "runner_protocol": RUNNER_PROTOCOL})
         self.hello_response = response
         if response.kind != "ok":
@@ -187,52 +187,56 @@ class AdapterSession:
         return classify_response(raw, request_line, response_line)
 
     def _write_all(self, request_line: str, data: bytes, deadline: float) -> "AdapterResponse | None":
-        """Write the request on the non-blocking stdin fd, charging every
-        partial write to the per-request deadline."""
+        """Write the request from a daemon thread and wait for it under the
+        per-request deadline, so an adapter that stops reading stdin cannot
+        stall the runner. Killing the adapter breaks the pipe and ends the
+        thread."""
         assert self.process is not None and self.process.stdin is not None
-        fd = self.process.stdin.fileno()
-        view = memoryview(data)
-        with selectors.DefaultSelector() as writer:
-            writer.register(fd, selectors.EVENT_WRITE)
-            while view:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0 or not writer.select(remaining):
-                    self._kill()
-                    return AdapterResponse.harness(request_line, f"adapter request timed out after {self.timeout:g}s (adapter not reading stdin)")
-                try:
-                    written = os.write(fd, view)
-                except BlockingIOError:
-                    continue
-                except OSError as exc:
-                    return AdapterResponse.harness(request_line, f"adapter write failed: {exc}")
-                view = view[written:]
+        stdin = self.process.stdin
+        errors: list[OSError] = []
+
+        def write() -> None:
+            try:
+                stdin.write(data)
+                stdin.flush()
+            except OSError as exc:
+                errors.append(exc)
+
+        writer = threading.Thread(target=write, daemon=True)
+        writer.start()
+        writer.join(max(0.0, deadline - time.monotonic()))
+        if writer.is_alive():
+            self._kill()
+            return AdapterResponse.harness(request_line, f"adapter request timed out after {self.timeout:g}s (adapter not reading stdin)")
+        if errors:
+            return AdapterResponse.harness(request_line, f"adapter write failed: {errors[0]}")
         return None
 
     def _read_line(self, request_line: str, deadline: float) -> "bytes | AdapterResponse":
-        """Read one response line under a single per-request deadline.
-
-        Selector readiness only promises that some bytes are available, so a
-        blocking readline() after it hangs forever on a partial line. Read the
-        raw fd incrementally instead and charge every partial read to the same
-        deadline."""
-        assert self._selector is not None and self.process is not None and self.process.stdout is not None
-        fd = self.process.stdout.fileno()
+        """Read one response line under a single per-request deadline,
+        charging every partial chunk to the same deadline so a partial line
+        cannot hang the runner."""
+        assert self.process is not None
         while b"\n" not in self._buffer:
             if len(self._buffer) > MAX_LINE_BYTES:
                 self._kill()
                 return AdapterResponse.harness(request_line, "adapter response exceeds 16 MiB line limit")
+            if self._eof:
+                return AdapterResponse.harness(request_line, f"adapter process exited with {self.process.poll()}")
             remaining = deadline - time.monotonic()
-            if remaining <= 0 or not self._selector.select(remaining):
+            try:
+                if remaining <= 0:
+                    raise queue.Empty
+                chunk = self._chunks.get(timeout=remaining)
+            except queue.Empty:
                 self._kill()
                 return AdapterResponse.harness(request_line, f"adapter request timed out after {self.timeout:g}s")
-            try:
-                chunk = os.read(fd, 65536)
-            except OSError as exc:
+            if isinstance(chunk, OSError):
                 self._kill()
-                return AdapterResponse.harness(request_line, f"adapter read failed: {exc}")
+                return AdapterResponse.harness(request_line, f"adapter read failed: {chunk}")
             if chunk == b"":
-                code = self.process.poll()
-                return AdapterResponse.harness(request_line, f"adapter process exited with {code}")
+                self._eof = True
+                continue
             self._buffer.extend(chunk)
         index = self._buffer.index(b"\n")
         line = bytes(self._buffer[:index])
@@ -240,9 +244,6 @@ class AdapterSession:
         return line
 
     def close(self) -> None:
-        if self._selector is not None:
-            self._selector.close()
-            self._selector = None
         if self.process is None:
             return
         if self.process.poll() is None:
@@ -267,3 +268,17 @@ class AdapterSession:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
+
+
+def _pump(fd: int, chunks: "queue.Queue[bytes | OSError]") -> None:
+    """Copy the adapter's stdout into the queue until EOF, which arrives as
+    b"". A read error is queued in place of the chunk and ends the pump."""
+    while True:
+        try:
+            chunk = os.read(fd, 65536)
+        except OSError as exc:
+            chunks.put(exc)
+            return
+        chunks.put(chunk)
+        if not chunk:
+            return

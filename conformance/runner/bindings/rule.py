@@ -261,11 +261,15 @@ def tv_rule_m(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
+    ingested = send(result, session, ctx, _ingest_files(ctx, {"files": inp["files"]}))
+    # DERIVATION: [ACIF-RULE] §11, §8.3 — the render takes the adapter's own
+    # canonical record, so the suite pins no body carrier; the body must
+    # appear byte-verbatim, trailing newline included.
     response = send(
         result,
         session,
         ctx,
-        render(inp["canonical"], inp["render_target"]),
+        render(hash_value(ingested, "canonical"), inp["render_target"]),
         tags={"degradation_path": "rule-gate-loss", "paired_diagnostic": exp["diagnostic"]},
     )
     assert_output_contains(result, "render", response, "emitted", exp["emitted"])

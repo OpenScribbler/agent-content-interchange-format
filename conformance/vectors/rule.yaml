@@ -167,10 +167,11 @@
   harness: static
   description: render degradation — manual rendered to a no-declaration-surface target requires the diagnostic
   input:
-    canonical: {rule: {activation: {mode: manual}}}
+    files:
+      conventions.md: "---\nactivation:\n  mode: manual\n---\nFollow @security.md before editing.\n"
     render_target: no-declaration-surface-provider
   expect:
-    emitted: rule-body
+    emitted: "Follow @security.md before editing.\n"
     diagnostic: acif.rule.activation_degraded
     diagnostic_names: {mode_lost: manual, effective_behavior: always-on}
 

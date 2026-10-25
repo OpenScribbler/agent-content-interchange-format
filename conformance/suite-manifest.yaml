@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 14
+  date: 2026-10-25
+  change_class: repair
+  supersedes: 13
+  note: "Repair: TV-RULE-m asserted that a render of a manual rule to a no-declaration-surface target emits the text rule-body, but its canonical fixture carried no rule body. A conforming renderer, which emits the body it is given byte-verbatim ([ACIF-RULE] §11, §8.3) and never invents text, could not pass it; a renderer that invents text could. The binding now ingests a manual rule source whose body is \"Follow @security.md before editing.\\n\" and renders the adapter's own canonical record, so the suite pins no body field. The emitted check requires that body byte-verbatim, trailing newline included, and the activation_degraded diagnostic check is unchanged. Repaired vector: TV-RULE-m. Expectation-flip inventory: TV-RULE-m (emitted)."
+  vectors: 189
+  binding_set: 92cd27a6e1571fbb668065d170bf8b758fbed939d7305e6dddbf7d7783b27bf3
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: 5dda8462859c2c3dc9147bb65514f21958c06ff3ae984c45050ae27cd803ec79
+    fresh.yaml: d6b701b899b76272b2305418f2a9a12e5bddefab6d19d2680f4b24a8711e4e2a
+    hook.yaml: 236f25292e472ac6dfa2e78aa09ad639f26c943ce6d4bf8aa775ab5a1cb31ce2
+    install.yaml: f6b378e2e4cab6a9e010ec565a09c092c22ddaad7bcd0f445c6677dd5d45784d
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: b8880b8e302f6df3462e34c753f7905309a77274305a0c6b376d5a32ff428988
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 13
   date: 2026-10-24
   change_class: c

@@ -91,7 +91,7 @@ implementation has done that yet.
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
 
-The suite is at 13. Published runs live under
+The suite is at 14. Published runs live under
 [`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
 [`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
 
