@@ -329,12 +329,22 @@ fully-formed entry-point row the vector supplies, overriding the matrix
 OS, one of `darwin` | `linux` | `windows`; a vector omits it only when
 no row of the resolved list carries `os`, so the result cannot depend on
 it), optional `appdata_dir` (the application-data directory `<appdata>`
-resolves to; present when a row surviving OS filtering carries it) →
+resolves to; present when a row surviving OS filtering carries it),
+optional `overlay` (the [ACIF-INSTALL] §6.1 operator overlay: an ordered
+list of rows in the `entry` shape, applying to the invocation's
+`provider` and `content_type` and resolved ahead of the matrix rows, or
+of `entry` when both are present; a present `overlay` that is not a list,
+or a row failing a §6.1 validity check, refuses with
+`acif.install.overlay_invalid`). Overlay origin is the `overlay` input
+itself: a field named `overlay` inside `entry` or any row is an unknown
+field and is ignored (§1) →
 `result`: `targets` (ordered
 list of `{scope, path, layout, status, write_target}` with `path` fully
 resolved), `diagnostics`. Refusals surface as errors with the
-`acif.install.*` identifier; the supersession warn rides `diagnostics`
-alongside a populated `targets`.
+`acif.install.*` identifier; the supersession warn and the
+`acif.install.entry_point_overridden` warn ride `diagnostics` alongside
+a populated `targets`. A `targets` entry carries no field naming whether
+its row came from the overlay; the overridden warn is that disclosure.
 
 ## Appendix A — Pinned diagnostic params
 
@@ -354,6 +364,9 @@ Payload-pinned (a vector asserts params content):
 | `acif.registry.stale` | `expires` (the effective `E_sidecar` as an RFC 3339 timestamp; compared as an instant, not byte-wise — any valid serialization of the instant passes) | TV-FRESH-a |
 | `acif.registry.stale` | `expires` (as above; here `E_sidecar` is the computed default window, `fetched_at + 72h`) | TV-FRESH-h |
 | `acif.install.scope_unavailable` | `available_scopes` (the scopes that do have rows for the pair, sorted) | TV-INSTALL-e |
+| `acif.install.scope_unavailable` | `available_scopes` (as above; overlay rows count as rows) | TV-INSTALL-h |
+| `acif.install.entry_point_overridden` | `scope` (the scope that writes through the overlay row), `overlay_path` (the resolved path of that scope's first overlay row), `matrix_write_target` (the resolved path of that scope's first current matrix row, else its first matrix row; null when the scope has no matrix row; asserted present when null); the binding matches every instance one to one, so a missing or an extra warning fails | TV-INSTALL-h |
+| `acif.install.overlay_invalid` | `reason` (one of the [ACIF-INSTALL] §6.1 validity reasons), `row_index` (the failing row's zero-based overlay position; null for `overlay_not_list`; asserted present when null) | TV-INSTALL-h |
 | `acif.hook.event_untranslatable` | `event` (the canonical event name), `provider` (the render-target provider slug) | TV-HOOK-m |
 | `acif.hook.event_untranslatable` | `event`, `provider` (as above) | TV-HOOK-q |
 

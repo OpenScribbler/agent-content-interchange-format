@@ -46,13 +46,15 @@ Terms defined in [ACIF-CORE] §2 — including **provider** and **install tool**
 
 **contribution** — the bytes an install adds to a shared file under the `merged_into_shared_file` layout (§10).
 
+**overlay** — an ordered list of entry-point rows the operator supplies to one install invocation, resolved ahead of the matrix rows (§6.1).
+
 ## 4. Requirements Language
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as shown here.
 
 ## 5. Conformance
 
-**Conforming install tool** — satisfies every MUST and MUST NOT in this document, and in the install-time sections of the L1 specifications for each content type it installs ([ACIF-HOOK] §11 coverage-gap rule; the revoked-reference refusal of [ACIF-CORE] §10 and [ACIF-REGISTRY] §9). An install tool MAY support any subset of providers and content types; conformance is claimed per `(provider, content type)` pair.
+**Conforming install tool** — satisfies every MUST and MUST NOT in this document, and in the install-time sections of the L1 specifications for each content type it installs ([ACIF-HOOK] §11 coverage-gap rule; the revoked-reference refusal of [ACIF-CORE] §10 and [ACIF-REGISTRY] §9). An install tool MAY support any subset of providers and content types; conformance is claimed per `(provider, content type)` pair. An install tool that accepts an overlay (§6.1) MUST declare in its conformance statement where it reads overlay rows from.
 
 The test-vector family in Appendix B is normatively authoritative over prose.
 
@@ -76,8 +78,53 @@ Each row carries:
 Three structural rules:
 
 - **Uniqueness.** `(provider, content type, scope, path_template)` is unique across the matrix. Two rows differing only in `layout` or `status` are a publication defect, not a choice offered to consumers.
-- **Order is precedence.** Row order within a `(provider, content type)` list is normative. The first `status: current` row for a requested scope is the **write target**; every row is a read/discovery location. An install tool MUST NOT write to a non-first row for its scope except under explicit operator instruction.
-- **Absence is meaningful.** A `(provider, content type)` pair with no rows means no location is published for that pair. An install tool MUST NOT guess: the outcome is the `acif.install.no_entry_point` refusal (§11). A guessed path that a provider happens to read today is precisely the impl-private knowledge this document exists to eliminate.
+- **Order is precedence.** Row order within a `(provider, content type)` list is normative. The first `status: current` row for a requested scope is the **write target**; every row is a read/discovery location. An install tool MUST NOT write to a non-first row for its scope except under explicit operator instruction. An overlay (§6.1) is that instruction.
+- **Absence is meaningful.** A `(provider, content type)` pair with no rows means no location is published for that pair. An install tool MUST NOT guess: the outcome is the `acif.install.no_entry_point` refusal (§11). A guessed path that a provider happens to read today is precisely the impl-private knowledge this document exists to eliminate. Only an overlay row (§6.1) can resolve an absent pair or scope.
+
+### 6.1 Operator overlay
+
+An operator MAY supply an **overlay** to an install invocation: an ordered list of entry-point rows for the invocation's `(provider, content type)`. Overlay rows use the row model above and the §8 grammar, with one extension: an overlay template MAY be absolute (§8.3). `as_of` MAY be omitted.
+
+**Origin.** Overlay rows MUST come from the operator: from the invocation itself, or from user-level or administrator-level configuration outside the project tree. An install tool MUST NOT ship overlay rows or derive them. It MUST NOT read them from the project tree, from content, from a registry, or from any location that a fetched artifact, content, a registry, or a repository can write.
+
+This rule is not vector-testable: a resolution input carries no record of where it was read from. The §5 conformance statement is where a tool states its sources.
+
+**Derivation.** Producing a path the operator never named is derivation. When the operator names only a directory, an install tool MAY complete the row from the matrix row of the same scope: its `layout` and `scope`, and the shape of its trailing `<content-name>` segment, with `status: current` whatever the matrix row's status. That completion is not derivation. A tool migrating older settings into overlay rows MAY convert values the operator wrote, and MUST NOT convert values the tool wrote itself, such as first-run defaults.
+
+*(Informative)* A setting that re-roots the home directory is not an overlay. It is the home-directory input of §8.3, and every home-anchored row resolves against it.
+
+**Validity.** An install tool checks every overlay row before resolution, in overlay order, after the §8.2 content-name predicate. The first row that fails refuses the invocation with `acif.install.overlay_invalid` (§11), whose `params` name `reason` and `row_index`, the row's zero-based position in the overlay. An overlay that is not a list refuses with reason `overlay_not_list` and a null `row_index`. A row's checks run in the order below, and the first that fails names the reason:
+
+| Reason | The row fails when |
+|---|---|
+| `field_invalid` | it is not a mapping; its `scope` or `layout` is not a string in its enum; its `path_template` is absent or empty; or it carries an `os` that breaks the §6 `os` rules |
+| `status_not_current` | its `status` is absent or is not `current` |
+| `anchor_misplaced` | a segment of its template other than the first is `~`; or it carries `<appdata>` other than once as the leading segment, or on a row whose `os` is not exactly `[windows]` (§8.3) |
+| `leading_double_slash` | its template begins `//` |
+| `backslash` | its template carries `\` |
+| `dot_segment` | a segment of its template is `.` or `..` |
+| `anchor_scope_mismatch` | it is at `managed` scope and not absolute, at `user` scope and project-anchored, or at `project` scope and home- or application-data-anchored |
+| `absolute_os_mismatch` | its template begins with a drive letter and its `os` is not exactly `[windows]`, or begins `/` and its `os` is absent or includes `windows` |
+| `content_name_placement` | its `layout` is `single_file` or `directory_of_files` and the final segment of its template, ignoring one trailing `/`, lacks `<content-name>`; or its `layout` is `merged_into_shared_file` and its template carries `<content-name>` |
+| `duplicate_row` | an earlier overlay row has the same `(scope, path_template)` |
+
+These checks, with the §8.1 token closure that `placeholder_unrecognized` enforces at resolution, cover every §8 constraint on a template. Overlay rows are always `current`, so supersession never applies to them. The placement check is what keeps an overlay from aiming an install, or the uninstall that follows it, at a shared directory such as the home directory itself.
+
+**Precedence.** OS filtering applies to overlay rows as to matrix rows. The resolved list is the filtered overlay rows, in overlay order, followed by the filtered matrix rows, in matrix order. Every rule of §6 and every lane of §11 applies to that list. A scope with an overlay row therefore writes through its first overlay row, and its matrix rows remain read/discovery locations. A scope with no overlay row resolves from the matrix rows exactly as it would with no overlay.
+
+**Absence.** An overlay row for a pair or scope the matrix has no rows for resolves it: neither `no_entry_point` nor `scope_unavailable` fires. Without an overlay row covering it, both refusals fire exactly as they would with no overlay. A pair whose only rows are overlay rows takes the same lanes, and `scope_unavailable` names the scopes its overlay rows cover.
+
+**Disclosure.** Every resolution in which a scope writes through an overlay row carries `acif.install.entry_point_overridden` for that scope (§11), and an install tool MUST NOT suppress it. Operators MAY configure it to refuse, as for supersession. Its `params` MUST name:
+
+- `scope`, the scope that writes through the overlay row;
+- `overlay_path`, the resolved path of that scope's first overlay row;
+- `matrix_write_target`, the resolved path of that scope's first current matrix row, else of its first matrix row, whatever the operator has configured for the supersession lane. It is null when the scope has no matrix row. When that matrix row carries a token outside the consumer's grammar, its path cannot be formed, so the invocation refuses with `placeholder_unrecognized` rather than writing through the overlay row.
+
+A null `matrix_write_target` tells the operator that the overlay fills a gap in the matrix, which is a candidate row-data amendment (§12). How an install tool presents repeated warnings to a person is out of scope.
+
+**Uninstall.** An install tool that offers uninstall MUST record the resolved write path of each install it made through an overlay row, and MUST uninstall from that record rather than from the overlay in force at uninstall time. It SHOULD warn when a recorded path no longer appears in the resolved list. This is not vector-testable: resolution carries no install history.
+
+The overlay is invocation input, like the content name. It is not part of Appendix A.2 or its export.
 
 ## 7. Scope
 
@@ -88,6 +135,8 @@ Three structural rules:
 | `user` | the invoking user's home directory, or on a windows-only row their application-data directory (§8.3) | content available to that user in every project |
 | `project` | the project root | content versioned and scoped with a repository |
 | `managed` | an administrator-controlled absolute location | org- or machine-managed content the user does not edit |
+
+The anchors above are those of matrix rows. An overlay row (§6.1) MAY also be absolute at `user` or `project` scope, within the §6.1 validity rules, and resolves as §8.3 states.
 
 **Relationship to `install_scope_capabilities` ([ACIF-REGISTRY] §8.5).** The registry projection answers *whether an item may live at a scope*; this matrix answers *where that scope is on disk for a provider*. The two vocabularies map totally: §8.5 `project` → `project`; §8.5 `global` and `user` → `user` (the two keys are provider-parlance synonyms for the same per-user anchor); §8.5 `managed` → `managed`. A §8.5 entry tagged `source: install_context` derives from this matrix; where such an entry and this matrix disagree, this matrix governs and the projection has a bug ([CHANGE-PROCESS] source-of-truth rule).
 
@@ -114,11 +163,14 @@ Growing the token set is a Class C change ([CHANGE-PROCESS]). Tokens beginning `
 
 ### 8.3 Anchors and resolution
 
-Resolution is a function: identical `(entry-point row, content name, target OS, home directory, application-data directory, project root)` MUST produce a byte-identical resolved path, across invocations and across conforming implementations. The target OS is REQUIRED whenever a candidate row carries `os`; when no candidate row carries `os` the result cannot depend on it, and the input MAY be omitted. The application-data directory is REQUIRED only when a row that survives OS filtering carries `<appdata>`.
+Resolution is a function: identical `(entry-point row, row origin, content name, target OS, home directory, application-data directory, project root)` MUST produce a byte-identical resolved path, across invocations and across conforming implementations. The target OS is REQUIRED whenever a candidate row carries `os`; when no candidate row carries `os` the result cannot depend on it, and the input MAY be omitted. The application-data directory is REQUIRED only when a row that survives OS filtering carries `<appdata>`. Row origin is whether the row came from the matrix or from an overlay (§6.1); it travels beside the row, and no field of a row can claim it.
+
+The anchor is read off the template, before substitution. A content name never changes a row's anchor, so a template beginning `<content-name>` is project-anchored whatever the name.
 
 - A template beginning `~/` is **home-anchored**: `~` resolves to the invoking user's home directory — the platform's native notion (`$HOME` on POSIX systems, `%USERPROFILE%` on Windows). `~` carries no other meaning and appears only as the leading segment.
 - A template beginning `<appdata>/` is **application-data-anchored**: `<appdata>` resolves to the invoking user's roaming application-data directory, the platform's `%APPDATA%`. The token appears only as the leading segment, and only on a row whose `os` is exactly `[windows]`; anywhere else it is a publication defect. It is a token rather than a home-anchored path because `%APPDATA%` is relocatable and is not always `~/AppData/Roaming`.
 - A `managed`-scope template is **absolute** and resolves verbatim (it may still carry `<content-name>`).
+- An overlay row's template (§6.1) MAY be **absolute** at any scope. A template beginning `/`, or beginning with a drive letter followed by `:/`, resolves verbatim. An absolute overlay row MUST carry `os`: exactly `[windows]` for a drive letter, and a set without `windows` for `/`, so the template is absolute on every OS it resolves on. A matrix row is absolute only at `managed` scope.
 - Any other template is **project-anchored**: resolved against the project root the invocation supplies.
 
 Templates are written with `/` separators; an install tool maps them to the native separator at the filesystem boundary. Resolution performs placeholder substitution and anchoring only — it MUST NOT normalize case, expand symlinks, or rewrite segments.
@@ -159,8 +211,12 @@ Resolution and install produce dispositions in the [ACIF-HOOK] §11 pattern — 
 | rows exist, but none for the requested scope | `acif.install.scope_unavailable` | refuse; `params` MUST name the scopes that do have rows |
 | a row carries a token outside the consumer's grammar | `acif.install.placeholder_unrecognized` | refuse for the write direction; the row MAY still serve read/discovery |
 | the resolved write row is `status: superseded` | `acif.install.entry_point_superseded` | warn and proceed; operators MAY configure refuse |
+| a scope writes through an overlay row (§6.1) | `acif.install.entry_point_overridden` | warn and proceed; MUST NOT be suppressed; operators MAY configure refuse; `params` MUST name `scope`, `overlay_path`, and `matrix_write_target` |
+| the overlay is not a list, or an overlay row fails a §6.1 validity check | `acif.install.overlay_invalid` | refuse the invocation; `params` MUST name `reason` and `row_index` |
 
 Silence is the violation, as everywhere in this document set: each condition has exactly one disclosure home, and an install tool MUST NOT convert a refuse lane into a best-effort write under an option flag ([ACIF-RENDER] §6.1 discipline). The warn lane exists for supersession because the superseded location is still a real location — a stale-but-working install is disclosed, not forbidden; a guessed path is forbidden because it is not disclosed anywhere.
+
+An overlay row is the §6 explicit operator instruction. It is not a best-effort write under an option flag: its location is disclosed by the operator who wrote it and by the `entry_point_overridden` warning, and disclosure is the property this discipline protects. An overlay changes no other lane. `overlay_invalid` refuses a malformed overlay before any row resolves. `content_name_invalid` still rejects before any path is formed, so the §13 traversal defense holds for overlay templates, and `placeholder_unrecognized` applies to overlay rows as to matrix rows.
 
 ## 12. Maintenance: What the Freeze Claims
 
@@ -183,6 +239,10 @@ That split sets the maintenance model:
 
 **`managed` scope is an authority boundary.** Managed rows resolve to administrator-controlled locations. An install tool MUST NOT escalate privileges to write a managed row on a user's behalf; a managed install is an administrator's act, and the row exists so that act is placed correctly, not so it can be automated around.
 
+**The overlay is an operator-controlled write primitive.** An overlay row directs writes to any path its author names, absolute paths included. That is why §6.1 restricts its origin to the operator and keeps it out of the project tree: an overlay accepted from content, a registry, a repository, or a tool default would let a party other than the operator choose where an install writes. An install tool running with elevated privileges MUST NOT read overlay rows from configuration an unprivileged user can write. The `managed` rule above applies to any write whose resolved path falls under a location a managed row resolves to, whatever the overlay row's scope label, and a `managed`-scope overlay row authorizes no privilege escalation.
+
+**An overlay row is unverified.** No overlay row has been verified against any provider build, so an overlay install is the fail-open case above made deliberate: the operator's path may be one the provider never reads. An install tool MUST NOT report an overlay install as verified or as active. For a hook, an overlay install that the provider does not read is a silently absent control, and `entry_point_overridden` is the disclosure that lets the operator check it.
+
 ## 14. Error Identifiers
 
 All identifiers follow the [ACIF-CORE] §8.7 naming discipline, family `acif.install.*`. This document is their owning specification. None uses the `_unmappable` suffix: that suffix is reserved for L1 canonicalization totality nets whose firing is Class B evidence, and no install condition is one — the matrix's amendment signal is observation, not a diagnostic (§12).
@@ -194,6 +254,8 @@ All identifiers follow the [ACIF-CORE] §8.7 naming discipline, family `acif.ins
 | `acif.install.scope_unavailable` | refuse | no row for the requested scope; `params` names available scopes (§11) |
 | `acif.install.placeholder_unrecognized` | refuse | row token outside the consumer's closed grammar (§8.1) |
 | `acif.install.entry_point_superseded` | diagnostic (warn) | write target resolved via a `status: superseded` row (§11) |
+| `acif.install.entry_point_overridden` | diagnostic (warn) | a scope writes through an overlay row; `params` names `scope`, `overlay_path`, and `matrix_write_target` (§6.1, §11) |
+| `acif.install.overlay_invalid` | refuse | the overlay is not a list, or an overlay row fails a §6.1 validity check; `params` names `reason` and `row_index` (§6.1, §11) |
 
 ## 15. References
 
@@ -409,7 +471,7 @@ Rows are grouped by provider, then content type; order within a group is normati
 
 The vectors in this family, published in the `conformance/` directory, are normatively authoritative over prose.
 
-**TV-INSTALL-\***: (a) resolution determinism and multiplicity — a multi-row `(provider, content type)` list resolves every row, order preserved, first-current-row-per-scope identified as the write target, byte-identical across invocations and implementations; (b) layout coverage — resolution exercised across all three layout members and all six content types (the six-coequal witness); (c) content-name validity — separator, backslash, dot-segment, and empty names reject with `acif.install.content_name_invalid` before path formation; (d) placeholder totality — a row carrying a token outside the closed set refuses the write direction with `acif.install.placeholder_unrecognized`; (e) disposition lanes — `no_entry_point` and `scope_unavailable` refuse with pinned `params`, supersession warns with the write proceeding; (f) anchor resolution — home-anchored, project-anchored, and absolute managed templates resolve against invocation-supplied roots deterministically; (g) OS selection — a list mixing unconstrained and OS-constrained rows filters to the target OS before precedence, so the write target differs by OS, and an `<appdata>`-anchored row resolves against the invocation-supplied application-data directory.
+**TV-INSTALL-\***: (a) resolution determinism and multiplicity — a multi-row `(provider, content type)` list resolves every row, order preserved, first-current-row-per-scope identified as the write target, byte-identical across invocations and implementations; (b) layout coverage — resolution exercised across all three layout members and all six content types (the six-coequal witness); (c) content-name validity — separator, backslash, dot-segment, and empty names reject with `acif.install.content_name_invalid` before path formation; (d) placeholder totality — a row carrying a token outside the closed set refuses the write direction with `acif.install.placeholder_unrecognized`; (e) disposition lanes — `no_entry_point` and `scope_unavailable` refuse with pinned `params`, supersession warns with the write proceeding; (f) anchor resolution — home-anchored, project-anchored, and absolute managed templates resolve against invocation-supplied roots deterministically; (g) OS selection — a list mixing unconstrained and OS-constrained rows filters to the target OS before precedence, so the write target differs by OS, and an `<appdata>`-anchored row resolves against the invocation-supplied application-data directory; (h) operator overlay — an overlay row precedes its scope's matrix rows and becomes the write target, the matrix rows still listed for read; an overlay fills a pair or a scope the matrix has no rows for (`matrix_write_target` null); each overlaid scope carries exactly one `entry_point_overridden` naming its scope, and a matrix-resolved scope carries none; absolute overlay templates carry `os` and resolve verbatim, a drive letter on `windows`; the anchor is read off the template, so a content name of `C:` or `~` stays project-anchored; an overlay over a scope whose only matrix row is superseded writes through the overlay row, names that row as `matrix_write_target`, and carries no supersession warning; a row field named `overlay` confers no overlay origin; `content_name_invalid` and `placeholder_unrecognized` hold for overlay rows, and an overlaid scope whose matrix write row carries an unknown token refuses; an absent, OS-filtered, or other-scope overlay leaves `no_entry_point` and `scope_unavailable` unchanged, including for a pair whose only rows are overlay rows; and each `overlay_invalid` reason refuses with its `row_index`.
 
 Individual vector IDs are assigned in the conformance suite.
 
@@ -418,6 +480,8 @@ Individual vector IDs are assigned in the conformance suite.
 Minted 2026-07-16 as the install-entry-points expansion (SHAPE.md Decision #41; stabilization-plan Phase 4, Gate C: spec-purist + registry-operator, convergent). The Gate C record: home = a dedicated L5 actor document (this one) rather than a [ACIF-REGISTRY] §8 projection (a frozen table is ACIF's assertion, not a registry derivation) or a render-context input ([ACIF-RENDER] §6.1 pins its context closed; placement is the install tool's act, downstream of bytes); polarity = frozen rows under the deterministic-projection discipline with the row-data amendment lane, rather than an observational §8.4-style snapshot (an install-tool MUST cannot cite stale-able data), with the registry-operator's conditions adopted: the A.1 ownership carve-out, supersession-not-deletion, byte-identical re-serving, refresh-over-vendored consumption, and the amendment lane landing on observation without a batch window.
 
 The `os` row field and the `<appdata>` token were added by SHAPE.md Decision #45 (Class C, 2026-09-30), when devin's per-OS user and managed locations became the first verified rows that need them.
+
+The operator overlay (§6.1), `acif.install.entry_point_overridden`, and `acif.install.overlay_invalid` were added by SHAPE.md Decision #49 (Class C, 2026-10-09), so an operator can place content the matrix is behind on or silent about, with the location disclosed.
 
 Row-data amendment, 2026-09-30: cursor's hook rows moved from `~/.cursor/settings.json` and `.cursor/settings.json` to `~/.cursor/hooks.json` and `.cursor/hooks.json`, verified against Cursor's hooks documentation. The `settings.json` rows are superseded, not deleted (§12). Cursor also reads Claude Code's hook names from `.claude/settings*.json`, which is claude-code's location and is not a cursor row.
 

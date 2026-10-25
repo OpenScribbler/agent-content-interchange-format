@@ -70,7 +70,7 @@ dependencies and conformance classes explicitly.
 ## Conformance suite
 
 [`conformance/`](conformance/README.md) publishes the test-vector catalog —
-186 vectors across 12 catalogs. **The vectors are normatively authoritative
+187 vectors across 12 catalogs. **The vectors are normatively authoritative
 over prose**: an implementation that contradicts a published vector is
 non-conformant regardless of any prose reading. Post-publication changes
 follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state
@@ -85,13 +85,13 @@ implementation has done that yet.
 
 | Scope | [syllago](https://github.com/OpenScribbler/syllago) | [acif-ts](https://github.com/OpenScribbler/acif-ts) |
 |---|---|---|
-| core | pass at suite 6 | pass at suite 6 |
-| hook | pass at suite 6 | pass at suite 6; fails TV-HOOK-k and TV-HOOK-m at suite 11, and TV-HOOK-n through TV-HOOK-r at suite 12 |
+| core | pass at suite 6 | pass at suite 12 |
+| hook | pass at suite 6 | pass at suite 12 |
 | skill, rule, command, agent, mcp | pass at suite 6 | not claimed |
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
 
-The suite is at 12. Published runs live under
+The suite is at 13. Published runs live under
 [`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
 [`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
 

@@ -9,6 +9,7 @@ from .common import (
     assert_diagnostic,
     assert_error,
     assert_result_field,
+    diagnostics_for,
     result_for,
     send,
 )
@@ -23,7 +24,7 @@ def _resolve_request(case: dict[str, Any]) -> dict[str, Any]:
         "home_dir": case["home_dir"],
         "project_root": case["project_root"],
     }
-    for optional in ("scope", "entry", "os", "appdata_dir"):
+    for optional in ("scope", "entry", "overlay", "os", "appdata_dir"):
         if optional in case:
             inp[optional] = case[optional]
     return {"op": "resolve_install_targets", "input": inp}
@@ -103,4 +104,65 @@ def tv_install_g(vector: Vector, session: Any, ctx: Any):
             assert_error(result, f"case_{idx}", response, expected["error"])
         else:
             assert_result_field(result, f"case_{idx}", response, "targets", expected["targets"])
+    return result
+
+
+OVERRIDDEN = "acif.install.entry_point_overridden"
+
+
+def _assert_overridden(result: Any, case: str, response: Any, expected: list[dict[str, Any]]) -> None:
+    """Every entry_point_overridden the response carries, matched one to one
+    against the expected params: a missing or an extra warning fails, and an
+    expected param must be present (a null included). No other acif.install.*
+    diagnostic may ride along, so a stray supersession warning fails too."""
+    if response.kind == "unsupported":
+        result.set_status("unsupported", f"{case}: adapter returned unsupported")
+        return
+    if response.kind == "harness-error":
+        return
+    diagnostics = diagnostics_for(response)
+    observed = [d.get("params") for d in diagnostics if d.get("id") == OVERRIDDEN]
+    unmatched = list(observed)
+    passed = len(observed) == len(expected)
+    if response.kind == "ok":
+        stray = [
+            d.get("id")
+            for d in diagnostics
+            if isinstance(d.get("id"), str) and d["id"].startswith("acif.install.") and d["id"] != OVERRIDDEN
+        ]
+        if stray:
+            passed = False
+            observed = {"overridden": observed, "unexpected_same_family": stray}
+    for params in expected:
+        match = next(
+            (
+                i
+                for i, got in enumerate(unmatched)
+                if isinstance(got, dict) and all(k in got and got[k] == v for k, v in params.items())
+            ),
+            None,
+        )
+        if match is None:
+            passed = False
+            break
+        unmatched.pop(match)
+    result.add_check(case, "diagnostic", {"id": OVERRIDDEN, "params": expected}, observed, passed)
+
+
+@binding("TV-INSTALL-h")
+def tv_install_h(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    exp = vector.data["expect"]
+    for idx, case in enumerate(vector.data["input"]["cases"], start=1):
+        response = send(result, session, ctx, _resolve_request(case))
+        expected = exp[f"case_{idx}"]
+        if "error" in expected:
+            assert_error(result, f"case_{idx}", response, expected["error"])
+            if "params" in expected:
+                assert_diagnostic(result, f"case_{idx}", response, expected["error"], expected["params"])
+            # A refusal writes nothing, so it discloses no override.
+            _assert_overridden(result, f"case_{idx}", response, [])
+        else:
+            assert_result_field(result, f"case_{idx}", response, "targets", expected["targets"])
+            _assert_overridden(result, f"case_{idx}", response, expected["overridden"])
     return result

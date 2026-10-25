@@ -442,7 +442,8 @@ def assert_diagnostic(
     passed = bool(matches)
     if expected_params is not None and matches:
         params = matches[0].get("params", {})
-        passed = isinstance(params, dict) and all(params.get(k) == v for k, v in expected_params.items())
+        # Presence before value: an expected null param must be present as null.
+        passed = isinstance(params, dict) and all(k in params and params[k] == v for k, v in expected_params.items())
         observed = params
     if passed:
         family = diagnostic_family(expected_id)
