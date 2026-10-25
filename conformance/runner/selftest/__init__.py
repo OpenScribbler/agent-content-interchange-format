@@ -40,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
         ("absent fields never satisfy a relation", check_absent_relations),
         ("render-d structural lossy check", check_render_d_structural),
         ("protocol partial-line timeout", check_partial_line_timeout),
+        ("protocol exit, oversize line and write failure", check_transport_failures),
         ("handshake and response strictness", check_handshake_strictness),
         ("cli exit status", check_exit_status),
         ("differential clean discipline", check_differential_clean),
@@ -872,6 +873,29 @@ def check_partial_line_timeout() -> None:
             raise AssertionError(f"{mode}: must time out as harness-error, got {response.kind}: {response.harness_error}")
         if elapsed > 5:
             raise AssertionError(f"{mode}: held the request for {elapsed:.1f}s past a 0.5s timeout")
+
+
+def check_transport_failures() -> None:
+    """The stdout pump delivers EOF as an exit, the 16 MiB limit kills an
+    adapter mid-line rather than waiting out the deadline, and a request
+    the adapter cannot receive fails the write."""
+    for mode, pattern in (
+        ("exit-mid", r"adapter process exited with (3|None)$"),
+        ("oversize", r"adapter response exceeds 16 MiB line limit$"),
+        ("close-stdin", r"adapter write failed: "),
+    ):
+        session = AdapterSession(_stub(mode), timeout=10)
+        try:
+            session.start()
+            started = time.monotonic()
+            response = session.request({"op": "ingest", "input": {}})
+            elapsed = time.monotonic() - started
+        finally:
+            session.close()
+        if response.kind != "harness-error" or not re.match(pattern, response.harness_error or ""):
+            raise AssertionError(f"{mode}: expected harness-error matching {pattern!r}, got {response.kind}: {response.harness_error}")
+        if elapsed > 5:
+            raise AssertionError(f"{mode}: held the request for {elapsed:.1f}s; it must fail without waiting out the deadline")
 
 
 def check_handshake_strictness() -> None:

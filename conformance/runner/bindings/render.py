@@ -214,7 +214,9 @@ def _paired_degradation_invariant(observations: list[Any], vector_results: list[
         trigger_row = rows.get(trigger["vector"])
         if trigger_row is None or trigger_row.status == "out-of-scope":
             continue
-        if path not in exercised:
+        # A trigger vector that stopped before its render (TV-RULE-m skips
+        # the render when its ingest fails) already carries its own verdict.
+        if path not in exercised and trigger_row.status not in ("fail", "unsupported", "harness-error"):
             row.set_status("harness-error", f"{path}: claimed trigger vector {trigger['vector']} was not exercised")
 
 

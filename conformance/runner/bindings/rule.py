@@ -10,7 +10,8 @@ from .common import (
     assert_derived_capability,
     assert_diagnostic,
     assert_error,
-    assert_output_contains,
+    assert_ok,
+    assert_output_equals,
     assert_present_absent,
     assert_relation,
     assert_result_field,
@@ -261,14 +262,22 @@ def tv_rule_m(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
+    ingested = send(result, session, ctx, _ingest_files(ctx, {"files": inp["files"]}))
+    if ingested.kind != "ok":
+        assert_ok(result, "ingest", ingested, "ok", True)
+        return result
+    # DERIVATION: [ACIF-RULE] §11, §8.3 — the render takes the adapter's own
+    # canonical record, so the suite pins no body carrier. The target has no
+    # declaration surface, so the output is exactly the body, byte-verbatim
+    # with its trailing newline.
     response = send(
         result,
         session,
         ctx,
-        render(inp["canonical"], inp["render_target"]),
+        render(hash_value(ingested, "canonical"), inp["render_target"]),
         tags={"degradation_path": "rule-gate-loss", "paired_diagnostic": exp["diagnostic"]},
     )
-    assert_output_contains(result, "render", response, "emitted", exp["emitted"])
+    assert_output_equals(result, "render", response, exp["emitted"])
     assert_diagnostic(result, "render", response, exp["diagnostic"], exp["diagnostic_names"])
     return result
 
