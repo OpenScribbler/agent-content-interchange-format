@@ -494,3 +494,19 @@ def tv_l3_d(vector: Vector, session: Any, ctx: Any):
     response = send(result, session, ctx, evaluate_install(vector.data["input"]["item"]))
     assert_result_field(result, "item", response, "install", vector.data["expect"]["install"])
     return result
+
+
+@binding("TV-L3-e")
+def tv_l3_e(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    exp = vector.data["expect"]
+    for idx, case in enumerate(vector.data["input"]["cases"], start=1):
+        label = f"case_{idx}"
+        response = send(result, session, ctx,
+            ingest(case["kind"], sidecar=case["record"], context={"validation_surface": "registry_emit"}))
+        expected = exp[label]
+        if "error" in expected:
+            assert_error(result, label, response, expected["error"])
+        else:
+            assert_result_field(result, label, response, "conformant", expected["conformant"])
+    return result

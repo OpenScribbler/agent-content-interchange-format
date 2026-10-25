@@ -183,6 +183,18 @@ pack-identity reconciliation ([ACIF-PUBLISHER] §9.1) →
 (`acif.publisher.pack_source_conflict` with Appendix A params on
 conflict).
 
+Registry-emit form: `context.validation_surface: "registry_emit"` asks
+the adapter to validate `sidecar` as a registry-emitted record
+(`publisher_section` and `registry_section`) at the record-emit boundary,
+applying every `reject (record-emit)` condition of [ACIF-REGISTRY] §12
+(for example `acif.source_uri.missing` and
+`acif.registry.attestation_hash_mismatch`). A failing record returns the
+error response with that identifier; a passing one returns
+`result.conformant: true`. On this surface `kind` may be `"pack"` with
+the pack record carried as `sidecar` (no `manifests`), and the adapter
+applies the [ACIF-REGISTRY] §6 pack-record variant. The context key is
+additive and needs no protocol bump (§1).
+
 Rejections use the error response with the spec-minted identifier
 (`acif.body.symlink`, `acif.body.path_collision`, `acif.body.empty`,
 `acif.hook.script_file_missing`, `acif.hook.script_path_invalid`, …).
@@ -304,10 +316,19 @@ reference carries the §3.1 diagnostic `acif.registry.reference_unresolved`
 ### 4.12 `evaluate_install`
 
 Install-time disposition over a record the vector supplies fully formed
-([ACIF-HOOK] §11 coverage-gap rule; [ACIF-CORE] §10 / [ACIF-REGISTRY] §9
-revoked-reference refusal). `input`: `item` (or canonical record),
-optional `install_target_os` → `result`: `install` (disposition string,
-e.g. `refuse-unless-operator-opt-in`, `proceed`), `diagnostics`.
+([ACIF-HOOK] §11 coverage-gap and degraded-event rules; [ACIF-CORE] §10 /
+[ACIF-REGISTRY] §9 revoked-reference refusal). `input`: `item` (or
+canonical record), optional `install_target_os`, optional
+`install_target_provider` (the provider slug the install writes the hook
+to; the adapter evaluates the [ACIF-HOOK] §11 degraded-event rule for
+that one provider), optional `install_operator_override` (`true` when the
+operator has opted in to override the [ACIF-HOOK] §11 degraded-event
+refusal for that item and provider; it never overrides the OS
+coverage-gap refusal; absent means no override). With both
+`install_target_os` and `install_target_provider` present, the adapter
+evaluates both rules and discloses each → `result`: `install` (disposition string,
+e.g. `refuse-unless-operator-opt-in`, `proceed`), `diagnostics`. Both
+provider fields are additive and need no protocol bump (§1).
 
 ### 4.13 `reconcile_frontmatter`
 
@@ -356,6 +377,7 @@ Payload-pinned (a vector asserts params content):
 | `acif.install.scope_unavailable` | `available_scopes` (the scopes that do have rows for the pair, sorted) | TV-INSTALL-e |
 | `acif.hook.event_untranslatable` | `event` (the canonical event name), `provider` (the render-target provider slug) | TV-HOOK-m |
 | `acif.hook.event_untranslatable` | `event`, `provider` (as above) | TV-HOOK-q |
+| `acif.hook.event_untranslatable` | `event`, `provider` (as above), `disposition` (`refused` \| `overridden` \| `proceeded`, on the [ACIF-HOOK] §11 install-time disclosure) | TV-HOOK-s |
 
 Identifier-only (vectors assert presence of the id; `params` MAY be empty
 and is not asserted): `acif.command.placeholder_named_arg_collapsed`,

@@ -33,6 +33,7 @@ hook:
   - TV-HOOK-p
   - TV-HOOK-q
   - TV-HOOK-r
+  - TV-HOOK-s
   - TV-PLATFORM-a
   - TV-PLATFORM-b
   - TV-PLATFORM-c
@@ -198,10 +199,12 @@ registry:
   - TV-FRESH-i
   - TV-FRESH-j
   - TV-FRESH-k
+  - TV-FRESH-l
   - TV-L3-a
   - TV-L3-b
   - TV-L3-c
   - TV-L3-d
+  - TV-L3-e
 install:
   - TV-INSTALL-a
   - TV-INSTALL-b

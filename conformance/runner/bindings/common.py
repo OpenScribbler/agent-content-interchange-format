@@ -130,10 +130,20 @@ def resolve_reference(item: Any, registry_state: dict[str, Any]) -> dict[str, An
     }
 
 
-def evaluate_install(item: Any, install_target_os: str | None = None) -> dict[str, Any]:
+def evaluate_install(
+    item: Any,
+    install_target_os: str | None = None,
+    *,
+    install_target_provider: str | None = None,
+    install_operator_override: bool = False,
+) -> dict[str, Any]:
     request_input: dict[str, Any] = {"item": item}
     if install_target_os is not None:
         request_input["install_target_os"] = install_target_os
+    if install_target_provider is not None:
+        request_input["install_target_provider"] = install_target_provider
+    if install_operator_override:
+        request_input["install_operator_override"] = True
     return {"op": "evaluate_install", "input": request_input}
 
 
@@ -441,9 +451,25 @@ def assert_diagnostic(
     observed = diagnostics
     passed = bool(matches)
     if expected_params is not None and matches:
-        params = matches[0].get("params", {})
-        passed = isinstance(params, dict) and all(params.get(k) == v for k, v in expected_params.items())
-        observed = params
+        # Any matching instance may carry the expected params: an install tool
+        # can emit the same id at render time and again at install time
+        # ([ACIF-HOOK] §11, §12.3), and order between them is not pinned.
+        # Every instance that carries an expected key must agree with it, so
+        # contradictory instances (refused beside proceeded) still fail.
+        all_params = [m.get("params", {}) for m in matches]
+        satisfying = [
+            params for params in all_params
+            if isinstance(params, dict) and all(params.get(k) == v for k, v in expected_params.items())
+        ]
+        conflicting = [
+            params for params in all_params
+            if isinstance(params, dict) and any(k in params and params[k] != v for k, v in expected_params.items())
+        ]
+        passed = bool(satisfying) and not conflicting
+        if conflicting:
+            observed = all_params
+        else:
+            observed = satisfying[0] if satisfying else (all_params[0] if len(all_params) == 1 else all_params)
     if passed:
         family = diagnostic_family(expected_id)
         unexpected = [
