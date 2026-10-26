@@ -14,7 +14,7 @@ is correct and the script has a bug.
 ```
 conformance/
   vectors/           # normative — one YAML catalog per family
-    core.yaml        # TV-1..TV-13 + TV-L2-* + TV-L3-* (record, envelope & pack layer)
+    core.yaml        # TV-1..TV-14 + TV-L2-* + TV-L3-* (record, envelope & pack layer)
     hook.yaml        # TV-HOOK-*   ([ACIF-HOOK] Appendix C)
     platform.yaml    # TV-PLATFORM-* ([ACIF-HOOK] Appendix C; type-general)
     skill.yaml       # TV-SKILL-*  ([ACIF-SKILL] Appendix B)

@@ -361,10 +361,9 @@ def tv_hook_j(vector: Vector, session: Any, ctx: Any) -> VectorResult:
     result = _result(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
-    response = _send(result, session, ctx, _sidecar_ingest(inp["absolute"]["hook"]))
-    _assert_error(result, "absolute", response, exp["absolute"]["error"])
-    response = _send(result, session, ctx, _sidecar_ingest(inp["traversal"]["hook"]))
-    _assert_error(result, "traversal", response, exp["traversal"]["error"])
+    for case, expected in exp.items():
+        response = _send(result, session, ctx, _sidecar_ingest(inp[case]["hook"]))
+        _assert_error(result, case, response, expected["error"])
     return result
 
 

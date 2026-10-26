@@ -20,7 +20,9 @@ import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+from acif_frontmatter import publisher_section_from_frontmatter  # noqa: E402
 from acif_hash import (  # noqa: E402
+    BodyReject,
     body_hash_multi,
     body_hash_single,
     jcs,
@@ -83,7 +85,49 @@ def compute() -> dict[str, list[str]]:
         "sub/acif-sidecar.yaml": b"kind: skill\nid: f47ac10b\n",
     }, "SKILL.md")
     assert tv12_c != tv12_a, "subdirectory sidecar must enter body_hash"
-    out["core.yaml"] = [tv1, tv2, tv9_bytes, tv9_hash, tv12_a, tv12_c]
+    # TV-14 — control characters in body paths ([ACIF-CORE] §7.4 step 3)
+    for raw in ("notes\n.md", "notes\u001f.md", "notes\u007f.md", "scripts\r/run.sh"):
+        try:
+            body_hash_multi({"SKILL.md": b"Prose.\n", raw: b"collision probe\n"}, "SKILL.md")
+        except BodyReject as exc:
+            assert exc.error == "acif.body.path_control_char"
+        else:
+            raise AssertionError(f"TV-14: {raw!r} must reject")
+    for raw, error in (
+        ("notes\udcff.md", "acif.body.path_not_utf8"),   # the bytes notes<0xFF>.md, surrogate-escaped
+        ("z\n.md", "acif.body.path_control_char"),
+    ):
+        try:
+            body_hash_multi({"SKILL.md": b"Prose.\n", "caf\u00e9.md": b"x\n", "cafe\u0301.md": b"x\n", raw: b"x\n"}, "SKILL.md")
+        except BodyReject as exc:
+            assert exc.error == error, (raw, exc.error)
+        else:
+            raise AssertionError(f"TV-14: {raw!r} must reject")
+    tv14_c1 = body_hash_multi({"SKILL.md": b"Prose.\n", "notes\u0080.md": b"collision probe\n"}, "SKILL.md")
+    # TV-L2-g — frontmatter-to-publisher_section layout ([ACIF-PUBLISHER] §5.6)
+    l2g = []
+    for frontmatter in (
+        "name: pdf-tools\ndisplay_name: PDF Tools\ndescription: Fill PDF forms.\nlicense: Apache-2.0\n"
+        "version: 1.2.0\nactivation:\n  type: manual\nallowed-tools: [Read, Bash]\n",
+        "kind: skill\nid: f47ac10b-58cc-4372-a567-0e02b2c3d479\ndisplay_name: PDF Tools\n"
+        "license:\n  spdx: MIT\npack_id: 11111111-1111-4111-8111-111111111111\n",
+        "display_name: Demo\n",
+        "display_name: Demo\nskill: {x: 1}\n",
+        "display_name: Demo\nflag: yes\nmode: 0777\ncreated: 2024-01-01\nn: 1e3\n",
+        "display_name: Demo\n<<: {x: 1}\n",
+        "display_name: Demo\nx: " + "[" * 63 + "0" + "]" * 63 + "\n",
+        "display_name: Demo\nn: 1e20\n",
+        "display_name: Demo\nn: 9007199254740991\n",
+        "display_name: Demo\nx: [?foo, ::vector]\n",
+        "display_name: Demo\nx: [a,\n  \tb]\n",
+    ):
+        section = publisher_section_from_frontmatter(f"---\n{frontmatter}---\nUse this skill.\n".encode(), "skill")
+        l2g += [jcs(section).decode("utf-8"), metadata_hash(section)]
+    null_value = publisher_section_from_frontmatter(b"---\ndisplay_name: Demo\ndescription:\n---\nx\n", "skill")
+    assert null_value == {"display_name": "Demo"}, "a null-valued key is absent"
+    tab_separated = publisher_section_from_frontmatter(b"---\ndisplay_name:\tDemo\n---\nx\n", "skill")
+    assert tab_separated == {"display_name": "Demo"}, "a tab after the colon separates"
+    out["core.yaml"] = [tv1, tv2, tv9_bytes, tv9_hash, tv12_a, tv12_c, tv14_c1, *l2g]
 
     # ── mcp.yaml ─────────────────────────────────────────────────────────────
     mcp_stdio = {"servers": {"demo": {

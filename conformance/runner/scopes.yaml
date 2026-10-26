@@ -14,6 +14,7 @@ core:
   - TV-11
   - TV-12
   - TV-13
+  - TV-14
 hook:
   - TV-HOOK-a
   - TV-HOOK-b
@@ -151,12 +152,14 @@ publisher:
   - TV-11
   - TV-12
   - TV-13
+  - TV-14
   - TV-L2-a
   - TV-L2-b
   - TV-L2-c
   - TV-L2-d
   - TV-L2-e
   - TV-L2-f
+  - TV-L2-g
 registry:
   - TV-URI-a
   - TV-URI-b

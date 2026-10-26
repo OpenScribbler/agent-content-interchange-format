@@ -70,7 +70,7 @@ dependencies and conformance classes explicitly.
 ## Conformance suite
 
 [`conformance/`](conformance/README.md) publishes the test-vector catalog —
-189 vectors across 12 catalogs. **The vectors are normatively authoritative
+191 vectors across 12 catalogs. **The vectors are normatively authoritative
 over prose**: an implementation that contradicts a published vector is
 non-conformant regardless of any prose reading. Post-publication changes
 follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state
@@ -91,7 +91,7 @@ implementation has done that yet.
 | publisher, registry, render | pass at suite 6 | not claimed |
 | install | no published run (scope added at suite 7) | not claimed |
 
-The suite is at 14. Published runs live under
+The suite is at 15. Published runs live under
 [`conformance/evidence/`](conformance/evidence/); the suite 6 runs are
 [`differential-hook-evidence-2026-07-16.md`](conformance/evidence/differential-hook-evidence-2026-07-16.md).
 
@@ -110,7 +110,7 @@ The suite is at 14. Published runs live under
 
 ## Design record
 
-`SHAPE.md` is the historical design record — 51 decisions, the open-question
+`SHAPE.md` is the historical design record — 52 decisions, the open-question
 ledger, and the spec-promotion ratifications. Where the record and a spec
 disagree, the spec governs. Deferred work lives in `ROADMAP.md` (roadmap
 items, not version commitments).
@@ -131,7 +131,7 @@ specs/
   render-back/           # [ACIF-RENDER]    (L4)
   install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
-SHAPE.md                 # historical design record (Decisions #1–#51)
+SHAPE.md                 # historical design record (Decisions #1–#52)
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content
 ```

@@ -1,4 +1,4 @@
-# ACIF conformance vectors — record & pack layer (TV-1..TV-13, TV-L2-*, TV-L3-*)
+# ACIF conformance vectors — record & pack layer (TV-1..TV-14, TV-L2-*, TV-L3-*)
 # Normative. Owning specs: [ACIF-PUBLISHER] Appendix A, [ACIF-REGISTRY] Appendix A (TV-L3),
 # [ACIF-CORE] §5–§7. Hash values marked <computed> are filled by reference/generate_vectors.py.
 
@@ -185,6 +185,46 @@
     path_collision: {error: acif.body.path_collision}
     empty: {error: acif.body.empty}
 
+- id: TV-14
+  spec: "[ACIF-CORE] §7.4, §8.7"
+  harness: static
+  description: body-path rejects — a name that is not UTF-8 rejects first; U+0000–U+001F or U+007F in any file or directory name rejects next, over every path before the NFC collision check; U+0080 does not reject
+  input:
+    lf_in_file_name:
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["notes\n.md"]
+    unit_separator_in_file_name:
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["notes\u001F.md"]
+    delete_in_file_name:
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["notes\u007F.md"]
+    cr_in_directory_name:
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["scripts\r/run.sh"]
+    c1_in_file_name:   # U+0080 is outside the rule; the body hashes normally
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["notes\u0080.md"]
+    control_char_over_collision:   # both scans finish over every path before collision detection
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["caf\u00E9.md", "cafe\u0301.md", "z\n.md"]
+    not_utf8_file_name:   # the bytes of notes<0xFF>.md
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_path_hex: ["6e6f746573ff2e6d64"]
+    not_utf8_over_control_char:   # the UTF-8 scan finishes before the control-character scan
+      files: {SKILL.md: "Prose.\n"}
+      files_raw_paths: ["a\n.md"]
+      files_raw_path_hex: ["7aff2e6d64"]   # z<0xFF>.md
+  expect:
+    lf_in_file_name: {error: acif.body.path_control_char}
+    unit_separator_in_file_name: {error: acif.body.path_control_char}
+    delete_in_file_name: {error: acif.body.path_control_char}
+    cr_in_directory_name: {error: acif.body.path_control_char}
+    c1_in_file_name: {body_hash: "af2fb7b527a855b065fd7fd55ff0591fbe81e0730a0428f90146397d9cc50dc0"}
+    control_char_over_collision: {error: acif.body.path_control_char}
+    not_utf8_file_name: {error: acif.body.path_not_utf8}
+    not_utf8_over_control_char: {error: acif.body.path_not_utf8}
+
 - id: TV-L2-a
   spec: "[ACIF-PUBLISHER] §5.2"
   harness: static
@@ -275,6 +315,182 @@
       id: acif.publisher.pack_source_conflict
       names_sources: ["package.json", "gemini-extension.json"]
       names_values: ["superpowers", "super-powers"]
+
+- id: TV-L2-g
+  spec: "[ACIF-PUBLISHER] §5.6; [ACIF-CORE] §2, §8.7"
+  harness: static
+  description: frontmatter-to-publisher_section layout — envelope keys at the top level, every other key under the context-assigned kind; no-declaration, null-value, kind, forbidden-field, version, YAML 1.2 core-schema (tab separation, `<<` as a plain key, flow-context plain scalars and tab line prefixes), limit accepts (depth 64, 1e20, 2^53-1), and malformed cases (not UTF-8, a second document, anchor, alias, each tag form, raw line separator, raw non-printable, nested duplicate key, depth, surrogate escapes paired or not, noncharacter, number), in reject precedence order
+  input:
+    kind: skill   # the kind the ingestion context assigns (canonical entry file SKILL.md)
+    cases:
+      agent_skills_form:
+        files: {SKILL.md: "---\nname: pdf-tools\ndisplay_name: PDF Tools\ndescription: Fill PDF forms.\nlicense: Apache-2.0\nversion: 1.2.0\nactivation:\n  type: manual\nallowed-tools: [Read, Bash]\n---\nFill the form.\n"}
+      declared_envelope:
+        files: {SKILL.md: "---\nkind: skill\nid: f47ac10b-58cc-4372-a567-0e02b2c3d479\ndisplay_name: PDF Tools\nlicense:\n  spdx: MIT\npack_id: 11111111-1111-4111-8111-111111111111\n---\nFill the form.\n"}
+      display_name_only:
+        files: {SKILL.md: "---\ndisplay_name: Demo\n---\nUse this skill.\n"}
+      null_value:
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription:\n---\nUse this skill.\n"}
+      empty_map:
+        files: {SKILL.md: "---\n{}\n---\nUse this skill.\n"}
+      empty_block:
+        files: {SKILL.md: "---\n---\nUse this skill.\n"}
+      null_document:
+        files: {SKILL.md: "---\n~\n---\nUse this skill.\n"}
+      comment_only:
+        files: {SKILL.md: "---\n# no metadata yet\n---\nUse this skill.\n"}
+      key_equal_to_kind:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nskill: {x: 1}\n---\nUse this skill.\n"}
+      yaml_1_2_core_schema:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: yes\nmode: 0777\ncreated: 2024-01-01\nn: 1e3\n---\nUse this skill.\n"}
+      kind_mismatch:
+        files: {SKILL.md: "---\nkind: rule\ndisplay_name: Demo\n---\nUse this skill.\n"}
+      kind_invalid:
+        files: {SKILL.md: "---\nkind: widget\ndisplay_name: Demo\n---\nUse this skill.\n"}
+      forbidden_field:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nresolved_version: 1.0.0\n---\nUse this skill.\n"}
+      version_float:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nversion: 1.0\n---\nUse this skill.\n"}
+      version_short_string:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nversion: \"1.0\"\n---\nUse this skill.\n"}
+      duplicate_key:
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndisplay_name: Other\n---\nUse this skill.\n"}
+      non_string_key:
+        files: {SKILL.md: "---\ndisplay_name: Demo\n1: x\n---\nUse this skill.\n"}
+      integer_beyond_ijson:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nn: 9007199254740993\n---\nUse this skill.\n"}
+      null_scalar_document:   # a block whose parse is null declares nothing
+        files: {SKILL.md: "---\nnull\n---\nUse this skill.\n"}
+      tab_separator:   # a tab after the colon separates, as a space does
+        files: {SKILL.md: "---\ndisplay_name:\tDemo\n---\nUse this skill.\n"}
+      merge_key_is_ordinary:   # `<<` is a string key, never a merge
+        files: {SKILL.md: "---\ndisplay_name: Demo\n<<: {x: 1}\n---\nUse this skill.\n"}
+      version_block_scalar:   # the value is "1.2.3" plus LF, which is not SemVer
+        files: {SKILL.md: "---\ndisplay_name: Demo\nversion: |\n  1.2.3\n---\nUse this skill.\n"}
+      anchor_only:   # an anchor rejects even when nothing refers to it
+        files: {SKILL.md: "---\ndisplay_name: Demo\na: &x 1\n---\nUse this skill.\n"}
+      alias:
+        files: {SKILL.md: "---\ndisplay_name: &n Demo\ndescription: *n\n---\nUse this skill.\n"}
+      explicit_tag:   # a core tag whose resolution would succeed
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !!str 123\n---\nUse this skill.\n"}
+      explicit_tag_non_specific:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: ! 123\n---\nUse this skill.\n"}
+      explicit_tag_local:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !foo 123\n---\nUse this skill.\n"}
+      explicit_tag_verbatim:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !<tag:yaml.org,2002:str> 123\n---\nUse this skill.\n"}
+      raw_line_separator:   # a raw U+2028 in a plain value
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: one\u2028two\n---\nUse this skill.\n"}
+      nesting_depth_65:   # the top-level map is level 1, then 64 sequences
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]\n---\nUse this skill.\n"}
+      lone_surrogate:   # malformed (step 1) wins over the forbidden field (step 4)
+        files: {SKILL.md: "---\ndisplay_name: \"\\uD800\"\nresolved_version: 1.0.0\n---\nUse this skill.\n"}
+      noncharacter:
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: \"\\uFFFF\"\n---\nUse this skill.\n"}
+      float_overflow:   # not finite after rounding to binary64
+        files: {SKILL.md: "---\ndisplay_name: Demo\nn: 1e400\n---\nUse this skill.\n"}
+      surrogate_pair_escape:   # a high and low escape pair is two surrogates, never one code point
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: \"\\uD83D\\uDE00\"\n---\nUse this skill.\n"}
+      multiple_documents:   # keys after a `...` document end start a second document
+        files: {SKILL.md: "---\ndisplay_name: Demo\n...\nversion: \"9.9.9\"\n---\nUse this skill.\n"}
+      raw_escape_character:   # a raw ESC (0x1B), outside YAML 1.2 c-printable
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: \"\x1B[1mBold\"\n---\nUse this skill.\n"}
+      not_utf8_block:   # the bytes of display_name: caf<0xE9>, then a valid body
+        files_hex: {SKILL.md: "2d2d2d0a646973706c61795f6e616d653a20636166e90a2d2d2d0a557365207468697320736b696c6c2e0a"}
+      nested_duplicate_key:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx:\n  a: 1\n  a: 2\n---\nUse this skill.\n"}
+      nesting_depth_64:   # the top-level map is level 1, then 63 sequences
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]\n---\nUse this skill.\n"}
+      float_1e20:   # float-resolved, so the integer limit does not apply
+        files: {SKILL.md: "---\ndisplay_name: Demo\nn: 1e20\n---\nUse this skill.\n"}
+      integer_max_safe:   # 2^53-1 is the largest accepted integer
+        files: {SKILL.md: "---\ndisplay_name: Demo\nn: 9007199254740991\n---\nUse this skill.\n"}
+      flow_plain_indicators:   # YAML 1.2 plain scalars that start with `?` and `::` inside a flow sequence
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [?foo, ::vector]\n---\nUse this skill.\n"}
+      flow_continuation_tab:   # a tab after the indentation of a flow continuation line separates
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [a,\n  \tb]\n---\nUse this skill.\n"}
+  expect:
+    agent_skills_form:
+      # metadata_hash preimage before its LF:
+      # {"description":"Fill PDF forms.","display_name":"PDF Tools","skill":{"activation":{"type":"manual"},"allowed-tools":["Read","Bash"],"license":"Apache-2.0","name":"pdf-tools"},"version":"1.2.0"}
+      publisher_section: {description: "Fill PDF forms.", display_name: "PDF Tools", version: "1.2.0", skill: {name: pdf-tools, license: "Apache-2.0", activation: {type: manual}, allowed-tools: [Read, Bash]}}
+      metadata_hash: "2ae2e74c6278ea6947718d16bdd0055de7f128f2de7f6c11686e93b1feadc262"
+    declared_envelope:
+      # {"display_name":"PDF Tools","id":"f47ac10b-58cc-4372-a567-0e02b2c3d479","kind":"skill","license":{"spdx":"MIT"},"pack_id":"11111111-1111-4111-8111-111111111111"}
+      publisher_section: {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "PDF Tools", license: {spdx: MIT}, pack_id: "11111111-1111-4111-8111-111111111111"}
+      metadata_hash: "b0e44b69fabda01d26a1d9678aa9af9806c3c7bd82ada33e1d69e2d87a51f815"
+    display_name_only:
+      # {"display_name":"Demo"}
+      publisher_section: {display_name: Demo}
+      metadata_hash: "d0bc88f19d894e9ff93e2a61302eebf79b9d45705fe660065e3fb6cbe9f1dd49"
+    null_value:
+      publisher_section: {display_name: Demo}
+      metadata_hash: "d0bc88f19d894e9ff93e2a61302eebf79b9d45705fe660065e3fb6cbe9f1dd49"
+    empty_map: {publisher_section: absent, metadata_hash: absent}
+    empty_block: {publisher_section: absent, metadata_hash: absent}
+    null_document: {publisher_section: absent, metadata_hash: absent}
+    comment_only: {publisher_section: absent, metadata_hash: absent}
+    key_equal_to_kind:
+      # {"display_name":"Demo","skill":{"skill":{"x":1}}}
+      publisher_section: {display_name: Demo, skill: {skill: {x: 1}}}
+      metadata_hash: "26b08040e2d68100dee8b4287edc1c7f9131e25b6a56776723e7c23ee37bd2f0"
+    yaml_1_2_core_schema:
+      # {"display_name":"Demo","skill":{"created":"2024-01-01","flag":"yes","mode":777,"n":1000}}
+      publisher_section: {display_name: Demo, skill: {flag: "yes", mode: 777, created: "2024-01-01", n: 1000}}
+      metadata_hash: "6181dda17634146ed0ef1a5e4f2014653b5c1bb367ba5b4736b32f6de0a425f4"
+    kind_mismatch: {error: acif.publisher.frontmatter_kind_mismatch}
+    kind_invalid: {conformant: false, reason: acif.envelope.kind_invalid}
+    forbidden_field: {conformant: false, reason: acif.envelope.forbidden_field, params: {field: resolved_version}}
+    version_float: {conformant: false, reason: acif.envelope.version_invalid}
+    version_short_string: {conformant: false, reason: acif.envelope.version_invalid}
+    duplicate_key: {error: acif.frontmatter.malformed}
+    non_string_key: {error: acif.frontmatter.malformed}
+    integer_beyond_ijson: {error: acif.frontmatter.malformed}
+    null_scalar_document: {publisher_section: absent, metadata_hash: absent}
+    tab_separator:
+      publisher_section: {display_name: Demo}
+      metadata_hash: "d0bc88f19d894e9ff93e2a61302eebf79b9d45705fe660065e3fb6cbe9f1dd49"
+    merge_key_is_ordinary:
+      # {"display_name":"Demo","skill":{"<<":{"x":1}}}
+      publisher_section: {display_name: Demo, skill: {"<<": {x: 1}}}
+      metadata_hash: "2ea807378e4bd761a65bd2f4942eb980b94435252793d3e4cee6ea33abc5055e"
+    version_block_scalar: {conformant: false, reason: acif.envelope.version_invalid}
+    anchor_only: {error: acif.frontmatter.malformed}
+    alias: {error: acif.frontmatter.malformed}
+    explicit_tag: {error: acif.frontmatter.malformed}
+    explicit_tag_non_specific: {error: acif.frontmatter.malformed}
+    explicit_tag_local: {error: acif.frontmatter.malformed}
+    explicit_tag_verbatim: {error: acif.frontmatter.malformed}
+    raw_line_separator: {error: acif.frontmatter.malformed}
+    nesting_depth_65: {error: acif.frontmatter.malformed}
+    lone_surrogate: {error: acif.frontmatter.malformed}
+    noncharacter: {error: acif.frontmatter.malformed}
+    float_overflow: {error: acif.frontmatter.malformed}
+    surrogate_pair_escape: {error: acif.frontmatter.malformed}
+    multiple_documents: {error: acif.frontmatter.malformed}
+    raw_escape_character: {error: acif.frontmatter.malformed}
+    not_utf8_block: {error: acif.frontmatter.malformed}
+    nested_duplicate_key: {error: acif.frontmatter.malformed}
+    nesting_depth_64:
+      # {"display_name":"Demo","skill":{"x":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}
+      publisher_section: {display_name: Demo, skill: {x: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}
+      metadata_hash: "2515b642687173c819f69e20a0b8ade3328c8f11969d39ff9867ba454df7f765"
+    float_1e20:
+      # {"display_name":"Demo","skill":{"n":100000000000000000000}}
+      publisher_section: {display_name: Demo, skill: {n: 100000000000000000000}}
+      metadata_hash: "acf16463b6bb170779a6d2ee27c19634c6be963da5c1c5983229ae43af73ad24"
+    integer_max_safe:
+      # {"display_name":"Demo","skill":{"n":9007199254740991}}
+      publisher_section: {display_name: Demo, skill: {n: 9007199254740991}}
+      metadata_hash: "4ffcb4cbf2ff4a6697477a33af198b8c07e3b49d19190d9c5a471748bd91b82a"
+    flow_plain_indicators:
+      # {"display_name":"Demo","skill":{"x":["?foo","::vector"]}}
+      publisher_section: {display_name: Demo, skill: {x: ["?foo", "::vector"]}}
+      metadata_hash: "6335e0a15a6a3bf9605418a3712ab2630a69edfa5a4a79fe408cc77de52f7729"
+    flow_continuation_tab:
+      # {"display_name":"Demo","skill":{"x":["a","b"]}}
+      publisher_section: {display_name: Demo, skill: {x: [a, b]}}
+      metadata_hash: "4011bb7cdedfec2e6b1896f9a6dc51f9fc20269a861ce0ec1f2ab256162aeb19"
 
 - id: TV-L3-a
   spec: "[ACIF-REGISTRY] §7"

@@ -31,10 +31,17 @@ from ..vectors import Vector
 
 def _body_files(body: dict[str, Any]) -> dict[str, Any]:
     files = dict(body.get("files", {}))
+    # File content given as hex bytes, for content that is not UTF-8.
+    for path, hex_content in body.get("files_hex", {}).items():
+        files[path] = bytes.fromhex(hex_content)
     for link in body.get("symlinks", []):
         files[link["path"]] = {"symlink": link["target"]}
     for raw_path in body.get("files_raw_paths", []):
         files[raw_path] = "collision probe\n"
+    # A path given as hex bytes, for a name that is not UTF-8; the fixture
+    # writer creates it from those bytes.
+    for hex_path in body.get("files_raw_path_hex", []):
+        files[bytes.fromhex(hex_path).decode("utf-8", "surrogateescape")] = "collision probe\n"
     return files
 
 
@@ -307,6 +314,19 @@ def tv_13(vector: Vector, session: Any, ctx: Any):
     return result
 
 
+@binding("TV-14")
+def tv_14(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    for case, expected in vector.data["expect"].items():
+        response = send(result, session, ctx, _ingest_body(ctx, inp[case]))
+        if "error" in expected:
+            assert_error(result, case, response, expected["error"])
+        else:
+            assert_result_field(result, case, response, "body_hash", expected["body_hash"])
+    return result
+
+
 @binding("TV-L2-a")
 def tv_l2_a(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
@@ -454,6 +474,26 @@ def tv_l2_f(vector: Vector, session: Any, ctx: Any):
             "values": exp["diagnostic"]["names_values"],
         },
     )
+    return result
+
+
+@binding("TV-L2-g")
+def tv_l2_g(vector: Vector, session: Any, ctx: Any):
+    result = result_for(vector)
+    inp = vector.data["input"]
+    for case, expected in vector.data["expect"].items():
+        response = send(result, session, ctx, _ingest_body(ctx, inp["cases"][case], kind=inp["kind"]))
+        if "error" in expected:
+            assert_error(result, case, response, expected["error"])
+        elif "conformant" in expected:
+            assert_result_field(result, case, response, "conformant", expected["conformant"])
+            assert_verdict_reason(result, case, response, expected["reason"], session, expected.get("params"))
+        elif expected["publisher_section"] == "absent":
+            assert_present_absent(result, case, response, "publisher_section", expected["publisher_section"])
+            assert_present_absent(result, case, response, "metadata_hash", expected["metadata_hash"])
+        else:
+            assert_result_field(result, case, response, "publisher_section", expected["publisher_section"])
+            assert_result_field(result, case, response, "metadata_hash", expected["metadata_hash"])
     return result
 
 

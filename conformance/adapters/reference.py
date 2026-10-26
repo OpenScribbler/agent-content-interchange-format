@@ -28,9 +28,18 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "reference"))
 
+from acif_frontmatter import (  # noqa: E402
+    FrontmatterReject,
+    check_values,
+    frontmatter_block,
+    load_core,
+    publisher_section_from_mapping,
+)
 from acif_hash import (  # noqa: E402
+    BodyReject,
     body_hash_frontmatter_type,
     canonical_text,
+    check_raw_paths,
     classify,
     jcs,
     metadata_hash,
@@ -190,8 +199,13 @@ def main() -> int:
             response = {"unsupported": True}
         except SpecError as exc:
             response = {"ok": False, "error": exc.error, "diagnostics": exc.diagnostics}
+        except BodyReject as exc:
+            response = {"ok": False, "error": exc.error, "diagnostics": []}
         except _ConformanceFalse as exc:
-            response = {"ok": True, "result": {"conformant": False, "reason": exc.reason}}
+            result = {"conformant": False, "reason": exc.reason}
+            if exc.params:
+                result["params"] = exc.params
+            response = {"ok": True, "result": result}
         except Exception as exc:  # pragma: no cover - deliberately adapter-internal
             response = {"ok": False, "error": f"adapter: {exc}"}
         emit(response)
@@ -351,19 +365,23 @@ def handle_frontmatter_ingest(kind: str, inp: dict[str, Any]) -> dict[str, Any]:
     entry_file = inp.get("entry_file")
     if not isinstance(body_root, str) or not isinstance(entry_file, str):
         raise Unsupported()
-    files = _read_body_files(Path(body_root))
+    files = _read_body_files(Path(body_root), entry_file)
     if entry_file not in files:
         raise SpecError("acif.body.empty")
     classification = classify(files, entry_file)
     body_hash = body_hash_frontmatter_type(files, entry_file)
-    frontmatter = _frontmatter_from_bytes(files[entry_file])
+    # [ACIF-PUBLISHER] §5.6: the body rejects above come first; then the
+    # ingestion context assigns `kind`, and the frontmatter is parsed under
+    # the YAML 1.2 core schema and placed.
+    block = _frontmatter_step(frontmatter_block, files[entry_file])
+    parsed = None if block is None else _frontmatter_step(load_core, block)
+    publisher_section = _frontmatter_step(publisher_section_from_mapping, parsed, kind)
     result: dict[str, Any] = {
         "classification": classification,
         "body_hash": body_hash,
-        "canonical": _canonical_frontmatter_block(kind, frontmatter),
+        "canonical": _canonical_frontmatter_block(kind, parsed if isinstance(parsed, dict) else {}),
     }
-    if frontmatter:
-        publisher_section = {"kind": kind, kind: frontmatter}
+    if publisher_section is not None:
         result["publisher_section"] = publisher_section
         result["metadata_hash"] = metadata_hash(publisher_section)
         result["canonical_bytes"] = jcs(publisher_section).decode("utf-8")
@@ -388,14 +406,28 @@ def _frontmatter_provider_result(kind: str, provider: dict[str, Any]) -> dict[st
     frontmatter = content.get("frontmatter", content)
     if not isinstance(frontmatter, dict):
         raise Unsupported()
-    publisher_section = {"kind": "agent", "agent": dict(frontmatter)}
+    # Step 1's value conditions hold for a JSON mapping as for a YAML parse.
+    _frontmatter_step(check_values, frontmatter)
+    publisher_section = _frontmatter_step(publisher_section_from_mapping, dict(frontmatter), "agent")
     canonical = _canonical_frontmatter_block("agent", frontmatter, provider=str(tag))
-    return {
-        "canonical": canonical,
-        "publisher_section": publisher_section,
-        "metadata_hash": metadata_hash(publisher_section),
-        "canonical_bytes": jcs(publisher_section).decode("utf-8"),
-    }
+    result: dict[str, Any] = {"canonical": canonical}
+    if publisher_section is not None:
+        result["publisher_section"] = publisher_section
+        result["metadata_hash"] = metadata_hash(publisher_section)
+        result["canonical_bytes"] = jcs(publisher_section).decode("utf-8")
+    return result
+
+
+def _frontmatter_step(fn: Any, *args: Any) -> Any:
+    """Run one [ACIF-PUBLISHER] §5.6 step, mapping its reject onto the
+    adapter-protocol transport: `reject (verdict)` identifiers as a
+    `{conformant: false}` verdict, the others as an ingest error."""
+    try:
+        return fn(*args)
+    except FrontmatterReject as exc:
+        if exc.verdict:
+            raise _ConformanceFalse(exc.error, exc.params) from None
+        raise SpecError(exc.error) from None
 
 
 def _looks_like_publisher_section(value: dict[str, Any]) -> bool:
@@ -464,6 +496,14 @@ def canonical_hook(hook: dict[str, Any], body_root: str | None) -> tuple[dict[st
     if not isinstance(handlers, list) or not handlers:
         raise SpecError("acif.hook.handlers_missing")
 
+    # [ACIF-HOOK] §9.2: the [ACIF-CORE] §7.4 step 3 path rejects run over
+    # every referenced path before any acif.hook.script_path_invalid check.
+    check_raw_paths(
+        script["path"]
+        for handler in handlers if isinstance(handler, dict) and isinstance(handler.get("scripts"), list)
+        for script in handler["scripts"]
+        if isinstance(script, dict) and script.get("type") == "file" and isinstance(script.get("path"), str)
+    )
     referenced_files: dict[str, bytes] = {}
     canonical_handlers = []
     for handler in handlers:
@@ -963,9 +1003,10 @@ def _parse_rfc3339(value: Any) -> dt.datetime:
 
 
 class _ConformanceFalse(Exception):
-    def __init__(self, reason: str):
+    def __init__(self, reason: str, params: dict[str, Any] | None = None):
         super().__init__(reason)
         self.reason = reason
+        self.params = params or {}
 
 
 def handle_fetch_uri(inp: dict[str, Any]) -> dict[str, Any]:
@@ -1045,9 +1086,10 @@ def _open_no_redirect(url: str, trust_ca: str, resolve: dict[str, str]) -> dict[
         return {"status": exc.code, "headers": exc.headers}
 
 
-def _read_body_files(root: Path) -> dict[str, bytes]:
+def _read_body_files(root: Path, entry_file: str) -> dict[str, bytes]:
+    # [ACIF-CORE] §7.4 step order is reject precedence: symlink (step 2),
+    # then control character and NFC collision (step 3), then empty.
     files: dict[str, bytes] = {}
-    normalized_paths: set[str] = set()
     for dirpath, dirnames, filenames in os.walk(root):
         current = Path(dirpath)
         for dirname in list(dirnames):
@@ -1057,38 +1099,35 @@ def _read_body_files(root: Path) -> dict[str, bytes]:
             path = current / filename
             if path.is_symlink():
                 raise SpecError("acif.body.symlink")
-            rel = path.relative_to(root).as_posix()
-            nfc = unicodedata.normalize("NFC", rel)
-            if nfc in normalized_paths:
-                raise SpecError("acif.body.path_collision")
-            normalized_paths.add(nfc)
-            files[rel] = path.read_bytes()
+            files[path.relative_to(root).as_posix()] = path.read_bytes()
+    enumerated = [rel for rel in files if not any(part in VCS_DIRS for part in rel.split("/"))]
+    if classify(files, entry_file) == "multi-file":
+        # The §7.4 manifest runs only for a multi-file body (§7.2).
+        check_raw_paths(enumerated)
+    normalized_paths: set[str] = set()
+    for rel in enumerated:
+        nfc = unicodedata.normalize("NFC", rel)
+        if nfc in normalized_paths:
+            raise SpecError("acif.body.path_collision")
+        normalized_paths.add(nfc)
     publishable = [rel for rel in files if _publishable_body_path(rel)]
     if not publishable:
         raise SpecError("acif.body.empty")
     return files
 
 
+VCS_DIRS = frozenset({".git", ".svn", ".hg", ".bzr", "_darcs", ".fossil"})
+
+
 def _publishable_body_path(rel: str) -> bool:
     parts = rel.split("/")
-    if any(part in {".git", ".svn", ".hg", ".bzr", "_darcs", ".fossil"} for part in parts):
+    if any(part in VCS_DIRS for part in parts):
         return False
     if len(parts) == 1:
         upper = parts[0].upper()
         if upper.startswith("LICENSE") or upper.startswith("README") or parts[0] == "acif-sidecar.yaml":
             return False
     return True
-
-
-def _frontmatter_from_bytes(data: bytes) -> dict[str, Any]:
-    text = canonical_text(data).decode("utf-8")
-    if not text.startswith("---\n"):
-        return {}
-    end = text.find("\n---\n", 4)
-    if end == -1:
-        return {}
-    parsed = yaml.safe_load(text[4:end]) or {}
-    return parsed if isinstance(parsed, dict) else {}
 
 
 def _parse_structured(value: str) -> Any:
