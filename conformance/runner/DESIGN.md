@@ -9,7 +9,7 @@ document governs.
 ## 1. Goal and non-goals
 
 The runner executes the published conformance vectors
-(`conformance/vectors/*.yaml`: 189 vectors — 177 static, 10 mock-transport,
+(`conformance/vectors/*.yaml`: 191 vectors — 179 static, 10 mock-transport,
 2 mock-crawl — across 12 catalogs) against an **implementation under test
 (IUT)** and produces a conformance report. The specs graduate from Draft
 when two independent implementations pass all vectors in their claimed

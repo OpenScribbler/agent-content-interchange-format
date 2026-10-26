@@ -21,6 +21,8 @@ class FixtureError(RuntimeError):
 def probe_environment() -> dict[str, dict[str, Any]]:
     return {
         "byte_preserving_names": _probe_byte_preserving_names(),
+        "control_char_names": _probe_control_char_names(),
+        "non_utf8_names": _probe_non_utf8_names(),
         "symlink_creation": _probe_symlink_creation(),
         "case_sensitive": _probe_case_sensitive(),
         "mock_http_tls": _probe_mock_http_tls(),
@@ -39,6 +41,40 @@ def _probe_byte_preserving_names() -> dict[str, Any]:
             ok = len(entries) == 2 and len(set(entries)) == 2
             return {"ok": ok, "detail": f"{len(entries)} distinct byte entries"}
         except OSError as exc:
+            return {"ok": False, "detail": str(exc)}
+
+
+# Control characters a fixture path may carry ([ACIF-CORE] §7.4 step 3).
+# U+0000 is absent: no POSIX or Windows filesystem can hold it in a name.
+_CONTROL_CHARS = frozenset(chr(c) for c in range(0x01, 0x20)) | {"\x7f"}
+
+
+def _probe_control_char_names() -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="acif-probe-ctrl-") as tmp:
+        root = Path(tmp)
+        names = ["a\nb", "a\x1fb", "a\x7fb"]
+        try:
+            for name in names:
+                (root / name).write_text(name, encoding="utf-8")
+            entries = set(os.listdir(root))
+            ok = set(names) <= entries
+            return {"ok": ok, "detail": f"{len(entries)} entries"}
+        except OSError as exc:
+            return {"ok": False, "detail": str(exc)}
+
+
+def _probe_non_utf8_names() -> dict[str, Any]:
+    # A file name whose bytes are not UTF-8 ([ACIF-CORE] §7.4 step 3). Linux
+    # filesystems hold one; APFS and NTFS refuse or rewrite it.
+    with tempfile.TemporaryDirectory(prefix="acif-probe-utf8-") as tmp:
+        name = b"a\xffb"
+        try:
+            fd = os.open(os.path.join(os.fsencode(tmp), name), os.O_WRONLY | os.O_CREAT, 0o600)
+            os.close(fd)
+            entries = os.listdir(os.fsencode(tmp))
+            ok = name in entries and os.fsdecode(name) in os.listdir(tmp)
+            return {"ok": ok, "detail": f"{len(entries)} entries"}
+        except (OSError, ValueError) as exc:
             return {"ok": False, "detail": str(exc)}
 
 
@@ -84,6 +120,11 @@ def required_capabilities(files: dict[str, Any]) -> set[str]:
         caps.add("byte_preserving_names")
     if len({p.lower() for p in paths}) != len(paths):
         caps.add("case_sensitive")
+    if any(ch in _CONTROL_CHARS for p in paths for ch in p):
+        caps.add("control_char_names")
+    # A fixture path decoded from non-UTF-8 bytes carries lone surrogates.
+    if any(0xD800 <= ord(ch) <= 0xDFFF for p in paths for ch in p):
+        caps.add("non_utf8_names")
     return caps
 
 

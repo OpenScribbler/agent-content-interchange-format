@@ -18,16 +18,19 @@ restated normatively in [ACIF-CORE] §7 (MOAT credited informatively). This
 script is informative: the published vectors in ../vectors/ are the normative
 authority, and where this script and a vector disagree, the vector wins.
 
-The canonical JSON serializer here implements RFC 8785 (JCS) for the value
-space the ACIF vectors exercise: objects, arrays, strings, booleans, null,
-and integers within the IEEE-754 exact range. It does not implement JCS
-number serialization for non-integer floats; ACIF canonical forms carry none.
+The canonical JSON serializer here implements RFC 8785 (JCS) for the I-JSON
+value space: objects, arrays, strings, booleans, null, integers within the
+IEEE-754 exact range, and finite floats serialized with the ECMAScript
+Number-to-string rule RFC 8785 §3.2.2.3 adopts (frontmatter values parsed
+under the YAML 1.2 core schema can be floats; [ACIF-PUBLISHER] §5.6).
 """
 from __future__ import annotations
 
 import hashlib
 import json
+import math
 import unicodedata
+from decimal import Decimal
 from pathlib import Path
 
 TEXT_EXTENSIONS = frozenset({
@@ -48,6 +51,44 @@ VCS_DIRS = frozenset({".git", ".svn", ".hg", ".bzr", "_darcs", ".fossil"})
 # Registry-generated sidecar filename, excluded at the body root only
 # ([ACIF-CORE] §7.5). The name is registry-conventional; vectors use this one.
 SIDECAR_NAMES = frozenset({"acif-sidecar.yaml"})
+
+
+class BodyReject(ValueError):
+    """A [ACIF-CORE] §7.4 reject, carrying its §8.7 identifier."""
+
+    def __init__(self, error: str, path: str):
+        super().__init__(f"{error}: {path!r}")
+        self.error = error
+        self.path = path
+
+
+def _has_control_char(rel: str) -> bool:
+    return any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in rel)
+
+
+def _is_utf8(rel: str) -> bool:
+    """A name read from the filesystem decodes with surrogateescape, so a byte
+    that is not UTF-8 arrives as a lone surrogate; a surrogate in a name taken
+    from JSON or YAML is not a Unicode scalar value either. Neither encodes as
+    UTF-8."""
+    return not any(0xD800 <= ord(ch) <= 0xDFFF for ch in rel)
+
+
+def check_raw_paths(paths) -> None:
+    """[ACIF-CORE] §7.4 step 3, over the raw relative paths before NFC. The
+    UTF-8 scan covers every path before the control-character scan starts,
+    and both finish before any collision check: a path that is not valid
+    UTF-8 rejects with acif.body.path_not_utf8, then a path containing
+    U+0000–U+001F or U+007F in any component rejects with
+    acif.body.path_control_char. U+0080–U+009F are not control characters for
+    this rule."""
+    paths = list(paths)
+    for rel in paths:
+        if not _is_utf8(rel):
+            raise BodyReject("acif.body.path_not_utf8", rel)
+    for rel in paths:
+        if _has_control_char(rel):
+            raise BodyReject("acif.body.path_control_char", rel)
 
 
 # ── canonical text form ([ACIF-CORE] §7.3) ──────────────────────────────────
@@ -139,11 +180,11 @@ def directory_manifest(files: dict[str, bytes], entry_file: str | None = None) -
     """[ACIF-CORE] §7.4 manifest over {relpath: bytes} (symlinks unrepresentable
     here). The entry file's per-file hash input is its frontmatter-stripped
     canonical text form ([ACIF-CORE] §7.3)."""
+    enumerated = {rel: data for rel, data in files.items() if not any(p in VCS_DIRS for p in rel.split("/"))}
+    check_raw_paths(enumerated)
     entries = []
-    for rel, data in files.items():
+    for rel, data in enumerated.items():
         parts = rel.split("/")
-        if any(p in VCS_DIRS for p in parts):
-            continue
         if len(parts) == 1 and rel in SIDECAR_NAMES:
             continue
         nfc = unicodedata.normalize("NFC", rel)
@@ -171,7 +212,7 @@ def body_hash_frontmatter_type(files: dict[str, bytes], entry_file: str) -> str:
 # ── canonical JSON (RFC 8785 subset; [ACIF-CORE] §8.6) ───────────────────────
 
 def jcs(value) -> bytes:
-    """JCS for objects/arrays/strings/bools/null/ints (the ACIF value space)."""
+    """JCS over the I-JSON value space (RFC 8785)."""
     def enc(v):
         if isinstance(v, dict):
             items = sorted(v.items(), key=lambda kv: kv[0].encode("utf-16-be"))
@@ -184,6 +225,8 @@ def jcs(value) -> bytes:
             return "null"
         if isinstance(v, int):
             return str(v)
+        if isinstance(v, float):
+            return es6_number(v)
         if isinstance(v, str):
             return enc_str(v)
         raise TypeError(f"unsupported JCS type: {type(v)}")
@@ -192,6 +235,34 @@ def jcs(value) -> bytes:
         return json.dumps(s, ensure_ascii=False, separators=(",", ":"))
 
     return enc(value).encode("utf-8")
+
+
+def es6_number(x: float) -> str:
+    """ECMAScript Number.prototype.toString for a finite double, the number
+    serialization RFC 8785 §3.2.2.3 pins: shortest round-trip digits, no
+    trailing ".0", exponent form outside [1e-6, 1e21)."""
+    if math.isnan(x) or math.isinf(x):
+        raise TypeError("JCS cannot serialize NaN or Infinity")
+    if x == 0:
+        return "0"
+    sign = "-" if x < 0 else ""
+    _, digit_tuple, exp = Decimal(repr(abs(x))).as_tuple()
+    digits = "".join(str(d) for d in digit_tuple).lstrip("0")
+    stripped = digits.rstrip("0")
+    exp += len(digits) - len(stripped)
+    s, k = stripped, len(stripped)
+    n = k + exp  # value = 0.s × 10^n
+    if k <= n <= 21:
+        out = s + "0" * (n - k)
+    elif 0 < n <= 21:
+        out = s[:n] + "." + s[n:]
+    elif -6 < n <= 0:
+        out = "0." + "0" * (-n) + s
+    else:
+        e = n - 1
+        mantissa = s[0] + ("." + s[1:] if k > 1 else "")
+        out = f"{mantissa}e{'+' if e > 0 else '-'}{abs(e)}"
+    return sign + out
 
 
 # ── sidecar-only preimage ([ACIF-CORE] §7.7; [ACIF-HOOK] §9; [ACIF-MCP] §8) ──
@@ -206,6 +277,7 @@ def sidecar_only_body_hash(wiring: dict, referenced_files: dict[str, bytes]) -> 
     ([ACIF-HOOK] §9.3, [ACIF-MCP] §8.3), inline content LF-normalized.
     """
     if referenced_files:
+        check_raw_paths(referenced_files)
         entries = []
         for rel, data in referenced_files.items():
             nfc = unicodedata.normalize("NFC", rel)

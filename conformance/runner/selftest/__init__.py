@@ -37,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         ("source-mechanisms sync", check_source_mechanisms),
         ("hook event tables sync", check_hook_event_tables),
         ("install-entry-points sync", check_install_entry_points),
+        ("reference frontmatter limits", check_reference_frontmatter_limits),
         ("absent fields never satisfy a relation", check_absent_relations),
         ("render-d structural lossy check", check_render_d_structural),
         ("protocol partial-line timeout", check_partial_line_timeout),
@@ -591,6 +592,46 @@ def check_hook_event_tables() -> None:
             errors.append(f"A.4 {key}: spec {spec_pins.get(key)} != reference {reference.HOOK_RENDER_PINS.get(key)}")
     if errors:
         raise AssertionError("; ".join(errors))
+
+
+def check_reference_frontmatter_limits() -> None:
+    """Malformed conditions whose inputs are too large or too platform-bound for a vector literal."""
+    import importlib.util
+
+    reference_dir = str(CONFORMANCE_ROOT / "reference")
+    if reference_dir not in sys.path:
+        sys.path.insert(0, reference_dir)
+    module_spec = importlib.util.spec_from_file_location("_acif_reference_frontmatter", CONFORMANCE_ROOT / "reference" / "acif_frontmatter.py")
+    frontmatter = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(frontmatter)
+    cases = {
+        "integer text past the decimal-conversion limit": "n: " + "9" * 4301,
+        "nesting depth 500": "x: " + "[" * 499 + "]" * 499,
+        "raw U+0085 inside a double-quoted scalar": 'display_name: "a\u0085b"',
+        "anchor without an alias": "a: &x 1",
+    }
+    errors: list[str] = []
+    for name, text in cases.items():
+        try:
+            frontmatter.load_core(text)
+        except frontmatter.FrontmatterReject as exc:
+            if exc.error != "acif.frontmatter.malformed":
+                errors.append(f"{name}: rejected with {exc.error}")
+        except Exception as exc:
+            errors.append(f"{name}: raised {type(exc).__name__} instead of acif.frontmatter.malformed")
+        else:
+            errors.append(f"{name}: accepted")
+    if frontmatter.load_core("x: " + "[" * 63 + "]" * 63) != {"x": _nested_list(63)}:
+        errors.append("nesting depth 64: not accepted")
+    if errors:
+        raise AssertionError("; ".join(errors))
+
+
+def _nested_list(depth: int) -> list:
+    value: list = []
+    for _ in range(depth - 1):
+        value = [value]
+    return value
 
 
 INSTALL_ROW_RE = re.compile(

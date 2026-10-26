@@ -196,8 +196,18 @@ applies the [ACIF-REGISTRY] §6 pack-record variant. The context key is
 additive and needs no protocol bump (§1).
 
 Rejections use the error response with the spec-minted identifier
-(`acif.body.symlink`, `acif.body.path_collision`, `acif.body.empty`,
+(`acif.body.symlink`, `acif.body.path_not_utf8`,
+`acif.body.path_control_char`,
+`acif.body.path_collision`, `acif.body.empty`,
+`acif.frontmatter.malformed`, `acif.publisher.frontmatter_kind_mismatch`,
 `acif.hook.script_file_missing`, `acif.hook.script_path_invalid`, …).
+A `reject (verdict)` condition ([ACIF-CORE] §8.7) that frontmatter
+ingestion reaches ([ACIF-PUBLISHER] §5.6 steps 4, 5 and 7:
+`acif.envelope.forbidden_field`, `acif.envelope.kind_invalid`,
+`acif.envelope.id_invalid`, `acif.envelope.version_invalid`) travels as
+the §3 verdict instead, `{conformant: false, reason, params}`, as it does
+for an authored sidecar. Whichever channel it uses, the first failing
+step in the §5.6 order is the one reported.
 
 ### 4.2 `derive_pack_id`
 
@@ -404,7 +414,7 @@ payload-pin self-check above does not govern them:
 
 | Identifier | Required params | Asserting site |
 |---|---|---|
-| `acif.envelope.forbidden_field` | `field` (the offending reserved name) | TV-6 |
+| `acif.envelope.forbidden_field` | `field` (the offending reserved name) | TV-6, TV-L2-g `forbidden_field` |
 | `acif.requires.orphan_key` | `key` (the offending `requires` key) | the six §9.4 orphan-key vectors (Appendix B) |
 
 ## Appendix B — Verdict-reason identifier map (informative)
@@ -427,6 +437,11 @@ per-case discrimination lives in each case's input key and the asserted
 | TV-11 case_2 | `id-not-uuid-v4` | `acif.envelope.id_invalid` |
 | TV-11 case_3 | `version-not-semver` | `acif.envelope.version_invalid` |
 | TV-11 case_4 | `license-spdx-not-identifier` | `acif.envelope.license_spdx_invalid` |
+| TV-L2-g `kind_invalid` | *none (minted at authoring)* | `acif.envelope.kind_invalid` |
+| TV-L2-g `forbidden_field` | *none (minted at authoring)* | `acif.envelope.forbidden_field` |
+| TV-L2-g `version_float` | *none (minted at authoring)* | `acif.envelope.version_invalid` |
+| TV-L2-g `version_short_string` | *none (minted at authoring)* | `acif.envelope.version_invalid` |
+| TV-L2-g `version_block_scalar` | *none (minted at authoring)* | `acif.envelope.version_invalid` |
 | TV-L3-b | `missing-provenance-tag` | `acif.registry.provenance_tag_missing` |
 | TV-L3-c | `missing-method-stamp` | `acif.registry.method_stamp_missing` |
 | TV-FRESH-f | `rfc3339-explicit-offset-required` | `acif.registry.timestamp_offset_missing` |

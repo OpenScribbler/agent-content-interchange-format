@@ -49,7 +49,19 @@ Dependency direction: every other ACIF document depends normatively on this one.
 
 **sidecar** — a generated file carrying an item's canonical metadata, separate from the item's source file(s).
 
-**frontmatter** — a YAML metadata block at the top of a Markdown source file, delimited by `---` lines. Frontmatter is interpreted per the YAML 1.2 core schema; a block whose top level is not a map, or that repeats a key, is malformed and MUST be rejected at ingestion.
+**frontmatter** — a YAML metadata block at the top of a Markdown source file, delimited by `---` lines. Frontmatter is interpreted per the YAML 1.2 core schema, and each value is the JSON value of that parse, not the text as written: `yes` is the string `"yes"`, `0777` is the integer 777, `2024-01-01` is the string `"2024-01-01"`, `1e3` is the number 1000, and `<<` is an ordinary string key, never a merge. A block is malformed, and MUST be rejected at ingestion with `acif.frontmatter.malformed`, when:
+
+- its top level is not a map;
+- it repeats a key at any nesting level, or any key is not a string;
+- it carries an anchor (`&a`) or an alias (`*a`);
+- it carries an explicit tag of any form: non-specific (`!`), core (`!!str`, `!!bool`), local (`!foo`), or verbatim (`!<tag:yaml.org,2002:str>`);
+- it contains a raw U+0085, U+2028, or U+2029 anywhere in the block. The escapes `\N`, `\L`, `\P`, `\u0085`, `\u2028`, and `\u2029` inside a double-quoted scalar stay legal;
+- it nests collections more than 64 levels deep, counting the top-level map as level 1;
+- a key or a string value contains a code point that is not a Unicode scalar value (a surrogate, U+D800 through U+DFFF, which only an escape can produce) or is a noncharacter (U+FDD0 through U+FDEF, or any code point whose low 16 bits are FFFE or FFFF);
+- a float-resolved scalar is not finite after rounding to the nearest IEEE 754 binary64 value (`.nan`, `.inf`, `-.inf`, `1e400`). A float that only loses precision rounds to nearest and is accepted;
+- an int-resolved scalar lies beyond ±(2^53−1). The limit applies to int-resolved scalars only: `1e20` resolves as a float and is accepted.
+
+The string and number conditions fix how ACIF applies I-JSON [RFC7493] to frontmatter. Every condition belongs to the parse and is checked before anything built from its value ([ACIF-PUBLISHER] §5.6 step 1). An implementation SHOULD check anchors, aliases, tags, and depth on the YAML event stream before it builds any value, so that a hostile block is rejected before it expands. Floats serialize per §8.6. A block declares nothing when its parse is null (an empty block, a block of whitespace or comments only, or a block holding only a null scalar such as `~` or `null`) or when it is the empty map `{}`: the item has no `publisher_section` and no `metadata_hash` ([ACIF-PUBLISHER] §5.6). *(Informative: anchors and aliases let a few hundred bytes expand to gigabytes of `metadata_hash` input, and YAML 1.1 parsers read a raw U+0085, U+2028, or U+2029 as a line break where YAML 1.2 parsers keep it as content, so both are rejected rather than resolved. The diagnostic should name the fix: write the value itself instead of an alias, quote a value instead of tagging it (`flag: "garbage"`, not `flag: !!bool garbage`), and replace a raw U+2028 with the `\u2028` escape inside a double-quoted string, or remove it.)*
 
 **publisher** — the party that authors and hosts an item's source.
 
@@ -137,7 +149,7 @@ Content types whose only carrier is the sidecar are referred to as **sidecar-onl
 
 Requirements:
 
-- In a sidecar, `kind` is REQUIRED (the file has no implicit type). In frontmatter, `kind` is OPTIONAL and MAY be inferred from the canonical filename (e.g., `SKILL.md` → `kind: skill`).
+- In a sidecar, `kind` is REQUIRED (the file has no implicit type). In frontmatter, `kind` is OPTIONAL: an undeclared kind is the kind the ingestion context assigns the item (for example, the canonical filename `SKILL.md` assigns `skill`), and a declared kind that differs from it is rejected ([ACIF-PUBLISHER] §5.6).
 - Data flows sidecar → frontmatter, never the reverse. Tooling that projects canonical values into source files MUST read from the canonical sidecar. Reconciliation rules for conflicts are defined in [ACIF-PUBLISHER].
 - Registries MUST NOT write to source files. All registry-generated metadata lives in sidecars.
 
@@ -201,11 +213,17 @@ Each file in the body is classified **text** or **binary**:
 
 1. Enumerate all regular files under the body root, excluding any path containing a version-control metadata directory component: `.git`, `.svn`, `.hg`, `.bzr`, `_darcs`, `.fossil`.
 2. Symbolic links anywhere in the body MUST be rejected at ingestion with `acif.body.symlink`.
-3. For each file, compute the relative path from the body root in POSIX form (`/` separators), normalized to Unicode NFC. Two distinct source paths that normalize to the same NFC relative path MUST be rejected at ingestion with `acif.body.path_collision`.
+3. For each file, compute the relative path from the body root in POSIX form (`/` separators). Then run two scans over the raw paths, before any normalization, each over every path before the next begins:
+   1. A relative path that is not valid UTF-8 (on a platform whose file names are UTF-16, such as Windows, one that is not valid UTF-16) MUST be rejected with `acif.body.path_not_utf8`.
+   2. A relative path any of whose components (file or directory name) contains a control character, U+0000 through U+001F or U+007F, MUST be rejected with `acif.body.path_control_char`. U+0080 through U+009F are not control characters for this rule.
+
+   Both scans complete before collision detection, so a body holding a control-character path and an NFC collision rejects with `acif.body.path_control_char`. Normalize each path to Unicode NFC. Two distinct source paths that normalize to the same NFC relative path MUST be rejected at ingestion with `acif.body.path_collision`.
 4. Compute each file's per-file hash per §7.3 (for the canonical entry file, over its frontmatter-stripped canonical text form).
 5. Sort entries by the raw UTF-8 byte order of their relative paths.
 6. Build the manifest: one line per entry, `<lowercase-hex-hash><SP><SP><relative-path><LF>`.
 7. The directory hash is `sha256:` followed by the lowercase hex SHA-256 of the manifest bytes.
+
+*(Informative: the step 3 path rejects are part of this algorithm, so every computation of a directory hash fails on such a path — ingestion, a consumer's recompute, and a signer alike. A manifest line is LF-terminated, and a path holding LF or CR would forge or blur a line boundary. A path that is not UTF-8 has no manifest spelling, and a lossy decode, such as replacing each invalid byte with U+FFFD, would give two different trees one manifest. The diagnostic should show the path escaped, for example `Icon\r` or `notes\xff.md`, and name the fix: rename the file. The rules remove inputs only, so no previously computable hash changes. Test vector TV-14 pins them.)*
 
 A body containing no files after exclusions is unpublishable for frontmatter-bearing content types; a canonicalizer detecting this condition MUST report `acif.body.empty`.
 
@@ -279,7 +297,10 @@ The error identifiers this document mints are:
 |---|---|---|
 | `acif.body.symlink` | reject | Symbolic link anywhere in the body at ingestion (§7.4) |
 | `acif.body.path_collision` | reject | Two distinct source paths NFC-normalize to the same relative path (§7.4) |
+| `acif.body.path_not_utf8` | reject | A body relative path is not valid UTF-8 (not valid UTF-16 where file names are UTF-16); checked over every path before the control-character scan (§7.4) |
+| `acif.body.path_control_char` | reject | A body relative path contains U+0000–U+001F or U+007F in any component, read before NFC normalization; checked over every path before collision detection (§7.4) |
 | `acif.body.empty` | reject | Frontmatter-bearing body contains no files after exclusions (§7.4) |
+| `acif.frontmatter.malformed` | reject | Frontmatter top level not a map; a duplicate or non-string key; an anchor, alias, or explicit tag; a raw U+0085, U+2028, or U+2029; nesting deeper than 64; a key or string that is not Unicode scalar values or holds a noncharacter; a non-finite float; or an int beyond ±(2^53−1) (§2) |
 | `acif.envelope.kind_invalid` | reject (verdict) | `kind` not one of the seven closed-enum values by exact byte comparison (§5.1) |
 | `acif.envelope.id_invalid` | reject (verdict) | `id` not a UUID version 4 — except a pack record with `source_kind: inferred`, whose `id` MUST be a valid UUID version 5 (§5.1) |
 | `acif.envelope.version_invalid` | reject (verdict) | Declared `version` not valid Semantic Versioning 2.0.0 (§5.1) |
@@ -353,6 +374,7 @@ A canonical body MAY reference another item (e.g., a hook naming the skill it ac
 
 - [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, RFC 2119, March 1997. <https://www.rfc-editor.org/rfc/rfc2119>
 - [RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", BCP 14, RFC 8174, May 2017. <https://www.rfc-editor.org/rfc/rfc8174>
+- [RFC7493] Bray, T., Ed., "The I-JSON Message Format", RFC 7493, March 2015. <https://www.rfc-editor.org/rfc/rfc7493>
 - [RFC8785] Rundgren, A., Jordan, B., Erdtman, S., "JSON Canonicalization Scheme (JCS)", RFC 8785, June 2020. <https://www.rfc-editor.org/rfc/rfc8785>
 - [RFC9562] Davis, K., Peabody, B., Leach, P., "Universally Unique IDentifiers (UUIDs)", RFC 9562, May 2024. <https://www.rfc-editor.org/rfc/rfc9562>
 - [SEMVER] Preston-Werner, T., "Semantic Versioning 2.0.0". <https://semver.org/spec/v2.0.0.html>
@@ -416,3 +438,5 @@ This document was promoted from the ACIF design record (`SHAPE.md`, Decisions #1
 Amended after the second independent review (2026-07-11): the §7.3 entry-file frontmatter strip generalized to multi-file bodies, pinning in prose the single-coverage behavior that §7.8 and vector TV-SKILL (k) already required (the informative reference script was corrected to match — the vectors were authoritative, and the script disagreed with them); the §7.2 exclusion-match semantics; the §7.5 sidecar filename pin; the §2 YAML-schema and provider-input pins; the §7.4 NFC-collision reject; and the three `acif.body.*` identifiers.
 
 Amended 2026-10-24 (SHAPE.md Decision #49, Class C): the §11 hash-scope paragraph now states that the registry-layer `attestation_hash` carries the attestation input digest an external attestation system signs, derived from the item's `body_hash` and `metadata_hash`, rather than describing an unfilled slot. `body_hash` and `metadata_hash` themselves are unchanged.
+
+Amended 2026-10-26 (SHAPE.md Decision #52, Class C): §2 now defines frontmatter values as the JSON values of the YAML 1.2 core-schema parse, with `<<` an ordinary key; lists the malformed conditions under the new identifier `acif.frontmatter.malformed` (a non-map top level, duplicate and non-string keys, anchors and aliases, explicit tags, raw U+0085, U+2028, and U+2029, nesting deeper than 64, and exact string and number limits); and states that a block whose parse is null, or `{}`, declares nothing. §6.1 takes an undeclared frontmatter `kind` from the ingestion context instead of inferring it from the filename, and defers a conflicting declaration to [ACIF-PUBLISHER] §5.6. §7.4 step 3 rejects a body path that is not valid UTF-8 with the new identifier `acif.body.path_not_utf8`, then a body path containing a control character with the new identifier `acif.body.path_control_char`, each scan over every path and both ahead of the NFC collision check. Test vector TV-14 pins the path rules. No previously computable `body_hash` changes.

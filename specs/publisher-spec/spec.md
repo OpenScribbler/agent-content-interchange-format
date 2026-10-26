@@ -65,7 +65,7 @@ There is no merge layer and there are no per-field provenance markers: a consume
 
 ### 5.3 Faithful observation
 
-`publisher_section` values are the publisher's declared values **as written**: no vocabulary translation, no default materialization, no normalization beyond the parse of the declaration surface itself. Registry-materialized defaults and vocabulary-translated forms are canonical-form content and MUST NOT be written into `publisher_section` ([ACIF-CORE] §7.8). *(Informative: this is what makes the section a provenance statement — its bytes answer "what did the publisher say," and `metadata_hash` (§6) attests exactly that. The canonical, translated, default-materialized form is what validators and predicates consume; the two views coexist by design.)*
+`publisher_section` values are the publisher's declared values, observed without vocabulary translation, without default materialization, and without normalization beyond the parse of the declaration surface itself. For frontmatter, that parse is the YAML 1.2 core schema ([ACIF-CORE] §2), and each value is the JSON value it yields, not the source text: `mode: 0777` is the integer 777, and `n: 1e3` serializes as `1000`. Registry-materialized defaults and vocabulary-translated forms are canonical-form content and MUST NOT be written into `publisher_section` ([ACIF-CORE] §7.8). *(Informative: this is what makes the section a provenance statement — its bytes answer "what did the publisher say," and `metadata_hash` (§6) attests exactly that. The canonical, translated, default-materialized form is what validators and predicates consume; the two views coexist by design.)*
 
 ### 5.4 Forbidden fields
 
@@ -74,6 +74,34 @@ The [ACIF-CORE] §5.2 forbidden version fields (`effective_version`, `derived_ve
 ### 5.5 Version discipline
 
 Item `version` is literal-or-absent ([ACIF-CORE] §5.1): when declared it MUST be valid Semantic Versioning 2.0.0, and no implementation may synthesize, inherit, or derive a value when the publisher omits it. A pack's `version` lives on the pack record only and never propagates to member items. `body_hash` is the canonical change signal; `version` is advisory ordering and display.
+
+### 5.6 Frontmatter to `publisher_section`
+
+An ingester builds `publisher_section` from a frontmatter-bearing item's entry-file frontmatter by the steps below, in order. The order is also the reject precedence: when a block fails more than one step, the first failing step's identifier is reported.
+
+1. **Parse.** Parse the block per [ACIF-CORE] §2. A malformed block MUST be rejected with `acif.frontmatter.malformed`.
+2. **No declaration.** An empty block, a null document, a comment-only block, or the empty map `{}` declares nothing: the item has no `publisher_section` and no `metadata_hash` (§5.2, §6).
+3. **Null values.** A top-level key whose value is null (for example `description:` with nothing after it) is absent, and is dropped before the steps that follow. When dropping null values leaves no key, step 2 applies.
+4. **Forbidden fields.** A §5.4 forbidden field at the top level MUST be rejected with `acif.envelope.forbidden_field`, its `field` parameter naming the field.
+5. **`kind` check.** When `kind` is declared, a value outside the seven [ACIF-CORE] §5.1 values MUST be rejected with `acif.envelope.kind_invalid`. A valid value that is not a frontmatter-bearing kind, or that differs from the kind the ingestion context assigns the item (for example, `skill` for a `SKILL.md` entry file), MUST be rejected with `acif.publisher.frontmatter_kind_mismatch`. An ingester MUST NOT fall back to either kind.
+6. **Placement.** Each top-level key is placed by its name alone; nested values are never rearranged:
+   - `kind`, `id`, `display_name`, `version`, `description`, and `pack_id` become top-level members of `publisher_section`.
+   - `license` whose value is a mapping becomes a top-level member. `license` with any other value, such as the Agent Skills string form `license: Apache-2.0`, is an extension key.
+   - Every other top-level key is an extension key, and becomes a member of one object at `publisher_section.<kind>`, where `<kind>` is the kind the ingestion context assigns the item. That object is present only when at least one extension key is declared. A top-level key equal to the kind, such as `skill:` in a `SKILL.md`, is an ordinary extension key and nests as `publisher_section.skill.skill`.
+   - `kind` appears in `publisher_section` only when it is declared (§5.3).
+7. **Envelope validation.** The placed envelope values are validated as on any record ([ACIF-CORE] §5.1), and only the conditions [ACIF-CORE] §5.1 mints an identifier for reject here, checked in this order: `id` (`acif.envelope.id_invalid`), `version` (`acif.envelope.version_invalid`), then `license.spdx` (`acif.envelope.license_spdx_invalid`). A value §5.1 mints no identifier for, such as a `display_name` that is not a string or a `pack_id` that is not a UUID, does not reject at this step. A pattern matches the whole string: the block scalar `version: |` over the line `1.2.3` yields `"1.2.3"` followed by LF, which is not SemVer. Frontmatter `id` and `version` are validated like any other: `version: 1.0` (a YAML float) and `version: "1.0"` (a string that is not SemVer) both MUST be rejected with `acif.envelope.version_invalid`. The `version_invalid` diagnostic SHOULD name the fix: declare full SemVer in quotes, such as `version: "1.0.0"`, or move a non-SemVer value under `metadata.version`, where it is an extension key.
+
+The `acif.envelope.*` identifiers are `reject (verdict)` identifiers ([ACIF-CORE] §8.7) and travel in the conformance verdict transport like every other envelope validation reject. `acif.frontmatter.malformed` and `acif.publisher.frontmatter_kind_mismatch` are ingest rejects.
+
+Rule, agent, and command publishers SHOULD declare `kind` in frontmatter. *(Informative: a skill's `SKILL.md` filename fixes its kind, but a Markdown file carrying a rule, an agent, or a command does not identify itself; a registry that assigns such a file a different kind places its extension keys under a different object and computes a different `metadata_hash` for the same bytes.)*
+
+*(Informative — per-language YAML notes.)* No stock YAML library in these languages applies [ACIF-CORE] §2 as written. Each needs the anchor, alias, tag, raw line-separator, depth, string, and number checks of §2 on top, and has known deviations besides. Verify an ingester against TV-L2-g before relying on it.
+
+- TypeScript: the `yaml` package with `{ schema: 'core', uniqueKeys: true }` parses YAML 1.2, but `toJS()` stringifies non-string keys (`1: x` becomes `{"1": "x"}`) and returns ints and floats alike as numbers. Check key node types, and read each scalar node's resolved tag to apply the int limit, on the document tree before calling `toJS()`.
+- Go: `gopkg.in/yaml.v3` keeps YAML 1.1 forms: `0777` decodes as octal 511, `_` digit separators (`1_000`) and `0b` binary ints are accepted, and `<<` merges mappings. Resolve scalars from the `yaml.Node` tree against the core schema rather than decoding into Go values.
+- Python: PyYAML implements YAML 1.1 in its resolvers (`yes` is a boolean, `0777` is 511, `2024-01-01` is a date) and in its scanner (raw U+0085, U+2028, and U+2029 are line breaks, and a tab after `:` is refused), so a Python ingester needs a core-schema resolver set and scanner fixes. The informative reference implementation `conformance/reference/acif_frontmatter.py` shows one and documents its remaining gaps.
+
+Test vector TV-L2-g pins this section in bytes.
 
 ## 6. `metadata_hash`
 
@@ -103,7 +131,9 @@ Data flows sidecar → frontmatter, never the reverse ([ACIF-CORE] §6.1). Tooli
 
 Non-ACIF frontmatter fields always pass through untouched, under either setting. The overwrite behavior MUST be opt-in per run (an explicit tooling input), never a persistent default.
 
-Because `publisher_section` observes declared values as written (§5.3), the conflict comparison is declared-value against canonical-sidecar value **for the same field**; a value that differs only because the sidecar carries a canonical vocabulary form of the same declaration is still a conflict under this rule — the projection exists to make the source file match the sidecar. Registries MUST NOT write to source files under any circumstances; reconciliation is publisher-side tooling only.
+**Flat projection.** Projecting a `publisher_section` back into frontmatter is the inverse of the §5.6 placement step: envelope members are written as top-level keys, and each member of the `publisher_section.<kind>` object is written as a top-level key, never as a nested `<kind>:` mapping. *(Informative example: the `publisher_section` `{"display_name":"Demo","skill":{"allowed-tools":["Read"],"skill":{"x":1}}}` projects into a `SKILL.md` as the three top-level keys `display_name: Demo`, `allowed-tools: [Read]`, and `skill: {x: 1}`; the inner `skill` key is an extension key named `skill`, and it round-trips through §5.6 to the same section.)*
+
+Because `publisher_section` observes declared values without translation (§5.3), the conflict comparison is declared-value against canonical-sidecar value **for the same field**; a value that differs only because the sidecar carries a canonical vocabulary form of the same declaration is still a conflict under this rule — the projection exists to make the source file match the sidecar. Registries MUST NOT write to source files under any circumstances; reconciliation is publisher-side tooling only.
 
 ## 8. Pack Records
 
@@ -201,6 +231,7 @@ Every response containing `inferred_pack_id` MUST include `inference_version: "v
 | Identifier | Class | Condition |
 |---|---|---|
 | `acif.publisher.frontmatter_conflict` | diagnostic (CI block by default; logged on overwrite opt-in) | Declared frontmatter value conflicts with the canonical sidecar value for the same ACIF field (§7) |
+| `acif.publisher.frontmatter_kind_mismatch` | reject | Declared frontmatter `kind` is a valid value that is not frontmatter-bearing, or differs from the kind the ingestion context assigns the item (§5.6) |
 | `acif.publisher.pack_source_conflict` | diagnostic (SHOULD-emit) | Multiple pack-shaped manifests carry conflicting values; the precedence winner was adopted (§9.1) |
 
 The `pack_resolution: unresolved` install refusal (§8.3) is a state-vocabulary rule, not an error identifier; the state itself is the signal.
@@ -232,7 +263,7 @@ The `pack_resolution: unresolved` install refusal (§8.3) is a state-vocabulary 
 ### 12.2 Informative
 
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md` — `registry_section` schema, `source_uri`, tuple endpoint, projections.
-- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #10, #11, #14, #15, #16, #17, #18, #20).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #10, #11, #14, #15, #16, #17, #18, #20, #52).
 
 ---
 
@@ -254,6 +285,8 @@ The vectors below, published in the `conformance/` directory, are normatively au
 
 - **TV-11 through TV-13** *(review-time additions, [ACIF-CORE] §5/§7)*: envelope-field validation rejects (non-enum `kind`, non-UUIDv4 `id`, non-SemVer `version`, non-SPDX `license.spdx`); root-only sidecar exclusion in bytes (root `acif-sidecar.yaml` excluded, a same-named subdirectory file included); body-boundary rejects (`acif.body.symlink`, `acif.body.path_collision`, `acif.body.empty`).
 
+- **TV-L2-g** *(Decision #52)* — frontmatter to `publisher_section` (§5.6): the Agent Skills form, a declared envelope, and a `display_name`-only block in bytes and `metadata_hash`; null values dropped; `{}`, empty, `~`, `null`, and comment-only blocks declaring nothing; a top-level key equal to the kind nesting as `skill.skill`; YAML 1.2 core-schema values, a tab separator, and `<<` as an ordinary key; a block-scalar `version`; and the step-order rejects (`acif.frontmatter.malformed`, `acif.envelope.forbidden_field`, `acif.envelope.kind_invalid`, `acif.publisher.frontmatter_kind_mismatch`, `acif.envelope.version_invalid`), with malformed cases for an anchor and alias, an explicit tag, a raw U+2028, nesting 65 deep, a lone surrogate, a noncharacter, and float overflow. Its companion **TV-14** ([ACIF-CORE] §7.4) pins the body-path UTF-8 and control-character rejects.
+
 Individual vector IDs are assigned in the conformance suite.
 
 ## Appendix B — Provenance and Preserved Positions (Informative)
@@ -263,3 +296,5 @@ Promoted 2026-07-11 from the ACIF design record: the common envelope, carrier ru
 Newly minted at spec-promotion time (not present in the design record; flagged for review): the §5.2 presence-by-declaration rule and the sidecar-only envelope-only content rule (resolving the design record's tension between "pack_id lives in publisher_section" and the hook exemplar's no-`publisher_section` note — the spec-purist hash-boundary consult's fixes, applied with [ACIF-CORE] §7.8); the §5.3 faithful-observation restatement (declared values as written; canonical form is a distinct view); the §6 preimage framing (RFC 8785 + single trailing LF — the design record's "sorted keys, no whitespace, LF" made byte-precise); the §8.2 pack hashing rule (no body hashes for packs; declared packs get `metadata_hash`, inferred packs get neither — discharging the [ACIF-CORE] §7.8 scope-out); the named identifiers `acif.publisher.frontmatter_conflict` (with the per-run-opt-in constraint on overwrite) and `acif.publisher.pack_source_conflict` (the multi-manifest warning, given an identifier at review); and the TV-L2 vector additions. These items were ratified back into the design record (SHAPE.md, Spec-Promotion Ratifications section) at promotion time.
 
 Amended after the second independent review (2026-07-11): the §9.3 https-normalization made algorithmic (scp-form rewrite, scheme replacement, userinfo drop); the §9.5 owner extraction restated to exclude the repository-name segment explicitly; and the TV-L2 (f) and TV-11–TV-13 vector registrations.
+
+Amended 2026-10-26 (SHAPE.md Decision #52, Class C): §5.3 defines frontmatter values as the JSON values of the YAML 1.2 core-schema parse, not the source text; the new §5.6 fixes how frontmatter becomes `publisher_section`, with its processing order as the reject precedence and the new identifier `acif.publisher.frontmatter_kind_mismatch`; step 7 rejects only on the identifiers [ACIF-CORE] §5.1 mints, in the order `id`, `version`, `license.spdx`; §7 pins the flat projection back to frontmatter; and Appendix A registers TV-L2-g. The informative reference adapter's `metadata_hash` changes for every frontmatter item that has a `publisher_section`.

@@ -119,17 +119,20 @@
     error: acif.hook.script_file_missing
 
 - id: TV-HOOK-j
-  spec: "[ACIF-HOOK] §9.2"
+  spec: "[ACIF-HOOK] §9.2; [ACIF-CORE] §7.4"
   harness: static
-  description: invalid referenced paths reject — absolute and traversing
+  description: invalid referenced paths reject — absolute and traversing; a control character in a path rejects with the core path identifier, ahead of the hook path checks
   input:
     absolute:
       hook: {event: session_start, handlers: [{type: command, scripts: [{type: file, path: "/etc/hooks/run.sh"}]}]}
     traversal:
       hook: {event: session_start, handlers: [{type: command, scripts: [{type: file, path: "../outside/run.sh"}]}]}
+    control_char_over_traversal:
+      hook: {event: session_start, handlers: [{type: command, scripts: [{type: file, path: "../hooks/a\nb.sh"}]}]}
   expect:
     absolute: {error: acif.hook.script_path_invalid}
     traversal: {error: acif.hook.script_path_invalid}
+    control_char_over_traversal: {error: acif.body.path_control_char}
 
 - id: TV-HOOK-k
   spec: "[ACIF-HOOK] Appendix A.4, §12.3"
