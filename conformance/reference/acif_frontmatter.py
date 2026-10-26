@@ -4,11 +4,12 @@ ACIF 0.1 — frontmatter-to-publisher_section reference implementation (Informat
 
 Reference implementation of:
   * the frontmatter parse ([ACIF-CORE] §2): YAML 1.2 core schema, with the
-    malformed conditions (top level not a map; a duplicate or non-string key;
-    an anchor, alias, or explicit tag; a raw U+0085, U+2028, or U+2029;
-    nesting deeper than 64; a key or string that is not Unicode scalar values
-    or holds a noncharacter; a float that is not finite; an int beyond
-    ±(2^53−1))
+    malformed conditions (a block that is not UTF-8; more than one document;
+    top level not a map; a duplicate or non-string key; an anchor, alias, or
+    explicit tag; a raw U+0085, U+2028, or U+2029; a raw character outside
+    c-printable; nesting deeper than 64; a surrogate escape, paired or not;
+    a key or string holding a noncharacter; a float that is not finite; an
+    int beyond ±(2^53−1))
   * the frontmatter-to-publisher_section construction ([ACIF-PUBLISHER] §5.6):
     no-declaration cases, null-as-absent, forbidden fields, the kind check,
     placement, and envelope validation, in that precedence order
@@ -19,12 +20,17 @@ resolvers are exactly the YAML 1.2 core schema's. Anchors, aliases, tags, and
 depth are checked on the event stream before any node is composed, so a
 hostile block never expands. Raw U+0085, U+2028, and U+2029 are rejected
 before parsing, which also keeps PyYAML's 1.1 scanner from reading them as
-line breaks. The scanner is patched to accept a tab as in-line separation
-(`a:<TAB>b`, `a: b<TAB># c`) and inside a plain scalar (`a: b<TAB>c`).
+line breaks. The scanner is patched to YAML 1.2 in four places: a tab is
+in-line separation (`a:<TAB>b`, `a: b<TAB># c`), part of a plain scalar
+(`a: b<TAB>c`), and separation after the indentation of a flow continuation
+line (`x: [a,` then `  <TAB>b]`); `?` and `:` start a plain scalar inside a
+flow collection when a character other than a space or flow indicator
+follows (`[?foo]`, `[::vector]`); `?` inside a flow plain scalar is content;
+and `:` directly after a quoted scalar or flow collection in a flow context
+is a value indicator (`{"a":1}`).
 
-Known gap against YAML 1.2: a tab that starts a line, including a
-continuation line of a multi-line plain or flow scalar, is rejected where a
-1.2 parser can accept it.
+Known gap against YAML 1.2: a tab in the line prefix of a continuation line
+of a multi-line plain scalar is rejected where a 1.2 parser can accept it.
 
 Step 7 checks `id` and `version`, in that order. It omits the SPDX
 license-list check behind `acif.envelope.license_spdx_invalid`, as the
@@ -49,11 +55,14 @@ FORBIDDEN_FIELDS = frozenset({"effective_version", "derived_version", "pack_inhe
 MAX_SAFE_INTEGER = 2**53 - 1
 MAX_DEPTH = 64
 RAW_LINE_SEPARATORS = ("\u0085", "\u2028", "\u2029")
+# A raw character outside YAML 1.2 c-printable: C0 other than TAB, LF, and CR;
+# DEL; C1 other than U+0085; a surrogate; U+FFFE and U+FFFF.
+NON_PRINTABLE = re.compile("[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]")
 
 UUID_V4 = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
 SEMVER = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
-    r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
+    r"(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
     r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
 
@@ -131,10 +140,12 @@ def _construct_bool(loader, node):
 def _construct_int(loader, node):
     value = loader.construct_scalar(node)
     if _INT_DEC.fullmatch(value):
-        try:
-            return int(value, 10)
-        except ValueError:  # beyond Python's int-from-text digit limit
-            raise _malformed("integer text too long") from None
+        # Check the magnitude on the text, so a long run of digits never
+        # reaches Python's int-from-text digit limit.
+        digits = value.lstrip("+-").lstrip("0") or "0"
+        if len(digits) > len(str(MAX_SAFE_INTEGER)):
+            raise _malformed(f"integer {value[:24]}... beyond ±(2^53−1)")
+        return -int(digits) if value.startswith("-") else int(digits)
     if _INT_OCT.fullmatch(value):
         return int(value[2:], 8)
     if _INT_HEX.fullmatch(value):
@@ -182,21 +193,116 @@ for _tag, _fn in (
     _CoreConstructor.add_constructor(_tag, _fn)
 
 
-class _TabScanner(yaml.scanner.Scanner):
-    """PyYAML's 1.1 scanner with YAML 1.2 tab handling where it is contained:
-    a tab after content on the same line separates tokens, and a tab between
-    two words is part of a plain scalar. A tab that starts a line is still
-    refused (YAML forbids tabs in indentation)."""
+_BREAK_OR_END = "\0 \t\r\n\x85\u2028\u2029"
+_FLOW_INDICATORS = ",[]{}"
 
-    def _after_content(self) -> bool:
-        return self.buffer[self.pointer - self.column:self.pointer].strip(" \t") != ""
+
+class _TabScanner(yaml.scanner.Scanner):
+    """PyYAML's 1.1 scanner with YAML 1.2 tab and flow-indicator handling.
+
+    Tabs: a tab after content on the same line separates tokens, a tab
+    between two words is part of a plain scalar, and on a flow continuation
+    line a tab separates once the line holds the flow node's indentation in
+    spaces (s-flow-line-prefix). A tab that starts a block line is still
+    refused (YAML forbids tabs in indentation).
+
+    Flow indicators: `?` is a key indicator, and outside a flow `:` a value
+    indicator, only before a space or line break. Inside a flow collection
+    `:` is also a value indicator before a flow indicator or directly after
+    a quoted scalar or flow collection; `?`, `:`, and `-` start a plain
+    scalar before any other non-space character; and `?` is plain-scalar
+    content."""
+
+    _json_node_last = False   # the token just fetched is a quoted scalar or a flow collection end
+    _json_node_before = False   # the token before the current fetch was
+
+    def _tab_separates(self) -> bool:
+        line = self.buffer[self.pointer - self.column:self.pointer]
+        if line.strip(" \t") != "":
+            return True
+        if self.flow_level:
+            # s-flow-line-prefix(n): n spaces of indentation, where the flow
+            # node sits one column inside the enclosing block collection.
+            return len(line) - len(line.lstrip(" ")) >= self.indent + 1
+        return False
+
+    def fetch_more_tokens(self):
+        self._json_node_before, self._json_node_last = self._json_node_last, False
+        return super().fetch_more_tokens()
+
+    def fetch_flow_scalar(self, style):
+        super().fetch_flow_scalar(style)
+        self._json_node_last = True
+
+    def fetch_flow_collection_end(self, TokenClass):
+        super().fetch_flow_collection_end(TokenClass)
+        self._json_node_last = True
+
+    def check_key(self):
+        return self.peek(1) in _BREAK_OR_END
+
+    def check_value(self):
+        if self.flow_level:
+            return self._json_node_before or self.peek(1) in _BREAK_OR_END + _FLOW_INDICATORS
+        return self.peek(1) in _BREAK_OR_END
+
+    def check_plain(self):
+        ch = self.peek()
+        if ch not in _BREAK_OR_END + "-?:,[]{}#&*!|>'\"%@`":
+            return True
+        following = self.peek(1)
+        if ch not in "-?:" or following in _BREAK_OR_END:
+            return False
+        return not self.flow_level or following not in _FLOW_INDICATORS
+
+    def scan_plain(self):
+        # PyYAML's scan_plain, with `?` as content inside a flow collection.
+        chunks = []
+        start_mark = self.get_mark()
+        end_mark = start_mark
+        indent = self.indent + 1
+        spaces = []
+        while True:
+            length = 0
+            if self.peek() == "#":
+                break
+            while True:
+                ch = self.peek(length)
+                if (
+                    ch in _BREAK_OR_END
+                    or (ch == ":" and self.peek(length + 1) in _BREAK_OR_END + (_FLOW_INDICATORS if self.flow_level else ""))
+                    or (self.flow_level and ch in _FLOW_INDICATORS)
+                ):
+                    break
+                length += 1
+            if length == 0:
+                break
+            self.allow_simple_key = False
+            chunks.extend(spaces)
+            chunks.append(self.prefix(length))
+            self.forward(length)
+            end_mark = self.get_mark()
+            spaces = self.scan_plain_spaces(indent, start_mark)
+            if not spaces or self.peek() == "#" or (not self.flow_level and self.column < indent):
+                break
+        return yaml.tokens.ScalarToken("".join(chunks), True, start_mark, end_mark)
+
+    def scan_flow_scalar_non_spaces(self, double, start_mark):
+        # An escape beyond U+10FFFF (`\U00110000`, `\UFFFFFFFF`) is a scan
+        # error, not a Python exception.
+        try:
+            return super().scan_flow_scalar_non_spaces(double, start_mark)
+        except (ValueError, OverflowError) as exc:
+            raise yaml.scanner.ScannerError(
+                "while scanning a double-quoted scalar", start_mark, f"escape outside Unicode ({exc})", self.get_mark()
+            ) from None
 
     def scan_to_next_token(self):
         if self.index == 0 and self.peek() == "\uFEFF":
             self.forward()
         found = False
         while not found:
-            while self.peek() == " " or (self.peek() == "\t" and self._after_content()):
+            while self.peek() == " " or (self.peek() == "\t" and self._tab_separates()):
                 self.forward()
             if self.peek() == "#":
                 while self.peek() not in "\0\r\n\x85\u2028\u2029":
@@ -264,23 +370,26 @@ def _check_events(text: str) -> None:
 def _check_string(value: str) -> None:
     for ch in value:
         cp = ord(ch)
+        # PyYAML keeps each \u or \U escape as its own code point, so a high
+        # and low escape pair arrives here as two surrogates and rejects.
         if 0xD800 <= cp <= 0xDFFF:
             raise _malformed(f"surrogate U+{cp:04X}")
         if 0xFDD0 <= cp <= 0xFDEF or (cp & 0xFFFE) == 0xFFFE:
             raise _malformed(f"noncharacter U+{cp:04X}")
 
 
-def _check_values(value) -> None:
-    """Every key and string is Unicode scalar values with no noncharacters; a
-    float is finite; an int (only an int-resolved scalar) is within
-    ±(2^53−1)."""
+def check_values(value) -> None:
+    """The [ACIF-CORE] §2 value conditions: every key and string is Unicode
+    scalar values with no noncharacters; a float is finite; an int (only an
+    int-resolved scalar) is within ±(2^53−1). Also applies to a mapping that
+    did not come from YAML, such as a JSON provider configuration."""
     if isinstance(value, dict):
         for key, child in value.items():
             _check_string(key)
-            _check_values(child)
+            check_values(child)
     elif isinstance(value, list):
         for child in value:
-            _check_values(child)
+            check_values(child)
     elif isinstance(value, str):
         _check_string(value)
     elif isinstance(value, bool) or value is None:
@@ -300,6 +409,9 @@ def load_core(text: str):
     for ch in RAW_LINE_SEPARATORS:
         if ch in text:
             raise _malformed(f"raw U+{ord(ch):04X}")
+    raw = NON_PRINTABLE.search(text)
+    if raw:
+        raise _malformed(f"raw U+{ord(raw.group()):04X} outside c-printable")
     try:
         _check_events(text)
         loader = CoreSchemaLoader(text)
@@ -309,7 +421,7 @@ def load_core(text: str):
             loader.dispose()
     except yaml.YAMLError as exc:
         raise _malformed(str(exc).splitlines()[0]) from exc
-    _check_values(value)
+    check_values(value)
     return value
 
 
@@ -318,16 +430,22 @@ def load_core(text: str):
 def frontmatter_block(data: bytes) -> str | None:
     """The text between the delimiter lines, or None when the file carries no
     frontmatter block. The closing `---` line ends in LF or end of input, and
-    may immediately follow the opening line."""
-    text = canonical_text(data).decode("utf-8")
-    if not text.startswith("---\n"):
+    may immediately follow the opening line. A block that is not UTF-8 is
+    malformed; the body after it is bytes and is not decoded."""
+    text = canonical_text(data)
+    if not text.startswith(b"---\n"):
         return None
-    end = text.find("\n---\n", 3)
+    end = text.find(b"\n---\n", 3)
     if end != -1:
-        return text[4:end + 1] if end >= 4 else ""
-    if text.endswith("\n---"):
-        return text[4:len(text) - 3] if len(text) > 7 else ""
-    return None
+        block = text[4:end + 1] if end >= 4 else b""
+    elif text.endswith(b"\n---"):
+        block = text[4:len(text) - 3] if len(text) > 7 else b""
+    else:
+        return None
+    try:
+        return block.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise _malformed(f"not UTF-8 at block byte {exc.start}") from None
 
 
 # ── publisher_section construction ([ACIF-PUBLISHER] §5.6) ──────────────────

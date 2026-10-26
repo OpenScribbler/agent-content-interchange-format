@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT / "reference"))
 
 from acif_frontmatter import (  # noqa: E402
     FrontmatterReject,
+    check_values,
     frontmatter_block,
     load_core,
     publisher_section_from_mapping,
@@ -369,9 +370,10 @@ def handle_frontmatter_ingest(kind: str, inp: dict[str, Any]) -> dict[str, Any]:
         raise SpecError("acif.body.empty")
     classification = classify(files, entry_file)
     body_hash = body_hash_frontmatter_type(files, entry_file)
-    # [ACIF-PUBLISHER] §5.6: the ingestion context assigns `kind`; the
-    # frontmatter is parsed under the YAML 1.2 core schema and placed.
-    block = frontmatter_block(files[entry_file])
+    # [ACIF-PUBLISHER] §5.6: the body rejects above come first; then the
+    # ingestion context assigns `kind`, and the frontmatter is parsed under
+    # the YAML 1.2 core schema and placed.
+    block = _frontmatter_step(frontmatter_block, files[entry_file])
     parsed = None if block is None else _frontmatter_step(load_core, block)
     publisher_section = _frontmatter_step(publisher_section_from_mapping, parsed, kind)
     result: dict[str, Any] = {
@@ -404,6 +406,8 @@ def _frontmatter_provider_result(kind: str, provider: dict[str, Any]) -> dict[st
     frontmatter = content.get("frontmatter", content)
     if not isinstance(frontmatter, dict):
         raise Unsupported()
+    # Step 1's value conditions hold for a JSON mapping as for a YAML parse.
+    _frontmatter_step(check_values, frontmatter)
     publisher_section = _frontmatter_step(publisher_section_from_mapping, dict(frontmatter), "agent")
     canonical = _canonical_frontmatter_block("agent", frontmatter, provider=str(tag))
     result: dict[str, Any] = {"canonical": canonical}

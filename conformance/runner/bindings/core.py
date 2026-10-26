@@ -31,6 +31,9 @@ from ..vectors import Vector
 
 def _body_files(body: dict[str, Any]) -> dict[str, Any]:
     files = dict(body.get("files", {}))
+    # File content given as hex bytes, for content that is not UTF-8.
+    for path, hex_content in body.get("files_hex", {}).items():
+        files[path] = bytes.fromhex(hex_content)
     for link in body.get("symlinks", []):
         files[link["path"]] = {"symlink": link["target"]}
     for raw_path in body.get("files_raw_paths", []):

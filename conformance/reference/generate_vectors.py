@@ -115,6 +115,11 @@ def compute() -> dict[str, list[str]]:
         "display_name: Demo\nskill: {x: 1}\n",
         "display_name: Demo\nflag: yes\nmode: 0777\ncreated: 2024-01-01\nn: 1e3\n",
         "display_name: Demo\n<<: {x: 1}\n",
+        "display_name: Demo\nx: " + "[" * 63 + "0" + "]" * 63 + "\n",
+        "display_name: Demo\nn: 1e20\n",
+        "display_name: Demo\nn: 9007199254740991\n",
+        "display_name: Demo\nx: [?foo, ::vector]\n",
+        "display_name: Demo\nx: [a,\n  \tb]\n",
     ):
         section = publisher_section_from_frontmatter(f"---\n{frontmatter}---\nUse this skill.\n".encode(), "skill")
         l2g += [jcs(section).decode("utf-8"), metadata_hash(section)]

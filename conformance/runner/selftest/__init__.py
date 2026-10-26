@@ -595,7 +595,7 @@ def check_hook_event_tables() -> None:
 
 
 def check_reference_frontmatter_limits() -> None:
-    """Malformed conditions whose inputs are too large or too platform-bound for a vector literal."""
+    """Reference checks a vector cannot carry: inputs too large for a literal, and the Python-specific parse, conversion, and JSON provider paths."""
     import importlib.util
 
     reference_dir = str(CONFORMANCE_ROOT / "reference")
@@ -609,6 +609,8 @@ def check_reference_frontmatter_limits() -> None:
         "nesting depth 500": "x: " + "[" * 499 + "]" * 499,
         "raw U+0085 inside a double-quoted scalar": 'display_name: "a\u0085b"',
         "anchor without an alias": "a: &x 1",
+        "escape beyond U+10FFFF": 'x: "\\U00110000"',
+        "escape \\UFFFFFFFF": 'x: "\\UFFFFFFFF"',
     }
     errors: list[str] = []
     for name, text in cases.items():
@@ -621,8 +623,46 @@ def check_reference_frontmatter_limits() -> None:
             errors.append(f"{name}: raised {type(exc).__name__} instead of acif.frontmatter.malformed")
         else:
             errors.append(f"{name}: accepted")
-    if frontmatter.load_core("x: " + "[" * 63 + "]" * 63) != {"x": _nested_list(63)}:
-        errors.append("nesting depth 64: not accepted")
+    accepts = {
+        "nesting depth 64": ("x: " + "[" * 63 + "]" * 63, {"x": _nested_list(63)}),
+        "zero past the decimal-conversion limit": ("n: " + "0" * 4301, {"n": 0}),
+        "JSON-like key with an adjacent value": ('x: {"a":1}', {"x": {"a": 1}}),
+        "`?` inside a flow plain scalar": ("x: [a?b]", {"x": ["a?b"]}),
+        "`:` inside a flow plain scalar": ("x: {a:b}", {"x": {"a:b": None}}),
+        "single-quoted surrogate text is literal": ("x: '\\uD800'", {"x": "\\uD800"}),
+    }
+    for name, (text, expected) in accepts.items():
+        try:
+            got = frontmatter.load_core(text)
+        except Exception as exc:
+            errors.append(f"{name}: raised {type(exc).__name__}")
+            continue
+        if got != expected:
+            errors.append(f"{name}: parsed as {got!r}")
+    try:
+        frontmatter.publisher_section_from_mapping({"version": "1.2\u0662.3"}, "skill")
+    except frontmatter.FrontmatterReject as exc:
+        if exc.error != "acif.envelope.version_invalid":
+            errors.append(f"SemVer with a non-ASCII digit: rejected with {exc.error}")
+    else:
+        errors.append("SemVer with a non-ASCII digit: accepted")
+    if frontmatter.publisher_section_from_frontmatter(b"---\nx: 1\n---\n\xff\n", "skill") != {"skill": {"x": 1}}:
+        errors.append("a body that is not UTF-8 after a valid block: not accepted")
+    # The JSON provider-configuration path applies step 1's value conditions.
+    adapter_spec = importlib.util.spec_from_file_location("_acif_reference_adapter_fm", CONFORMANCE_ROOT / "adapters" / "reference.py")
+    adapter = importlib.util.module_from_spec(adapter_spec)
+    adapter_spec.loader.exec_module(adapter)
+    for name, value in (("non-finite float", float("inf")), ("integer beyond 2^53-1", 2**53)):
+        provider = {"provider": "claude-code", "content": {"frontmatter": {"display_name": "Demo", "n": value}}}
+        try:
+            adapter.handle_frontmatter_ingest("agent", {"provider_config": provider})
+        except adapter.SpecError as exc:
+            if exc.error != "acif.frontmatter.malformed":
+                errors.append(f"JSON provider {name}: rejected with {exc.error}")
+        except Exception as exc:
+            errors.append(f"JSON provider {name}: raised {type(exc).__name__} instead of acif.frontmatter.malformed")
+        else:
+            errors.append(f"JSON provider {name}: accepted")
     if errors:
         raise AssertionError("; ".join(errors))
 

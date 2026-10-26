@@ -204,10 +204,11 @@ Rejections use the error response with the spec-minted identifier
 A `reject (verdict)` condition ([ACIF-CORE] §8.7) that frontmatter
 ingestion reaches ([ACIF-PUBLISHER] §5.6 steps 4, 5 and 7:
 `acif.envelope.forbidden_field`, `acif.envelope.kind_invalid`,
-`acif.envelope.id_invalid`, `acif.envelope.version_invalid`) travels as
-the §3 verdict instead, `{conformant: false, reason, params}`, as it does
+`acif.envelope.id_invalid`, `acif.envelope.version_invalid`,
+`acif.envelope.license_spdx_invalid`) travels as the §3 verdict instead, `{conformant: false, reason, params}`, as it does
 for an authored sidecar. Whichever channel it uses, the first failing
-step in the §5.6 order is the one reported.
+step in the §5.6 order is the one reported, and a body reject comes
+before every frontmatter step.
 
 ### 4.2 `derive_pack_id`
 

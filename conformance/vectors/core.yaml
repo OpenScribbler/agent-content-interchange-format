@@ -319,7 +319,7 @@
 - id: TV-L2-g
   spec: "[ACIF-PUBLISHER] §5.6; [ACIF-CORE] §2, §8.7"
   harness: static
-  description: frontmatter-to-publisher_section layout — envelope keys at the top level, every other key under the context-assigned kind; no-declaration, null-value, kind, forbidden-field, version, YAML 1.2 core-schema (tab separation, `<<` as a plain key), and malformed cases (anchor, alias, tag, raw line separator, depth, string, number), in reject precedence order
+  description: frontmatter-to-publisher_section layout — envelope keys at the top level, every other key under the context-assigned kind; no-declaration, null-value, kind, forbidden-field, version, YAML 1.2 core-schema (tab separation, `<<` as a plain key, flow-context plain scalars and tab line prefixes), limit accepts (depth 64, 1e20, 2^53-1), and malformed cases (not UTF-8, a second document, anchor, alias, each tag form, raw line separator, raw non-printable, nested duplicate key, depth, surrogate escapes paired or not, noncharacter, number), in reject precedence order
   input:
     kind: skill   # the kind the ingestion context assigns (canonical entry file SKILL.md)
     cases:
@@ -367,10 +367,18 @@
         files: {SKILL.md: "---\ndisplay_name: Demo\n<<: {x: 1}\n---\nUse this skill.\n"}
       version_block_scalar:   # the value is "1.2.3" plus LF, which is not SemVer
         files: {SKILL.md: "---\ndisplay_name: Demo\nversion: |\n  1.2.3\n---\nUse this skill.\n"}
-      anchor_and_alias:
+      anchor_only:   # an anchor rejects even when nothing refers to it
+        files: {SKILL.md: "---\ndisplay_name: Demo\na: &x 1\n---\nUse this skill.\n"}
+      alias:
         files: {SKILL.md: "---\ndisplay_name: &n Demo\ndescription: *n\n---\nUse this skill.\n"}
-      explicit_tag:
-        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !!bool garbage\n---\nUse this skill.\n"}
+      explicit_tag:   # a core tag whose resolution would succeed
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !!str 123\n---\nUse this skill.\n"}
+      explicit_tag_non_specific:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: ! 123\n---\nUse this skill.\n"}
+      explicit_tag_local:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !foo 123\n---\nUse this skill.\n"}
+      explicit_tag_verbatim:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nflag: !<tag:yaml.org,2002:str> 123\n---\nUse this skill.\n"}
       raw_line_separator:   # a raw U+2028 in a plain value
         files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: one\u2028two\n---\nUse this skill.\n"}
       nesting_depth_65:   # the top-level map is level 1, then 64 sequences
@@ -381,6 +389,26 @@
         files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: \"\\uFFFF\"\n---\nUse this skill.\n"}
       float_overflow:   # not finite after rounding to binary64
         files: {SKILL.md: "---\ndisplay_name: Demo\nn: 1e400\n---\nUse this skill.\n"}
+      surrogate_pair_escape:   # a high and low escape pair is two surrogates, never one code point
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: \"\\uD83D\\uDE00\"\n---\nUse this skill.\n"}
+      multiple_documents:   # keys after a `...` document end start a second document
+        files: {SKILL.md: "---\ndisplay_name: Demo\n...\nversion: \"9.9.9\"\n---\nUse this skill.\n"}
+      raw_escape_character:   # a raw ESC (0x1B), outside YAML 1.2 c-printable
+        files: {SKILL.md: "---\ndisplay_name: Demo\ndescription: \"\x1B[1mBold\"\n---\nUse this skill.\n"}
+      not_utf8_block:   # the bytes of display_name: caf<0xE9>, then a valid body
+        files_hex: {SKILL.md: "2d2d2d0a646973706c61795f6e616d653a20636166e90a2d2d2d0a557365207468697320736b696c6c2e0a"}
+      nested_duplicate_key:
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx:\n  a: 1\n  a: 2\n---\nUse this skill.\n"}
+      nesting_depth_64:   # the top-level map is level 1, then 63 sequences
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]\n---\nUse this skill.\n"}
+      float_1e20:   # float-resolved, so the integer limit does not apply
+        files: {SKILL.md: "---\ndisplay_name: Demo\nn: 1e20\n---\nUse this skill.\n"}
+      integer_max_safe:   # 2^53-1 is the largest accepted integer
+        files: {SKILL.md: "---\ndisplay_name: Demo\nn: 9007199254740991\n---\nUse this skill.\n"}
+      flow_plain_indicators:   # YAML 1.2 plain scalars that start with `?` and `::` inside a flow sequence
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [?foo, ::vector]\n---\nUse this skill.\n"}
+      flow_continuation_tab:   # a tab after the indentation of a flow continuation line separates
+        files: {SKILL.md: "---\ndisplay_name: Demo\nx: [a,\n  \tb]\n---\nUse this skill.\n"}
   expect:
     agent_skills_form:
       # metadata_hash preimage before its LF:
@@ -427,13 +455,42 @@
       publisher_section: {display_name: Demo, skill: {"<<": {x: 1}}}
       metadata_hash: "2ea807378e4bd761a65bd2f4942eb980b94435252793d3e4cee6ea33abc5055e"
     version_block_scalar: {conformant: false, reason: acif.envelope.version_invalid}
-    anchor_and_alias: {error: acif.frontmatter.malformed}
+    anchor_only: {error: acif.frontmatter.malformed}
+    alias: {error: acif.frontmatter.malformed}
     explicit_tag: {error: acif.frontmatter.malformed}
+    explicit_tag_non_specific: {error: acif.frontmatter.malformed}
+    explicit_tag_local: {error: acif.frontmatter.malformed}
+    explicit_tag_verbatim: {error: acif.frontmatter.malformed}
     raw_line_separator: {error: acif.frontmatter.malformed}
     nesting_depth_65: {error: acif.frontmatter.malformed}
     lone_surrogate: {error: acif.frontmatter.malformed}
     noncharacter: {error: acif.frontmatter.malformed}
     float_overflow: {error: acif.frontmatter.malformed}
+    surrogate_pair_escape: {error: acif.frontmatter.malformed}
+    multiple_documents: {error: acif.frontmatter.malformed}
+    raw_escape_character: {error: acif.frontmatter.malformed}
+    not_utf8_block: {error: acif.frontmatter.malformed}
+    nested_duplicate_key: {error: acif.frontmatter.malformed}
+    nesting_depth_64:
+      # {"display_name":"Demo","skill":{"x":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}
+      publisher_section: {display_name: Demo, skill: {x: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}
+      metadata_hash: "2515b642687173c819f69e20a0b8ade3328c8f11969d39ff9867ba454df7f765"
+    float_1e20:
+      # {"display_name":"Demo","skill":{"n":100000000000000000000}}
+      publisher_section: {display_name: Demo, skill: {n: 100000000000000000000}}
+      metadata_hash: "acf16463b6bb170779a6d2ee27c19634c6be963da5c1c5983229ae43af73ad24"
+    integer_max_safe:
+      # {"display_name":"Demo","skill":{"n":9007199254740991}}
+      publisher_section: {display_name: Demo, skill: {n: 9007199254740991}}
+      metadata_hash: "4ffcb4cbf2ff4a6697477a33af198b8c07e3b49d19190d9c5a471748bd91b82a"
+    flow_plain_indicators:
+      # {"display_name":"Demo","skill":{"x":["?foo","::vector"]}}
+      publisher_section: {display_name: Demo, skill: {x: ["?foo", "::vector"]}}
+      metadata_hash: "6335e0a15a6a3bf9605418a3712ab2630a69edfa5a4a79fe408cc77de52f7729"
+    flow_continuation_tab:
+      # {"display_name":"Demo","skill":{"x":["a","b"]}}
+      publisher_section: {display_name: Demo, skill: {x: [a, b]}}
+      metadata_hash: "4011bb7cdedfec2e6b1896f9a6dc51f9fc20269a861ce0ec1f2ab256162aeb19"
 
 - id: TV-L3-a
   spec: "[ACIF-REGISTRY] §7"
