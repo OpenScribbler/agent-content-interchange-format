@@ -70,7 +70,7 @@ dependencies and conformance classes explicitly.
 ## Conformance suite
 
 [`conformance/`](conformance/README.md) publishes the test-vector catalog —
-191 vectors across 12 catalogs. **The vectors are normatively authoritative
+193 vectors across 12 catalogs. **The vectors are normatively authoritative
 over prose**: an implementation that contradicts a published vector is
 non-conformant regardless of any prose reading. Post-publication changes
 follow [CHANGE-PROCESS.md](CHANGE-PROCESS.md); the suite's published state

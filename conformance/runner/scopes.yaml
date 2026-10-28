@@ -35,6 +35,8 @@ hook:
   - TV-HOOK-q
   - TV-HOOK-r
   - TV-HOOK-s
+  - TV-HOOK-t
+  - TV-HOOK-u
   - TV-PLATFORM-a
   - TV-PLATFORM-b
   - TV-PLATFORM-c

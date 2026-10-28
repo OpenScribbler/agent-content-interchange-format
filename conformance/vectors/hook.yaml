@@ -448,3 +448,112 @@
     lossless_blocking:
       install: proceed
       diagnostic_absent: acif.hook.event_untranslatable
+
+- id: TV-HOOK-t
+  spec: "[ACIF-HOOK] §11, Appendix A.4, §14; [ACIF-INSTALL] §6, Appendix A.2"
+  harness: static
+  description: install disposition judged on the resolved install row — the row's dialect, read from the install-target matrix, selects the A.4 render; a blocking hook refused on a row names the row's path template and dialect; devin's first (cli) rows keep the pre-dialect dispositions; a single-dialect provider's row carries no dialect and keeps its dispositions
+  input:
+    common_handlers: [{type: command, async: false, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      cascade_row_cascade_event: {event: before_shell_execute, provider: devin, entry: {scope: project, path_template: .windsurf/hooks.json}, blocking: true}
+      cascade_user_row_cascade_event: {event: before_mcp_execute, provider: devin, entry: {scope: user, path_template: "~/.codeium/windsurf/hooks.json"}, blocking: true}
+      cascade_row_cli_only_event: {event: before_tool_execute, provider: devin, entry: {scope: project, path_template: .devin/hooks.json}, blocking: true}
+      cascade_row_cli_only_event_override: {event: before_tool_execute, provider: devin, entry: {scope: project, path_template: .devin/hooks.json}, blocking: true, operator_override: true}
+      cli_row_cli_only_event: {event: before_tool_execute, provider: devin, entry: {scope: project, path_template: .devin/hooks.v1.json}, blocking: true}
+      cli_row_cascade_event: {event: before_shell_execute, provider: devin, entry: {scope: project, path_template: .devin/hooks.v1.json}, blocking: true}
+      cli_user_row_cascade_event_non_blocking: {event: before_shell_execute, provider: devin, entry: {scope: user, path_template: "~/.config/devin/config.json"}, blocking: false}
+      single_dialect_lossless: {event: before_tool_execute, provider: claude-code, entry: {scope: project, path_template: .claude/settings.json}, blocking: true}
+      single_dialect_no_native_name: {event: before_shell_execute, provider: claude-code, entry: {scope: project, path_template: .claude/settings.json}, blocking: true}
+  expect:
+    # Cascade fires pre_run_command, so the gate works from this file.
+    cascade_row_cascade_event:
+      install: proceed
+      diagnostic_absent: acif.hook.event_untranslatable
+    cascade_user_row_cascade_event:
+      install: proceed
+      diagnostic_absent: acif.hook.event_untranslatable
+    # Cascade has no PreToolUse: judged per provider this was lossless and
+    # installed a gate that never fires.
+    cascade_row_cli_only_event:
+      install: refuse-unless-operator-opt-in
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_tool_execute, provider: devin, disposition: refused, path_template: .devin/hooks.json, dialect: cascade}
+    cascade_row_cli_only_event_override:
+      install: proceed
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_tool_execute, provider: devin, disposition: overridden, path_template: .devin/hooks.json, dialect: cascade}
+    cli_row_cli_only_event:
+      install: proceed
+      diagnostic_absent: acif.hook.event_untranslatable
+    cli_row_cascade_event:
+      install: refuse-unless-operator-opt-in
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: devin, disposition: refused, path_template: .devin/hooks.v1.json, dialect: cli}
+    cli_user_row_cascade_event_non_blocking:
+      install: proceed
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: devin, disposition: proceeded, path_template: "~/.config/devin/config.json", dialect: cli}
+    single_dialect_lossless:
+      install: proceed
+      diagnostic_absent: acif.hook.event_untranslatable
+    single_dialect_no_native_name:
+      install: refuse-unless-operator-opt-in
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: claude-code, disposition: refused, path_template: .claude/settings.json}
+      params_absent: [dialect]
+
+- id: TV-HOOK-u
+  spec: "[ACIF-HOOK] Appendix A.4, §12.3, §14; [ACIF-RENDER] §6.1"
+  harness: static
+  description: dialect-scoped render — devin's cascade dialect emits Cascade names losslessly and degrades the CLI-only events to their CLI names with acif.hook.event_untranslatable; naming the cli dialect renders exactly as naming none; a single-dialect provider's render is unchanged
+  input:
+    common_handlers: [{type: command, scripts: [{type: inline, content: "#!/bin/sh\necho hi\n"}]}]
+    cases:
+      cascade_before_shell: {event: before_shell_execute, target: devin, dialect: cascade}
+      cascade_before_prompt: {event: before_prompt, target: devin, dialect: cascade}
+      cascade_agent_stop: {event: agent_stop, target: devin, dialect: cascade}
+      cascade_worktree_create: {event: worktree_create, target: devin, dialect: cascade}
+      cascade_before_tool: {event: before_tool_execute, target: devin, dialect: cascade}
+      cascade_after_compact: {event: after_compact, target: devin, dialect: cascade}
+      cli_before_prompt: {event: before_prompt, target: devin, dialect: cli}
+      cli_before_shell: {event: before_shell_execute, target: devin, dialect: cli}
+      default_before_prompt: {event: before_prompt, target: devin}
+      single_dialect_before_tool: {event: before_tool_execute, target: claude-code}
+  expect:
+    cascade_before_shell:
+      emitted: pre_run_command
+      diagnostic_absent: acif.hook.event_untranslatable
+    cascade_before_prompt:
+      emitted: pre_user_prompt
+      excluded: [UserPromptSubmit]
+      diagnostic_absent: acif.hook.event_untranslatable
+    cascade_agent_stop:
+      emitted: post_cascade_response
+      diagnostic_absent: acif.hook.event_untranslatable
+    cascade_worktree_create:
+      emitted: post_setup_worktree
+      diagnostic_absent: acif.hook.event_untranslatable
+    cascade_before_tool:
+      emitted: PreToolUse
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_tool_execute, provider: devin}
+    cascade_after_compact:
+      emitted: PostCompaction
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: after_compact, provider: devin}
+    cli_before_prompt:
+      emitted: UserPromptSubmit
+      excluded: [pre_user_prompt]
+      diagnostic_absent: acif.hook.event_untranslatable
+    cli_before_shell:
+      emitted: pre_run_command
+      diagnostic: acif.hook.event_untranslatable
+      params: {event: before_shell_execute, provider: devin}
+    default_before_prompt:
+      emitted: UserPromptSubmit
+      excluded: [pre_user_prompt]
+      diagnostic_absent: acif.hook.event_untranslatable
+    single_dialect_before_tool:
+      emitted: PreToolUse
+      diagnostic_absent: acif.hook.event_untranslatable

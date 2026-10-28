@@ -54,6 +54,7 @@ A render invocation takes the canonical form plus a render context:
 
 - **target provider** — REQUIRED. Selects the vocabulary mapping columns and the target format.
 - **target OS** — OPTIONAL. Consumed only where an L1 defines OS-dependent rendering ([ACIF-HOOK] §12.2); absence is a defined state, not an error.
+- **target dialect** — OPTIONAL. Consumed only where an L1 defines a provider with more than one event-name dialect ([ACIF-HOOK] Appendix A.4); absence selects the provider's default dialect, a defined state, not an error. An install tool passes the dialect of the entry-point row it writes ([ACIF-INSTALL] §6).
 
 ACIF 0.1 pins no further context inputs. A renderer accepting implementation-specific options MUST NOT let them change the rendered bytes of a conforming (content type, target) render — options that alter output are a fork of the render function, not a parameter of it.
 
@@ -167,3 +168,5 @@ Individual vector IDs are assigned in the conformance suite.
 Promoted 2026-07-11 from the ACIF design record: the render-back clauses distributed across Decisions #24 (strip-and-restore), #25/#29 (vocabulary render targets and tiebreakers), #30/#31 (mode and placeholder render rules), and #33 (degradation lanes, the structured-encoder rule, dead-default preservation, the refuse outcome), generalized here into the framework the per-type sections instantiate.
 
 Newly minted at spec-promotion time (not present in the design record; flagged for review): the fidelity-class taxonomy of §7 (the design record defined the individual outcomes; the four-class framing, the one-disclosure-home rule, and the no-reclassification rule are promotion-time generalizations); the §6.1 render-context pinning and the options-don't-change-bytes rule; the §6.2 fixed-member-order requirement; the §9 enumerable-lossy-set conformance bound; and the TV-RENDER family. These items were ratified back into the design record (SHAPE.md, Spec-Promotion Ratifications section) at promotion time.
+
+Amended 2026-10-28 (SHAPE.md Decision #54, Class C): §6.1 adds the OPTIONAL target dialect to the render context. A render that names none uses the provider's default dialect, so every render that named only a provider before this amendment is unchanged.

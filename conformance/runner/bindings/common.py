@@ -136,6 +136,7 @@ def evaluate_install(
     *,
     install_target_provider: str | None = None,
     install_operator_override: bool = False,
+    install_target_entry: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     request_input: dict[str, Any] = {"item": item}
     if install_target_os is not None:
@@ -144,6 +145,8 @@ def evaluate_install(
         request_input["install_target_provider"] = install_target_provider
     if install_operator_override:
         request_input["install_operator_override"] = True
+    if install_target_entry is not None:
+        request_input["install_target_entry"] = install_target_entry
     return {"op": "evaluate_install", "input": request_input}
 
 

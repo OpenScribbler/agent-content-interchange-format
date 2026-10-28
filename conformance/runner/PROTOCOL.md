@@ -281,7 +281,9 @@ Tier-2 URL-derived display name ([ACIF-REGISTRY] §10.5).
 
 Render-back to a provider target ([ACIF-RENDER]; per-type render
 sections). `input`: `canonical`, `target` (provider tag), optional
-`invocation` (render context) →
+`invocation` (render context: optional `target_os`, and optional
+`target_dialect`, a dialect [ACIF-HOOK] Appendix A.4 defines for the
+target provider; absent selects the provider's default dialect) →
 `result`: `output` (§3.2 bytes-as-string), `diagnostics` (§3.1 — includes
 the degradation-pairing diagnostics), `lossy` (array of documented-lossy
 tokens, e.g. `write-edit-distinction`).
@@ -334,12 +336,20 @@ canonical record), optional `install_target_os`, optional
 to; the adapter evaluates the [ACIF-HOOK] §11 degraded-event rule for
 that one provider), optional `install_operator_override` (`true` when the
 operator has opted in to override the [ACIF-HOOK] §11 degraded-event
-refusal for that item and provider; it never overrides the OS
+refusal for that item and one install row: the row `install_target_entry`
+names, or the provider's default row when it is absent; it never overrides the OS
 coverage-gap refusal; absent means no override). With both
 `install_target_os` and `install_target_provider` present, the adapter
-evaluates both rules and discloses each → `result`: `install` (disposition string,
-e.g. `refuse-unless-operator-opt-in`, `proceed`), `diagnostics`. Both
-provider fields are additive and need no protocol bump (§1).
+evaluates both rules and discloses each. Optional `install_target_entry`
+(`{scope, path_template}`, naming one [ACIF-INSTALL] Appendix A.2 hook row
+of `install_target_provider`) makes the degraded-event rule per row: the
+adapter reads that row's `dialect` from the matrix, renders in it, and the
+disclosure carries `path_template` (and `dialect` when the row has one).
+Without it, the adapter judges in the provider's default dialect and the
+disclosure names no row → `result`: `install` (disposition string,
+e.g. `refuse-unless-operator-opt-in`, `proceed`), `diagnostics`. The
+provider, override, and entry fields, and `invocation.target_dialect`,
+are additive and need no protocol bump (§1).
 
 ### 4.13 `reconcile_frontmatter`
 
@@ -389,6 +399,8 @@ Payload-pinned (a vector asserts params content):
 | `acif.hook.event_untranslatable` | `event` (the canonical event name), `provider` (the render-target provider slug) | TV-HOOK-m |
 | `acif.hook.event_untranslatable` | `event`, `provider` (as above) | TV-HOOK-q |
 | `acif.hook.event_untranslatable` | `event`, `provider` (as above), `disposition` (`refused` \| `overridden` \| `proceeded`, on the [ACIF-HOOK] §11 install-time disclosure) | TV-HOOK-s |
+| `acif.hook.event_untranslatable` | `event`, `provider`, `disposition` (as above), `path_template` (the resolved install row's path template), `dialect` (the row's dialect, when it carries one) | TV-HOOK-t |
+| `acif.hook.event_untranslatable` | `event`, `provider` (as above; a render in a named dialect) | TV-HOOK-u |
 
 Identifier-only (vectors assert presence of the id; `params` MAY be empty
 and is not asserted): `acif.command.placeholder_named_arg_collapsed`,

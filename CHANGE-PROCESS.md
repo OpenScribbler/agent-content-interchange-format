@@ -105,6 +105,16 @@ matrix-pinned vector fixtures, inventoried in the manifest note. A
 change to the descriptor's grammar or enums is not a row-data
 amendment; it is Class C.
 
+A hook row's `dialect` ([ACIF-INSTALL] §6) is row data: correcting
+which existing dialect a file reads, or giving a new row of a
+multi-dialect provider its dialect, is an observation about a file and
+lands in this lane. It changes which event names an install writes to
+that row and how [ACIF-HOOK] §11 judges a blocking hook there, so the
+manifest note inventories any vector that resolves the row through
+`install_target_entry`. Minting a dialect, or giving a provider a
+second one, adds [ACIF-HOOK] Appendix A.4 vocabulary and pins and is
+Class C.
+
 A **provider-identity amendment** — the slug itself changes because the
 vendor renamed the product — carries three obligations a location
 amendment does not, because the slug is the key every downstream
@@ -177,7 +187,7 @@ re-verification of the affected scope is warranted.
 
 ## Suite and report impact
 
-The conformance suite (191 vectors at this writing) is normatively
+The conformance suite (193 vectors at this writing) is normatively
 authoritative over prose, and conformance reports pin the exact catalog
 content hashes and binding-set hash they ran against. Those facts drive
 the impact rules:

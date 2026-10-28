@@ -540,3 +540,61 @@ def tv_hook_s(vector: Vector, session: Any, ctx: Any) -> VectorResult:
         else:
             _assert_diagnostic_absent(result, name, response, exp[name]["diagnostic_absent"])
     return result
+
+
+def _assert_params_absent(result: VectorResult, case: str, response: AdapterResponse, diagnostic_id: str, keys: list[str]) -> None:
+    if response.kind in {"unsupported", "harness-error"}:
+        return
+    present = sorted(
+        {
+            key
+            for d in diagnostics_for(response)
+            if d.get("id") == diagnostic_id and isinstance(d.get("params"), dict)
+            for key in keys
+            if key in d["params"]
+        }
+    )
+    result.add_check(case, "params_absent", keys, present, not present)
+
+
+@binding("TV-HOOK-t")
+def tv_hook_t(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        item = {"hook": {"event": case["event"], "blocking": case["blocking"], "handlers": inp["common_handlers"]}}
+        request = evaluate_install(
+            item,
+            install_target_provider=case["provider"],
+            install_operator_override=case.get("operator_override", False),
+            install_target_entry=case["entry"],
+        )
+        response = send(result, session, ctx, request)
+        _assert_result_field(result, name, response, "install", exp[name]["install"])
+        if "diagnostic" in exp[name]:
+            assert_diagnostic(result, name, response, exp[name]["diagnostic"], exp[name]["params"])
+            if "params_absent" in exp[name]:
+                _assert_params_absent(result, name, response, exp[name]["diagnostic"], exp[name]["params_absent"])
+        else:
+            _assert_diagnostic_absent(result, name, response, exp[name]["diagnostic_absent"])
+    return result
+
+
+@binding("TV-HOOK-u")
+def tv_hook_u(vector: Vector, session: Any, ctx: Any) -> VectorResult:
+    result = _result(vector)
+    inp = vector.data["input"]
+    exp = vector.data["expect"]
+    for name, case in inp["cases"].items():
+        invocation = {"target_dialect": case["dialect"]} if "dialect" in case else None
+        canonical = {"hook": {"event": case["event"], "handlers": inp["common_handlers"]}}
+        response = _send(result, session, ctx, render(canonical, case["target"], invocation))
+        assert_output_contains(result, name, response, "emitted", exp[name]["emitted"])
+        if "excluded" in exp[name]:
+            assert_output_excludes(result, name, response, "excluded", exp[name]["excluded"])
+        if "diagnostic" in exp[name]:
+            assert_diagnostic(result, name, response, exp[name]["diagnostic"], exp[name]["params"])
+        else:
+            _assert_diagnostic_absent(result, name, response, exp[name]["diagnostic_absent"])
+    return result

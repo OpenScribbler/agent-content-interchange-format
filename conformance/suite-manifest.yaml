@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 17
+  date: 2026-10-28
+  change_class: c
+  supersedes: 16
+  note: "Class C (SHAPE.md Decision #54), no identifier minted. A hook install row carries its own event-name dialect, and render-back and the [ACIF-HOOK] §11 degraded-event rule are judged per resolved install row instead of per provider. [ACIF-HOOK] A.4 gains a dialect table (devin: cli and cascade, default cli) and a dialect column; devin is pinned for all 16 of its A.1 events in both dialects; rule 2 applies to single-dialect providers only and rule 3 covers an unpinned pair of a multi-dialect provider. [ACIF-INSTALL] §6 adds the OPTIONAL dialect row field, required on every hook row of a multi-dialect provider and forbidden elsewhere; devin's hook rows carry cli or cascade in A.2 and the install-entry-points export, and no other provider's rows change. [ACIF-RENDER] §6.1 adds the OPTIONAL target dialect; a render naming none uses the default dialect. The §11 disclosure acif.hook.event_untranslatable gains params path_template and, when the row carries one, dialect. PROTOCOL: evaluate_install gains the optional install_target_entry and render's invocation the optional target_dialect, both additive. Inventory (in the decision row): EMPTY; renders naming no dialect and TV-HOOK-s, which names no row, are unchanged. Additive vectors: TV-HOOK-t (per-row install disposition through install_target_entry) and TV-HOOK-u (dialect-scoped render). The selftest's A.1/A.4 check diffs the dialect table and dialect-keyed pins, and the install-entry-points sync check parses the Dialect column and enforces its presence rule"
+  vectors: 193
+  binding_set: ac39e7f59fed324d72c1a0eb0be3b2814cc4614a37dc0d9c1eb79107a1d0e56f
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: ed55c590d313d3b7f1f712f186cc14b2a76b7bf1d2651ef8f7b534ed47dc711f
+    fresh.yaml: d6b701b899b76272b2305418f2a9a12e5bddefab6d19d2680f4b24a8711e4e2a
+    hook.yaml: c01d9ce7010a0e21375971165c4974d5ff7be99c98d2bb60e68e2d02e090fccf
+    install.yaml: f6b378e2e4cab6a9e010ec565a09c092c22ddaad7bcd0f445c6677dd5d45784d
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: b8880b8e302f6df3462e34c753f7905309a77274305a0c6b376d5a32ff428988
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 16
   date: 2026-10-27
   change_class: c

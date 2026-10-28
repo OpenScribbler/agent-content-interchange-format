@@ -54,7 +54,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 ## 5. Conformance
 
-**Conforming install tool** — satisfies every MUST and MUST NOT in this document, and in the install-time sections of the L1 specifications for each content type it installs ([ACIF-HOOK] §11 coverage-gap rules, including the refusal of a blocking hook whose event renders degraded or whose provider is absent from [ACIF-HOOK] A.1; the revoked-reference refusal of [ACIF-CORE] §10 and [ACIF-REGISTRY] §9). An install tool MAY support any subset of providers and content types; conformance is claimed per `(provider, content type)` pair.
+**Conforming install tool** — satisfies every MUST and MUST NOT in this document, and in the install-time sections of the L1 specifications for each content type it installs ([ACIF-HOOK] §11 coverage-gap rules, including the refusal of a blocking hook whose event renders degraded in the dialect of the row it is written to, or whose provider is absent from [ACIF-HOOK] A.1; the revoked-reference refusal of [ACIF-CORE] §10 and [ACIF-REGISTRY] §9). An install tool MAY support any subset of providers and content types; conformance is claimed per `(provider, content type)` pair.
 
 The test-vector family in Appendix B is normatively authoritative over prose.
 
@@ -70,10 +70,13 @@ Each row carries:
 | `os` | OPTIONAL; a set over the closed OS enum of [ACIF-HOOK] §7.1 | normative |
 | `path_template` | closed grammar, §8 | normative |
 | `layout` | closed enum, §9 | normative |
+| `dialect` | OPTIONAL; hook rows only; a dialect token [ACIF-HOOK] Appendix A.4 defines for the row's provider | normative |
 | `status` | `current` \| `superseded` | normative (maintenance, §12) |
 | `as_of` | free text naming the provider build or documentation the row was verified against | informative |
 
 **`os`.** A row carrying `os` is a location on those operating systems only; a row without it is a location on every OS. The value is a non-empty set: its members are drawn from `{darwin, linux, windows}`, sorted by raw UTF-8 byte order, with no duplicates, and it MUST NOT list all three members — the unconstrained row omits the field, so each row has one published form. Resolution begins by **OS filtering**: the install tool keeps the rows whose `os` is absent or contains the target OS, in their published order, and every rule below and in §11 applies to the filtered list. A row filtered out is not a location for that invocation, for writing or for discovery.
+
+**`dialect`.** A hook row carrying `dialect` is a file whose reader parses that dialect's event names ([ACIF-HOOK] Appendix A.4). A hook row of a provider that A.4 lists with more than one dialect MUST carry `dialect`; every other row, hook or not, MUST NOT. A single-dialect provider needs no field because its one dialect is the one A.1 and A.4 already judge it by: omitting the field keeps its rows, and every consumer's reading of them, exactly as they were, the same reason `os` is omitted from an unconstrained row. An install tool writing a hook renders it in the dialect of the row it writes, and evaluates the [ACIF-HOOK] §11 degraded-event rule against that render, whichever row the write resolves to, including a non-first row the operator directs it to. A consumer that ignores `dialect` renders every devin row in the default dialect and can write a blocking hook where it never fires, which is the fail-open §13 describes.
 
 Three structural rules:
 
@@ -174,7 +177,7 @@ Resolution and install produce dispositions in the [ACIF-HOOK] §11 pattern — 
 | the resolved write row is `status: superseded` | `acif.install.entry_point_superseded` | warn and proceed; operators MAY configure refuse |
 | an uninstall or re-install of a hook finds no install record for the item, a recorded entry absent from the shared file, or fewer or more matching instances than the readable install records name (§10) | `acif.install.contribution_not_found` | warn and proceed; nothing is removed for that entry; `params` MUST name the `file` and the `item` |
 
-Silence is the violation, as everywhere in this document set: each condition has exactly one disclosure home, and an install tool MUST NOT convert a refuse lane into a best-effort write under an option flag ([ACIF-RENDER] §6.1 discipline), except the [ACIF-HOOK] §11 operator override, which is scoped to one item and provider and stays disclosed and recorded. The warn lane exists for supersession because the superseded location is still a real location — a stale-but-working install is disclosed, not forbidden; a guessed path is forbidden because it is not disclosed anywhere.
+Silence is the violation, as everywhere in this document set: each condition has exactly one disclosure home, and an install tool MUST NOT convert a refuse lane into a best-effort write under an option flag ([ACIF-RENDER] §6.1 discipline), except the [ACIF-HOOK] §11 operator override, which is scoped to one item and one install row and stays disclosed and recorded. The warn lane exists for supersession because the superseded location is still a real location — a stale-but-working install is disclosed, not forbidden; a guessed path is forbidden because it is not disclosed anywhere.
 
 ## 12. Maintenance: What the Freeze Claims
 
@@ -191,7 +194,7 @@ That split sets the maintenance model:
 
 **Resolved paths are write targets.** The §8.2 validity predicate is the traversal defense: a content name carrying separators or dot-segments would otherwise turn a template into a write primitive against arbitrary paths. Rejection happens before path formation, and the predicate is vectored (Appendix B).
 
-**A wrong path is a fail-open install.** An install that lands where the provider no longer reads reports success while the content never runs — for a blocking hook, a silently absent control ([ACIF-HOOK] §11). A correct path with an event name the provider never fires fails open the same way, which is why [ACIF-HOOK] §11 refuses a blocking hook whose event renders degraded on the target provider, or whose provider ACIF has no event names for. This is why guessing is forbidden (§6), supersession is disclosed (§11), and rows are amended on observation rather than on release cadence (§12).
+**A wrong path is a fail-open install.** An install that lands where the provider no longer reads reports success while the content never runs — for a blocking hook, a silently absent control ([ACIF-HOOK] §11). A correct path with an event name the provider never fires fails open the same way, which is why [ACIF-HOOK] §11 refuses a blocking hook whose event renders degraded in the dialect of the row it is written to, or whose provider ACIF has no event names for. The row's dialect, not the provider, decides: a provider can read different names from different files, so a provider-level verdict can pass a hook that the written file never fires. This is why guessing is forbidden (§6), supersession is disclosed (§11), and rows are amended on observation rather than on release cadence (§12).
 
 **Shared files cross trust boundaries twice.** A `merged_into_shared_file` write lands beside provider settings the user relies on (the §10 preservation and un-merge obligations), and a cross-provider shared path means an install performed for one provider changes what another provider loads — an install tool SHOULD resolve the full matrix for a path it is about to write and disclose every other `(provider, content type)` row that names it.
 
@@ -240,187 +243,187 @@ The machine-readable form of this appendix is `conformance/install-entry-points.
 
 ### A.2 Entry-point rows
 
-Rows are grouped by provider, then content type; order within a group is normative precedence (§6). Sorting between groups is alphabetical by provider slug, then content type — the pinned canonical export ordering. A blank OS cell means the row carries no `os` and applies on every OS (§6); a listed value is the row's `os` set. Every published `managed` row is OS-constrained, because no surveyed provider places managed content at one absolute path on all three platforms. Providers are keyed by the slugs the normative appendices already use ([ACIF-HOOK] Appendix A/B columns); the survey basis omitted rows whose location, filename, or scope could not be stated determinately (a bare provider config dir with no per-type naming; a config path whose anchor the survey left ambiguous) — absence asserts nothing (A.1).
+Rows are grouped by provider, then content type; order within a group is normative precedence (§6). Sorting between groups is alphabetical by provider slug, then content type — the pinned canonical export ordering. A blank OS cell means the row carries no `os` and applies on every OS (§6); a listed value is the row's `os` set. A blank Dialect cell means the row carries no `dialect` (§6). Every published `managed` row is OS-constrained, because no surveyed provider places managed content at one absolute path on all three platforms. Providers are keyed by the slugs the normative appendices already use ([ACIF-HOOK] Appendix A/B columns); the survey basis omitted rows whose location, filename, or scope could not be stated determinately (a bare provider config dir with no per-type naming; a config path whose anchor the survey left ambiguous) — absence asserts nothing (A.1).
 
-*(Informative)* devin's rows are the first to use the OS dimension. Its CLI reads user configuration from `~/.config/devin/` on `darwin` and `linux` and from `%APPDATA%\devin\` on `windows`, and its managed locations are one absolute path per OS, with the pre-rename Windsurf locations read as a fallback. Both sets are published as per-OS rows, verified against `docs.devin.ai` in 2026-09. devin's managed hook files (`/Library/Application Support/Devin/hooks.json`, `/etc/devin/hooks.json`, `C:\ProgramData\Devin\hooks.json`, each with a Windsurf-named fallback) are omitted: they are read by the Cascade hook system, whose event names differ from the Devin CLI names that [ACIF-HOOK] Appendix A.4 pins as devin's render-back target, so an install directed there would write events the file's reader does not recognize. The subagent rows publish the flat `<content-name>.md` form only; devin also reads a `<content-name>/AGENT.md` directory form, which is omitted because [ACIF-AGENT] pins no entry-file name for a directory layout.
+*(Informative)* devin's rows are the first to use the OS dimension. Its CLI reads user configuration from `~/.config/devin/` on `darwin` and `linux` and from `%APPDATA%\devin\` on `windows`, and its managed locations are one absolute path per OS, with the pre-rename Windsurf locations read as a fallback. Both sets are published as per-OS rows, verified against `docs.devin.ai` in 2026-09. devin's hook rows name two dialects: the CLI files read `cli` names and the Cascade files read `cascade` names ([ACIF-HOOK] Appendix A.4), verified against the Devin CLI and Cascade hooks pages on docs.devin.ai on 2026-10-28. devin's managed hook files (`/Library/Application Support/Devin/hooks.json`, `/etc/devin/hooks.json`, `C:\ProgramData\Devin\hooks.json`, each with a Windsurf-named fallback) are read by Cascade and remain omitted. They were omitted when every devin render used CLI names; the `cascade` dialect now lets them be published, and they land as a row-data amendment once re-verified. The subagent rows publish the flat `<content-name>.md` form only; devin also reads a `<content-name>/AGENT.md` directory form, which is omitted because [ACIF-AGENT] pins no entry-file name for a directory layout.
 
 *(Informative)* cline's MCP settings file remains omitted. It lives under the host editor's per-OS application-data directory (`globalStorage` of whichever editor hosts the extension), so its location depends on an input the row model does not carry: the host editor, not the OS.
 
 *(Informative)* A second class of omission is deliberate and worth naming, because a reader comparing the matrix to a provider's own documentation will notice it. Some providers *read* another provider's configuration for compatibility: `devin` loads hooks, commands, and subagents from `~/.claude.json`, `~/.claude/settings.json`, and `.claude/settings.json` in addition to its own locations. Those are not entry-point rows. An entry point is where a conforming install tool *writes* so that this provider picks the item up (§3), and writing into a path another provider's rows already claim would install the item into that provider too, which no caller asked for. A compatibility read is a fact about the reading provider's loader, not a location ACIF directs anyone to write. The matrix therefore carries only the provider's own namespace, and a shared-convention path (`AGENTS.md`, `.agents/skills/`) counts as its own namespace because no single provider owns it.
 
-| Provider | Type | Scope | OS | Path template | Layout | Status | as_of *(informative)* |
-|---|---|---|---|---|---|---|---|
-| `amp` | hook | project |  | `.amp/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `amp` | mcp_config | project |  | `.amp/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `amp` | rule | user |  | `~/.config/amp/AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `amp` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `amp` | skill | user |  | `~/.config/agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `amp` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `claude-code` | agent | user |  | `~/.claude/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `claude-code` | agent | project |  | `.claude/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `claude-code` | command | user |  | `~/.claude/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `claude-code` | command | project |  | `.claude/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `claude-code` | hook | user |  | `~/.claude/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey; installer path table (ADR-0020) |
-| `claude-code` | hook | project |  | `.claude/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `claude-code` | mcp_config | project |  | `.mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `claude-code` | rule | user |  | `~/.claude/rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `claude-code` | rule | project |  | `.claude/rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `claude-code` | rule | project |  | `CLAUDE.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `claude-code` | skill | user |  | `~/.claude/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `claude-code` | skill | project |  | `.claude/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `cline` | command | user |  | `~/Documents/Cline/Workflows/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cline` | command | project |  | `.clinerules/workflows/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cline` | rule | user |  | `~/Documents/Cline/Rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cline` | rule | project |  | `.clinerules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cline` | rule | project |  | `.clinerules` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `cline` | skill | user |  | `~/.cline/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `cline` | skill | project |  | `.cline/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `codex` | command | project |  | `.codex/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `codex` | hook | project |  | `.codex/hooks.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `codex` | mcp_config | user |  | `~/.codex/config.toml` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `codex` | rule | user |  | `~/.codex/AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `codex` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `codex` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `codex` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `copilot-cli` | agent | user |  | `~/.github/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `copilot-cli` | agent | project |  | `.copilot/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `copilot-cli` | agent | project |  | `.github/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `copilot-cli` | command | user |  | `~/.copilot/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `copilot-cli` | command | project |  | `.copilot/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `copilot-cli` | hook | project |  | `.github/hooks/<content-name>.json` | single_file | current | syllago 2026-07 survey |
-| `copilot-cli` | mcp_config | user |  | `~/.copilot/mcp-config.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `copilot-cli` | mcp_config | project |  | `.copilot/mcp-config.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `copilot-cli` | rule | project |  | `.github/copilot-instructions.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `copilot-cli` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `copilot-cli` | skill | user |  | `~/.github/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `copilot-cli` | skill | project |  | `.github/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `crush` | hook | user |  | `~/.config/crush/crush.json` | merged_into_shared_file | current | syllago 2026-07 survey; installer path table (ADR-0020) |
-| `crush` | hook | project |  | `crush.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `crush` | mcp_config | user |  | `~/.config/crush/crush.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `crush` | mcp_config | project |  | `crush.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `crush` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `crush` | skill | user |  | `~/.config/crush/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `crush` | skill | project |  | `.crush/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `cursor` | agent | user |  | `~/.cursor/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cursor` | agent | project |  | `.cursor/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `cursor` | hook | user |  | `~/.cursor/hooks.json` | merged_into_shared_file | current | cursor.com/docs/agent/hooks 2026-09-30 |
-| `cursor` | hook | user |  | `~/.cursor/settings.json` | merged_into_shared_file | superseded | cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey; installer path table (ADR-0020)) |
-| `cursor` | hook | project |  | `.cursor/hooks.json` | merged_into_shared_file | current | cursor.com/docs/agent/hooks 2026-09-30 |
-| `cursor` | hook | project |  | `.cursor/settings.json` | merged_into_shared_file | superseded | cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey) |
-| `cursor` | mcp_config | user |  | `~/.cursor/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `cursor` | mcp_config | project |  | `.cursor/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `cursor` | rule | project |  | `.cursor/rules/<content-name>.mdc` | single_file | current | syllago 2026-07 survey |
-| `cursor` | rule | project |  | `.cursorrules` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `cursor` | skill | user |  | `~/.cursor/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `cursor` | skill | project |  | `.cursor/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `devin` | agent | user | darwin, linux | `~/.config/devin/agents/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | agent | user | windows | `<appdata>/devin/agents/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | agent | project |  | `.devin/agents/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | agent | project |  | `.agents/agents/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | user |  | `~/.codeium/windsurf/global_workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | project |  | `.devin/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | project |  | `.windsurf/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | managed | darwin | `/Library/Application Support/Devin/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | managed | linux | `/etc/devin/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | managed | windows | `C:/ProgramData/Devin/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | managed | darwin | `/Library/Application Support/Windsurf/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | managed | linux | `/etc/windsurf/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | command | managed | windows | `C:/ProgramData/Windsurf/workflows/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | user | darwin, linux | `~/.config/devin/config.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | user | windows | `<appdata>/devin/config.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | user |  | `~/.codeium/windsurf/hooks.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | user |  | `~/.codeium/hooks.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | project |  | `.devin/hooks.v1.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | project |  | `.devin/config.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | project |  | `.devin/hooks.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | hook | project |  | `.windsurf/hooks.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | mcp_config | user | darwin, linux | `~/.config/devin/mcp_config.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | mcp_config | user | windows | `<appdata>/devin/mcp_config.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | mcp_config | project |  | `.devin/mcp_config.json` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | user | darwin, linux | `~/.config/devin/AGENTS.md` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | user | windows | `<appdata>/devin/AGENTS.md` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | user |  | `~/.devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | user |  | `~/.devin/global_rules.md` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | user |  | `~/.codeium/windsurf/memories/global_rules.md` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | project |  | `.devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | project |  | `.devin/global_rules.md` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | project |  | `.windsurf/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | project |  | `.windsurfrules` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | managed | darwin | `/Library/Application Support/Devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | managed | linux | `/etc/devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | managed | windows | `C:/ProgramData/Devin/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | managed | darwin | `/Library/Application Support/Windsurf/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | managed | linux | `/etc/windsurf/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | rule | managed | windows | `C:/ProgramData/Windsurf/rules/<content-name>.md` | single_file | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | user | darwin, linux | `~/.config/devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | user | windows | `<appdata>/devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | user |  | `~/.codeium/windsurf/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | project |  | `.devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | project |  | `.windsurf/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | managed | darwin | `/Library/Application Support/Devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | managed | linux | `/etc/devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | managed | windows | `C:/ProgramData/Devin/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | managed | darwin | `/Library/Application Support/Windsurf/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | managed | linux | `/etc/windsurf/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `devin` | skill | managed | windows | `C:/ProgramData/Windsurf/skills/<content-name>/` | directory_of_files | current | docs.devin.ai 2026-09 verification |
-| `factory-droid` | agent | user |  | `~/.factory/droids/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `factory-droid` | agent | project |  | `.factory/droids/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `factory-droid` | command | user |  | `~/.factory/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `factory-droid` | command | project |  | `.factory/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `factory-droid` | hook | user |  | `~/.factory/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey; installer path table (ADR-0020) |
-| `factory-droid` | hook | project |  | `.factory/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `factory-droid` | mcp_config | user |  | `~/.factory/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `factory-droid` | mcp_config | project |  | `.factory/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `factory-droid` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `factory-droid` | skill | user |  | `~/.factory/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `factory-droid` | skill | project |  | `.factory/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `gemini-cli` | agent | user |  | `~/.gemini/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `gemini-cli` | agent | project |  | `.gemini/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `gemini-cli` | hook | user |  | `~/.gemini/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey; installer path table (ADR-0020) |
-| `gemini-cli` | hook | project |  | `.gemini/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `gemini-cli` | mcp_config | user |  | `~/.gemini/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `gemini-cli` | mcp_config | project |  | `.gemini/settings.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `gemini-cli` | rule | user |  | `~/.gemini/GEMINI.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `gemini-cli` | rule | project |  | `GEMINI.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `gemini-cli` | skill | user |  | `~/.gemini/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `gemini-cli` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `gemini-cli` | skill | project |  | `.gemini/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `gemini-cli` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `kiro` | mcp_config | user |  | `~/.kiro/settings/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `kiro` | mcp_config | project |  | `.kiro/settings/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `kiro` | rule | project |  | `.kiro/steering/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `opencode` | agent | user |  | `~/.config/opencode/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `opencode` | agent | project |  | `.opencode/agents/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `opencode` | command | user |  | `~/.config/opencode/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `opencode` | command | project |  | `.opencode/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `opencode` | mcp_config | project |  | `opencode.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `opencode` | mcp_config | project |  | `opencode.jsonc` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `opencode` | rule | user |  | `~/.config/opencode/AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `opencode` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `opencode` | skill | user |  | `~/.config/opencode/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `opencode` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `opencode` | skill | project |  | `.opencode/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `opencode` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `pi` | command | user |  | `~/.pi/agent/prompts/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `pi` | command | project |  | `.pi/prompts/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `pi` | hook | user |  | `~/.pi/agent/extensions/<content-name>.ts` | single_file | current | syllago 2026-07 survey |
-| `pi` | hook | project |  | `.pi/extensions/<content-name>.ts` | single_file | current | syllago 2026-07 survey |
-| `pi` | rule | project |  | `AGENTS.md` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `pi` | skill | user |  | `~/.pi/agent/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `pi` | skill | project |  | `.pi/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `roo-code` | command | user |  | `~/.roo/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `roo-code` | command | project |  | `.roo/commands/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `roo-code` | mcp_config | project |  | `.roo/mcp.json` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `roo-code` | rule | user |  | `~/.roo/rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `roo-code` | rule | project |  | `.roo/rules/<content-name>.md` | single_file | current | syllago 2026-07 survey |
-| `roo-code` | rule | project |  | `.roorules` | merged_into_shared_file | current | syllago 2026-07 survey |
-| `roo-code` | skill | user |  | `~/.roo/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `roo-code` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `roo-code` | skill | project |  | `.roo/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
-| `roo-code` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files | current | syllago 2026-07 survey |
+| Provider | Type | Scope | OS | Path template | Layout | Dialect | Status | as_of *(informative)* |
+|---|---|---|---|---|---|---|---|---|
+| `amp` | hook | project |  | `.amp/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `amp` | mcp_config | project |  | `.amp/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `amp` | rule | user |  | `~/.config/amp/AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `amp` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `amp` | skill | user |  | `~/.config/agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `amp` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `claude-code` | agent | user |  | `~/.claude/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `claude-code` | agent | project |  | `.claude/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `claude-code` | command | user |  | `~/.claude/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `claude-code` | command | project |  | `.claude/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `claude-code` | hook | user |  | `~/.claude/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey; installer path table (ADR-0020) |
+| `claude-code` | hook | project |  | `.claude/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `claude-code` | mcp_config | project |  | `.mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `claude-code` | rule | user |  | `~/.claude/rules/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `claude-code` | rule | project |  | `.claude/rules/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `claude-code` | rule | project |  | `CLAUDE.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `claude-code` | skill | user |  | `~/.claude/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `claude-code` | skill | project |  | `.claude/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `cline` | command | user |  | `~/Documents/Cline/Workflows/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `cline` | command | project |  | `.clinerules/workflows/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `cline` | rule | user |  | `~/Documents/Cline/Rules/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `cline` | rule | project |  | `.clinerules/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `cline` | rule | project |  | `.clinerules` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `cline` | skill | user |  | `~/.cline/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `cline` | skill | project |  | `.cline/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `codex` | command | project |  | `.codex/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `codex` | hook | project |  | `.codex/hooks.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `codex` | mcp_config | user |  | `~/.codex/config.toml` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `codex` | rule | user |  | `~/.codex/AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `codex` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `codex` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `codex` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `copilot-cli` | agent | user |  | `~/.github/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | agent | project |  | `.copilot/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | agent | project |  | `.github/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | command | user |  | `~/.copilot/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | command | project |  | `.copilot/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | hook | project |  | `.github/hooks/<content-name>.json` | single_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | mcp_config | user |  | `~/.copilot/mcp-config.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | mcp_config | project |  | `.copilot/mcp-config.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | rule | project |  | `.github/copilot-instructions.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `copilot-cli` | skill | user |  | `~/.github/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `copilot-cli` | skill | project |  | `.github/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `crush` | hook | user |  | `~/.config/crush/crush.json` | merged_into_shared_file |  | current | syllago 2026-07 survey; installer path table (ADR-0020) |
+| `crush` | hook | project |  | `crush.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `crush` | mcp_config | user |  | `~/.config/crush/crush.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `crush` | mcp_config | project |  | `crush.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `crush` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `crush` | skill | user |  | `~/.config/crush/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `crush` | skill | project |  | `.crush/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `cursor` | agent | user |  | `~/.cursor/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `cursor` | agent | project |  | `.cursor/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `cursor` | hook | user |  | `~/.cursor/hooks.json` | merged_into_shared_file |  | current | cursor.com/docs/agent/hooks 2026-09-30 |
+| `cursor` | hook | user |  | `~/.cursor/settings.json` | merged_into_shared_file |  | superseded | cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey; installer path table (ADR-0020)) |
+| `cursor` | hook | project |  | `.cursor/hooks.json` | merged_into_shared_file |  | current | cursor.com/docs/agent/hooks 2026-09-30 |
+| `cursor` | hook | project |  | `.cursor/settings.json` | merged_into_shared_file |  | superseded | cursor.com/docs/agent/hooks 2026-09-30 (Cursor reads hooks from `hooks.json`; previously syllago 2026-07 survey) |
+| `cursor` | mcp_config | user |  | `~/.cursor/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `cursor` | mcp_config | project |  | `.cursor/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `cursor` | rule | project |  | `.cursor/rules/<content-name>.mdc` | single_file |  | current | syllago 2026-07 survey |
+| `cursor` | rule | project |  | `.cursorrules` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `cursor` | skill | user |  | `~/.cursor/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `cursor` | skill | project |  | `.cursor/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `devin` | agent | user | darwin, linux | `~/.config/devin/agents/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | agent | user | windows | `<appdata>/devin/agents/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | agent | project |  | `.devin/agents/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | agent | project |  | `.agents/agents/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | user |  | `~/.codeium/windsurf/global_workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | project |  | `.devin/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | project |  | `.windsurf/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | managed | darwin | `/Library/Application Support/Devin/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | managed | linux | `/etc/devin/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | managed | windows | `C:/ProgramData/Devin/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | managed | darwin | `/Library/Application Support/Windsurf/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | managed | linux | `/etc/windsurf/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | command | managed | windows | `C:/ProgramData/Windsurf/workflows/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | user | darwin, linux | `~/.config/devin/config.json` | merged_into_shared_file | `cli` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | user | windows | `<appdata>/devin/config.json` | merged_into_shared_file | `cli` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | user |  | `~/.codeium/windsurf/hooks.json` | merged_into_shared_file | `cascade` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | user |  | `~/.codeium/hooks.json` | merged_into_shared_file | `cascade` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | project |  | `.devin/hooks.v1.json` | merged_into_shared_file | `cli` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | project |  | `.devin/config.json` | merged_into_shared_file | `cli` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | project |  | `.devin/hooks.json` | merged_into_shared_file | `cascade` | current | docs.devin.ai 2026-09 verification |
+| `devin` | hook | project |  | `.windsurf/hooks.json` | merged_into_shared_file | `cascade` | current | docs.devin.ai 2026-09 verification |
+| `devin` | mcp_config | user | darwin, linux | `~/.config/devin/mcp_config.json` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | mcp_config | user | windows | `<appdata>/devin/mcp_config.json` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | mcp_config | project |  | `.devin/mcp_config.json` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | user | darwin, linux | `~/.config/devin/AGENTS.md` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | user | windows | `<appdata>/devin/AGENTS.md` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | user |  | `~/.devin/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | user |  | `~/.devin/global_rules.md` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | user |  | `~/.codeium/windsurf/memories/global_rules.md` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | project |  | `.devin/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | project |  | `.devin/global_rules.md` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | project |  | `.windsurf/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | project |  | `.windsurfrules` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | managed | darwin | `/Library/Application Support/Devin/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | managed | linux | `/etc/devin/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | managed | windows | `C:/ProgramData/Devin/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | managed | darwin | `/Library/Application Support/Windsurf/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | managed | linux | `/etc/windsurf/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | rule | managed | windows | `C:/ProgramData/Windsurf/rules/<content-name>.md` | single_file |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | user | darwin, linux | `~/.config/devin/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | user | windows | `<appdata>/devin/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | user |  | `~/.codeium/windsurf/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | project |  | `.devin/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | project |  | `.windsurf/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | managed | darwin | `/Library/Application Support/Devin/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | managed | linux | `/etc/devin/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | managed | windows | `C:/ProgramData/Devin/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | managed | darwin | `/Library/Application Support/Windsurf/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | managed | linux | `/etc/windsurf/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `devin` | skill | managed | windows | `C:/ProgramData/Windsurf/skills/<content-name>/` | directory_of_files |  | current | docs.devin.ai 2026-09 verification |
+| `factory-droid` | agent | user |  | `~/.factory/droids/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | agent | project |  | `.factory/droids/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | command | user |  | `~/.factory/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | command | project |  | `.factory/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | hook | user |  | `~/.factory/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey; installer path table (ADR-0020) |
+| `factory-droid` | hook | project |  | `.factory/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | mcp_config | user |  | `~/.factory/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | mcp_config | project |  | `.factory/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `factory-droid` | skill | user |  | `~/.factory/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `factory-droid` | skill | project |  | `.factory/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `gemini-cli` | agent | user |  | `~/.gemini/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | agent | project |  | `.gemini/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | hook | user |  | `~/.gemini/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey; installer path table (ADR-0020) |
+| `gemini-cli` | hook | project |  | `.gemini/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | mcp_config | user |  | `~/.gemini/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | mcp_config | project |  | `.gemini/settings.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | rule | user |  | `~/.gemini/GEMINI.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | rule | project |  | `GEMINI.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `gemini-cli` | skill | user |  | `~/.gemini/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `gemini-cli` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `gemini-cli` | skill | project |  | `.gemini/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `gemini-cli` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `kiro` | mcp_config | user |  | `~/.kiro/settings/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `kiro` | mcp_config | project |  | `.kiro/settings/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `kiro` | rule | project |  | `.kiro/steering/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `opencode` | agent | user |  | `~/.config/opencode/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `opencode` | agent | project |  | `.opencode/agents/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `opencode` | command | user |  | `~/.config/opencode/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `opencode` | command | project |  | `.opencode/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `opencode` | mcp_config | project |  | `opencode.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `opencode` | mcp_config | project |  | `opencode.jsonc` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `opencode` | rule | user |  | `~/.config/opencode/AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `opencode` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `opencode` | skill | user |  | `~/.config/opencode/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `opencode` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `opencode` | skill | project |  | `.opencode/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `opencode` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `pi` | command | user |  | `~/.pi/agent/prompts/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `pi` | command | project |  | `.pi/prompts/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `pi` | hook | user |  | `~/.pi/agent/extensions/<content-name>.ts` | single_file |  | current | syllago 2026-07 survey |
+| `pi` | hook | project |  | `.pi/extensions/<content-name>.ts` | single_file |  | current | syllago 2026-07 survey |
+| `pi` | rule | project |  | `AGENTS.md` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `pi` | skill | user |  | `~/.pi/agent/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `pi` | skill | project |  | `.pi/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `roo-code` | command | user |  | `~/.roo/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `roo-code` | command | project |  | `.roo/commands/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `roo-code` | mcp_config | project |  | `.roo/mcp.json` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `roo-code` | rule | user |  | `~/.roo/rules/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `roo-code` | rule | project |  | `.roo/rules/<content-name>.md` | single_file |  | current | syllago 2026-07 survey |
+| `roo-code` | rule | project |  | `.roorules` | merged_into_shared_file |  | current | syllago 2026-07 survey |
+| `roo-code` | skill | user |  | `~/.roo/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `roo-code` | skill | user |  | `~/.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `roo-code` | skill | project |  | `.roo/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
+| `roo-code` | skill | project |  | `.agents/skills/<content-name>/` | directory_of_files |  | current | syllago 2026-07 survey |
 
 ## Appendix B — Conformance Test-Vector Family (Normative)
 
@@ -437,6 +440,8 @@ Individual vector IDs are assigned in the conformance suite.
 Minted 2026-07-16 as the install-entry-points expansion (SHAPE.md Decision #41; stabilization-plan Phase 4, Gate C: spec-purist + registry-operator, convergent). The Gate C record: home = a dedicated L5 actor document (this one) rather than a [ACIF-REGISTRY] §8 projection (a frozen table is ACIF's assertion, not a registry derivation) or a render-context input ([ACIF-RENDER] §6.1 pins its context closed; placement is the install tool's act, downstream of bytes); polarity = frozen rows under the deterministic-projection discipline with the row-data amendment lane, rather than an observational §8.4-style snapshot (an install-tool MUST cannot cite stale-able data), with the registry-operator's conditions adopted: the A.1 ownership carve-out, supersession-not-deletion, byte-identical re-serving, refresh-over-vendored consumption, and the amendment lane landing on observation without a batch window.
 
 The `os` row field and the `<appdata>` token were added by SHAPE.md Decision #45 (Class C, 2026-09-30), when devin's per-OS user and managed locations became the first verified rows that need them.
+
+Amended 2026-10-28 (SHAPE.md Decision #54, Class C): §6 adds the OPTIONAL `dialect` row field, on hook rows only, required on every hook row of a provider [ACIF-HOOK] Appendix A.4 lists with more than one dialect and forbidden elsewhere. devin's hook rows carry `cli` (`~/.config/devin/config.json`, `<appdata>/devin/config.json`, `.devin/hooks.v1.json`, `.devin/config.json`) or `cascade` (`~/.codeium/windsurf/hooks.json`, `~/.codeium/hooks.json`, `.devin/hooks.json`, `.windsurf/hooks.json`). The install tool renders a hook in the dialect of the row it writes, and the [ACIF-HOOK] §11 degraded-event rule is judged on that row, so an operator-directed write to a non-first Cascade row no longer passes on devin's CLI names. Before this amendment a blocking hook could render lossless for devin, pass §11, and never fire from the Cascade file it was written to. No row's location, order, or status moved, and every other provider's rows and export bytes are unchanged. §5 and §13 cite the per-row judgement, and §11 scopes the [ACIF-HOOK] §11 operator override to one item and one install row instead of one item and provider.
 
 Amended 2026-10-24 (SHAPE.md Decisions #50 and #51, Class C): §10 rule 3 keys a hook contribution by item instead of by event key and matcher, stated as an observable outcome: after installing A, then B with identical entries, then uninstalling A, the shared file holds exactly B's entries. An install tool meets it through an install record kept outside the shared file (§3, §10), placed beside the shared file at `project` scope; it matches entries under structured decoding, removes identical entries as a multiset counted over the install records the uninstalling tool can read (a shared file written by more than one install tool is outside the guarantee), deletes the item's record on uninstall whether or not entries were removed, never merges entries across items, and no longer defers contribution keying to [ACIF-HOOK] §12 or the §7.4 identity-merge, neither of which keys a contribution. `acif.install.contribution_not_found` (warn) is minted for a missing record, a missing entry, or a short or unaccounted-for count. Every hook install carrying an overridden [ACIF-HOOK] §11 disposition keeps an install record, whatever the layout. §5 and §13 cite the new [ACIF-HOOK] §11 refusal of a blocking hook whose event renders degraded or whose provider is absent from A.1, and §11 excepts its scoped operator override from the refuse-lane rule. The §10 rule is not vectored under the current adapter protocol; the [ACIF-HOOK] §11 rule is.
 
