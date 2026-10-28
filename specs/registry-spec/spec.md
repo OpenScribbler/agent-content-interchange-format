@@ -74,7 +74,8 @@ registry_section:
   install_scope_capabilities: {...}   # §8.5
   inferred_pack_id: "b2c3d4e5-..."   # OPTIONAL — [ACIF-PUBLISHER] §9; present iff
                                       # a pack was inferred; MAY coexist with a declared
-                                      # pack_id, which wins ([ACIF-PUBLISHER] §8.3)
+                                      # pack_id, which wins ([ACIF-PUBLISHER] §8.3);
+                                      # serialized in the [ACIF-CORE] §5.1 lowercase form
   pack_resolution: "inferred"         # OPTIONAL — declared | inferred | unresolved
   inference_version: "v0.1"           # REQUIRED when inferred_pack_id present
   fetched_at: "2026-05-11T18:00:00Z"  # REQUIRED — RFC 3339 with explicit offset, crawl time
@@ -182,7 +183,8 @@ cross_references:
     target_kind: mcp_config              # expected content type of the target
     target_id: "a1b2c3d4-..."            # name-declared refs: REQUIRED iff resolution:
                                          # resolved. UUID-authored refs MAY omit it — the
-                                         # declared identifier at source_path is the target id
+                                         # declared identifier at source_path is the target id;
+                                         # serialized in the [ACIF-CORE] §5.1 lowercase form
     resolution: resolved                 # declared | resolved | unresolved | revoked
     diagnostic: acif.registry.reference_unresolved
                                          # REQUIRED for unresolved | revoked — the §12
@@ -353,3 +355,5 @@ Newly minted at spec-promotion time (not present in the design record; flagged f
 Amended after the second independent review (2026-07-11): the `body_size_bytes` definition pinned per body classification (§7); the §10.5 record-both rule made concrete (declared name stays in `publisher_section`; URL-derived name is the tier-2 input and named in the diagnostic); and the TV-URI (v) / TV-L3 (d) vectors.
 
 Amended 2026-10-24 (SHAPE.md Decision #49, Class C): `attestation_hash` changes from a slot whose filler is out of scope to the attestation input digest an external attestation system signs, a domain-separated SHA-256 over the item's `body_hash` and `metadata_hash` (§6). When present it MUST equal that digest computed from the record's own hashes; a mismatch, or the field on a pack record, is the new record-emit reject `acif.registry.attestation_hash_mismatch` (§12). A consumer MUST recompute both hashes over the fetched item bytes the install is rendered from (canonical body and any publisher sidecar), not over the rendered bytes it writes, derive the digest, and count an attestation toward the `attested` tier only when one of its signed subject digests equals it; an absent `attestation_hash` evaluates `unattested` (§11.3). No external system is named, the registry still never parses an attestation, and the byte-identical-response rule is unchanged. TV-L3 (e) and TV-FRESH (l) are added, and TV-FRESH (j) carries a conformant `attestation_hash`.
+
+Amended 2026-10-27 (SHAPE.md Decision #53, Class C): `inferred_pack_id` (§5) and a cross-reference `target_id` (§9) are serialized in the [ACIF-CORE] §5.1 lowercase form, since [ACIF-PUBLISHER] §8.3 and [ACIF-CORE] §10 compare them byte for byte.

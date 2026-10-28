@@ -472,8 +472,9 @@ def publisher_section_from_mapping(parsed, kind: str) -> dict | None:
     declared = {key: value for key, value in parsed.items() if value is not None}
     if not declared:
         return None
-    # 4. Forbidden fields, top-level keys only ([ACIF-CORE] §5.2): a nested
-    # key of the same name is extension data.
+    # 4. Forbidden fields ([ACIF-CORE] §5.2). A top-level key here becomes a
+    # direct member of publisher_section.<kind> at step 6, so this one check
+    # covers both forbidden levels; a key nested deeper is extension data.
     for key in declared:
         if key in FORBIDDEN_FIELDS:
             raise FrontmatterReject("acif.envelope.forbidden_field", verdict=True, params={"field": key})

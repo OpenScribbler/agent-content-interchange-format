@@ -185,6 +185,11 @@ def tv_6(vector: Vector, session: Any, ctx: Any):
     response = send(result, session, ctx, ingest(vector.data["input"]["item_record"].get("kind", "skill"), sidecar=vector.data["input"]["item_record"]))
     assert_result_field(result, "item_record", response, "conformant", exp["conformant"])
     assert_verdict_reason(result, "item_record", response, exp["reason"], session, exp.get("params"))
+    record = vector.data["input"]["kind_block_member"]["item_record"]
+    case = exp["kind_block_member"]
+    response = send(result, session, ctx, ingest(record.get("kind", "skill"), sidecar=record))
+    assert_result_field(result, "kind_block_member", response, "conformant", case["conformant"])
+    assert_verdict_reason(result, "kind_block_member", response, case["reason"], session, case.get("params"))
     return result
 
 

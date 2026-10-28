@@ -415,7 +415,7 @@ payload-pin self-check above does not govern them:
 
 | Identifier | Required params | Asserting site |
 |---|---|---|
-| `acif.envelope.forbidden_field` | `field` (the offending reserved name) | TV-6, TV-L2-g `forbidden_field` |
+| `acif.envelope.forbidden_field` | `field` (the offending reserved name) | TV-6 (both sites), TV-L2-g `forbidden_field` |
 | `acif.requires.orphan_key` | `key` (the offending `requires` key) | the six §9.4 orphan-key vectors (Appendix B) |
 
 ## Appendix B — Verdict-reason identifier map (informative)
@@ -434,6 +434,7 @@ per-case discrimination lives in each case's input key and the asserted
 | Vector site | Catalog reason string | Minted identifier |
 |---|---|---|
 | TV-6 | `forbidden-field effective_version` | `acif.envelope.forbidden_field` |
+| TV-6 `kind_block_member` | `forbidden-field skill.resolved_version` | `acif.envelope.forbidden_field` |
 | TV-11 case_1 | `kind-not-in-closed-enum` | `acif.envelope.kind_invalid` |
 | TV-11 case_2 | `id-not-uuid-v4` | `acif.envelope.id_invalid` |
 | TV-11 case_3 | `version-not-semver` | `acif.envelope.version_invalid` |

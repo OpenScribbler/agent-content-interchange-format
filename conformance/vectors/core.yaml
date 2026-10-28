@@ -78,16 +78,23 @@
 - id: TV-6
   spec: "[ACIF-CORE] §5.2; [ACIF-PUBLISHER] §5.4"
   harness: static
-  description: forbidden version field on an item record is a conformance error
+  description: forbidden version field on an item record is a conformance error, at the top level or as a direct member of the kind block
   input:
     item_record:
       kind: skill
       effective_version: "3.0.0"
+    kind_block_member:
+      item_record:
+        kind: skill
+        id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        display_name: "Demo"
+        skill: {resolved_version: "1.0.0"}
   expect:
     conformant: false
     reason: acif.envelope.forbidden_field
     reason_note: forbidden-field effective_version
     params: {field: effective_version}
+    kind_block_member: {conformant: false, reason: acif.envelope.forbidden_field, reason_note: forbidden-field skill.resolved_version, params: {field: resolved_version}}
 
 - id: TV-7
   spec: "[ACIF-PUBLISHER] §5.5"

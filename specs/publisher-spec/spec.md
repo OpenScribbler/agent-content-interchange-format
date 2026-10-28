@@ -69,7 +69,7 @@ There is no merge layer and there are no per-field provenance markers: a consume
 
 ### 5.4 Forbidden fields
 
-The [ACIF-CORE] §5.2 forbidden version fields (`effective_version`, `derived_version`, `pack_inherited_version`, `resolved_version`) MUST NOT appear as a top-level key of either section of an item record; a key of the same name nested deeper is extension data. They MAY appear on a pack record only as the pack's own `version` semantics allow (§8.2): a pack's `version` is its own, never inherited into items.
+The [ACIF-CORE] §5.2 forbidden version fields (`effective_version`, `derived_version`, `pack_inherited_version`, `resolved_version`) MUST NOT appear as a top-level key of either section of an item record, or as a direct member of `publisher_section.<kind>`; a key of the same name nested deeper is extension data. They MAY appear on a pack record only as the pack's own `version` semantics allow (§8.2): a pack's `version` is its own, never inherited into items.
 
 ### 5.5 Version discipline
 
@@ -82,7 +82,7 @@ An ingester builds `publisher_section` from a frontmatter-bearing item's entry-f
 1. **Parse.** Parse the block per [ACIF-CORE] §2. A malformed block MUST be rejected with `acif.frontmatter.malformed`.
 2. **No declaration.** An empty block, a null document, a comment-only block, or the empty map `{}` declares nothing: the item has no `publisher_section` and no `metadata_hash` (§5.2, §6).
 3. **Null values.** A top-level key whose value is null (for example `description:` with nothing after it) is absent, and is dropped before the steps that follow. When dropping null values leaves no key, step 2 applies.
-4. **Forbidden fields.** A §5.4 forbidden field at the top level MUST be rejected with `acif.envelope.forbidden_field`, its `field` parameter naming the field. The same name nested below the top level, such as `resolved_version` inside an Agent Skills `metadata` map, does not reject.
+4. **Forbidden fields.** A §5.4 forbidden field at the top level MUST be rejected with `acif.envelope.forbidden_field`, its `field` parameter naming the field. A top-level frontmatter key that is not an envelope field becomes a direct member of `publisher_section.<kind>` at step 6, so this check is the [ACIF-CORE] §5.2 kind-block check for frontmatter. The same name nested below the top level of the frontmatter, such as `resolved_version` inside an Agent Skills `metadata` map, does not reject.
 5. **`kind` check.** When `kind` is declared, a value outside the seven [ACIF-CORE] §5.1 values MUST be rejected with `acif.envelope.kind_invalid`. A valid value that is not a frontmatter-bearing kind, or that differs from the kind the ingestion context assigns the item (for example, `skill` for a `SKILL.md` entry file), MUST be rejected with `acif.publisher.frontmatter_kind_mismatch`. An ingester MUST NOT fall back to either kind.
 6. **Placement.** Each top-level key is placed by its name alone; nested values are never rearranged:
    - `kind`, `id`, `display_name`, `version`, `description`, and `pack_id` become top-level members of `publisher_section`.
@@ -216,7 +216,7 @@ inferred_pack_id = UUIDv5(
 ACIF_PACK_NAMESPACE = "93516344-00e5-419b-a230-6e8b1d02f87d"
 ```
 
-The namespace constant is spec-pinned for inference algorithm v0.1 and is never reused by any other algorithm version; a future version MUST pin its own constant. Reference computation (TV-3): `UUIDv5(ACIF_PACK_NAMESPACE, "https://github.com/obra/superpowers\nsuperpowers")` = `d932cd6d-1c14-527d-b2e7-185c717b7a0d`.
+The result is serialized in the [ACIF-CORE] §5.1 lowercase form, the form §8.3 compares byte for byte. The namespace constant is spec-pinned for inference algorithm v0.1 and is never reused by any other algorithm version; a future version MUST pin its own constant. Reference computation (TV-3): `UUIDv5(ACIF_PACK_NAMESPACE, "https://github.com/obra/superpowers\nsuperpowers")` = `d932cd6d-1c14-527d-b2e7-185c717b7a0d`.
 
 ### 9.5 Canonical address
 
@@ -263,7 +263,7 @@ The `pack_resolution: unresolved` install refusal (§8.3) is a state-vocabulary 
 ### 12.2 Informative
 
 - [ACIF-REGISTRY] "ACIF Registry Specification", version 0.1.x. `../registry-spec/spec.md` — `registry_section` schema, `source_uri`, tuple endpoint, projections.
-- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #10, #11, #14, #15, #16, #17, #18, #20, #52).
+- [SHAPE] ACIF design record: `SHAPE.md` in the ACIF repository — decision provenance (Decisions #10, #11, #14, #15, #16, #17, #18, #20, #52, #53).
 
 ---
 
@@ -276,7 +276,7 @@ The vectors below, published in the `conformance/` directory, are normatively au
 - **TV-3** — inference determinism: the §9.4 reference computation reproduces `d932cd6d-1c14-527d-b2e7-185c717b7a0d` byte-for-byte.
 - **TV-4** — declared wins: `publisher_section.pack_id = X` with `registry_section.inferred_pack_id = Y` (X ≠ Y) → membership resolves via X.
 - **TV-5** — unresolved pack: declared `pack_id` naming a nonexistent pack → `pack_resolution: unresolved`; install MUST refuse without operator opt-in. Its `uppercase_pack_id` case *(Decision #53)*: an uppercase `pack_id` against a pack whose `id` is the same UUID in lowercase is also `unresolved`.
-- **TV-6** — forbidden fields: `effective_version` on an item record → conformance error.
+- **TV-6** — forbidden fields: `effective_version` on an item record → conformance error. Its `kind_block_member` case *(Decision #53)*: `resolved_version` as a direct member of `publisher_section.skill` also rejects with `acif.envelope.forbidden_field`.
 - **TV-7** — literal version through pack context: item `version: 2.0.0` inside a pack declaring `5.1.0` → `publisher_section.version` is `2.0.0`, unchanged; no item-level field reflects `5.1.0`.
 - **TV-8** — pack-less item is first-class: no `pack_id`, no `inferred_pack_id` → valid record, installable.
 - **TV-9** — canonical `metadata_hash` bytes: for a published `publisher_section`, the §6 serialization matches the published byte string and the published reference hash.
@@ -299,4 +299,4 @@ Amended after the second independent review (2026-07-11): the §9.3 https-normal
 
 Amended 2026-10-26 (SHAPE.md Decision #52, Class C): §5.3 defines frontmatter values as the JSON values of the YAML 1.2 core-schema parse, not the source text; the new §5.6 fixes how frontmatter becomes `publisher_section`, with its processing order as the reject precedence and the new identifier `acif.publisher.frontmatter_kind_mismatch`; step 7 rejects only on the identifiers [ACIF-CORE] §5.1 mints, in the order `id`, `version`, `license.spdx`; §5.6 places the [ACIF-CORE] §7.4 body rejects ahead of step 1; §7 pins the flat projection back to frontmatter and requires projection tooling to refuse a section §5.6 cannot produce; and Appendix A registers TV-L2-g. The informative reference adapter's `metadata_hash` changes for every frontmatter item that has a `publisher_section`.
 
-Amended 2026-10-27 (SHAPE.md Decision #53, Class C): §5.4 and §5.6 step 4 state that the forbidden version fields are checked as top-level keys only, so a nested key of the same name is extension data, matching [ACIF-CORE] §5.2; §8.3 states that membership compares by bytes; and Appendix A registers the TV-5, TV-11, TV-13, and TV-L2-g cases for an uppercase `pack_id` and `id`, a symlink under a version-control directory, and a nested forbidden name.
+Amended 2026-10-27 (SHAPE.md Decision #53, Class C): §5.4 and §5.6 step 4 state that the forbidden version fields are checked as top-level keys of each section and as direct members of `publisher_section.<kind>`, so a key of the same name nested deeper is extension data, matching [ACIF-CORE] §5.2; §8.3 states that membership compares by bytes; §9.4 serializes `inferred_pack_id` in the [ACIF-CORE] §5.1 lowercase form; and Appendix A registers the TV-5, TV-6, TV-11, TV-13, and TV-L2-g cases for an uppercase `pack_id` and `id`, a forbidden name in the kind block, a symlink under a version-control directory, and a nested forbidden name.

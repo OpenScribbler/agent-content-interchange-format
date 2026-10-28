@@ -226,8 +226,9 @@ def check_verdict_reason_gating() -> None:
         raise AssertionError("protocol-1 adapter must stay unasserted on reason")
 
     tv6 = catalogs.by_id["TV-6"]
-    with_params = [{"conformant": False, "reason": tv6.data["expect"]["reason"], "params": dict(tv6.data["expect"]["params"])}]
-    without_params = [{"conformant": False, "reason": tv6.data["expect"]["reason"]}]
+    tv6_cases = [tv6.data["expect"], tv6.data["expect"]["kind_block_member"]]
+    with_params = [{"conformant": False, "reason": case["reason"], "params": dict(case["params"])} for case in tv6_cases]
+    without_params = [{"conformant": False, "reason": case["reason"]} for case in tv6_cases]
     if not run("TV-6", 2, with_params):
         raise AssertionError("protocol-2 adapter carrying the pinned field param must pass TV-6")
     if run("TV-6", 2, without_params):

@@ -228,8 +228,10 @@ def _bad_uuid(rng: random.Random) -> str:
         u = _rand_uuid4(rng)
         return u[:14] + "1" + u[15:]
     if choice == 3:
-        # [ACIF-CORE] §5.1: a UUID's hex digits are lowercase
-        return _rand_uuid4(rng).upper()
+        # [ACIF-CORE] §5.1: a UUID's hex digits are lowercase. Force a
+        # letter into the last group so upper() always changes the value.
+        u = _rand_uuid4(rng)
+        return (u[:-1] + rng.choice("abcdef")).upper()
     return _rand_uuid4(rng)[:-1]
 
 
@@ -275,8 +277,9 @@ def _gen_sidecar(rng: random.Random) -> dict[str, Any]:
     if rng.random() < 0.2:
         section["pack_id"] = _rand_uuid4(rng)
     if rng.random() < 0.2:
-        # A forbidden name below the top level is extension data ([ACIF-CORE] §5.2).
-        section[kind] = {rng.choice(FORBIDDEN_FIELDS): rng.choice(_SEMVER_VALID)}
+        # A forbidden name below the kind block's direct members is extension
+        # data ([ACIF-CORE] §5.2).
+        section[kind] = {"metadata": {rng.choice(FORBIDDEN_FIELDS): rng.choice(_SEMVER_VALID)}}
     items = list(section.items())
     rng.shuffle(items)
     return {
@@ -302,8 +305,11 @@ def _gen_envelope(rng: random.Random) -> dict[str, Any]:
         record["version"] = rng.choice(_SEMVER_INVALID)
     elif defect == "spdx":
         record["license"] = {"spdx": rng.choice(_SPDX_INVALID)}
-    else:
+    elif rng.random() < 0.5:
         record[rng.choice(FORBIDDEN_FIELDS)] = rng.choice(_SEMVER_VALID)
+    else:
+        # A direct member of the kind block is forbidden too ([ACIF-CORE] §5.2).
+        record[kind] = {rng.choice(FORBIDDEN_FIELDS): rng.choice(_SEMVER_VALID)}
     # Mirrors the TV-11 binding: input.kind carries the record's kind
     # verbatim, even when the defect under test is the kind itself.
     return {
