@@ -215,8 +215,9 @@ def check_verdict_reason_gating() -> None:
         return result.status == "pass" and all(check["pass"] for check in result.checks)
 
     tv11 = catalogs.by_id["TV-11"]
-    minted = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason"]} for i in range(1, 5)]
-    free_text = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason_note"]} for i in range(1, 5)]
+    cases = range(1, len(tv11.data["input"]["cases"]) + 1)
+    minted = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason"]} for i in cases]
+    free_text = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason_note"]} for i in cases]
     if not run("TV-11", 2, minted):
         raise AssertionError("protocol-2 adapter emitting minted identifiers must pass TV-11")
     if run("TV-11", 2, free_text):
@@ -225,8 +226,9 @@ def check_verdict_reason_gating() -> None:
         raise AssertionError("protocol-1 adapter must stay unasserted on reason")
 
     tv6 = catalogs.by_id["TV-6"]
-    with_params = [{"conformant": False, "reason": tv6.data["expect"]["reason"], "params": dict(tv6.data["expect"]["params"])}]
-    without_params = [{"conformant": False, "reason": tv6.data["expect"]["reason"]}]
+    tv6_cases = [tv6.data["expect"], tv6.data["expect"]["kind_block_member"]]
+    with_params = [{"conformant": False, "reason": case["reason"], "params": dict(case["params"])} for case in tv6_cases]
+    without_params = [{"conformant": False, "reason": case["reason"]} for case in tv6_cases]
     if not run("TV-6", 2, with_params):
         raise AssertionError("protocol-2 adapter carrying the pinned field param must pass TV-6")
     if run("TV-6", 2, without_params):

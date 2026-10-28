@@ -13,6 +13,27 @@
 # repairs"); its note names the repaired vectors. Prior suite history
 # predates this manifest and lives in git.
 
+- suite: 16
+  date: 2026-10-27
+  change_class: c
+  supersedes: 15
+  note: "Class C (SHAPE.md Decision #53), no identifier minted. [ACIF-CORE] §7.4 step 1 excludes a version-control-named path component whatever its file type, and step 2 checks only the paths step 1 leaves, so a symbolic link under a version-control metadata directory is excluded, not rejected with acif.body.symlink. [ACIF-CORE] §5.1 requires id in lowercase hex (an ACIF restriction; RFC 9562 treats hex case as insignificant), so an uppercase or mixed-case id rejects with acif.envelope.id_invalid in a sidecar and in frontmatter. pack_id is not validated at ingest (Decision #52 unchanged); a pack_id and a UUID-authored reference ([ACIF-CORE] §10) compare byte for byte with the target's lowercase id, so one that is not a lowercase UUID never resolves, and an install tool reporting the unresolved pack SHOULD name a case-only difference. inferred_pack_id and target_id are serialized in the same lowercase form. [ACIF-CORE] §5.2 and [ACIF-PUBLISHER] §5.4 forbid the reserved version fields as top-level keys of either section and as direct members of publisher_section.<kind>; a key nested deeper is extension data. Inventory (in the decision row): no existing expectation flips. Additive cases: TV-5 uppercase_pack_id; TV-6 kind_block_member; TV-11 case_5 and case_6; TV-13 symlink_under_vcs_dir, without_vcs_dir, and symlink_outside_vcs_dir; TV-L2-g nested_forbidden_name, id_uppercase, and id_mixed_case. The TV-13 binding now asserts every case in the vector, and the TV-5 and TV-6 bindings assert their new cases. The differential generator's draws changed, so seeded differential runs from earlier suites do not reproduce"
+  vectors: 191
+  binding_set: 345c98b4f252252ab649af775061699fd44b98145744036cd26d8d4a255e828c
+  catalogs:
+    agent.yaml: 9ee8000bb65f1ec536ea2b4bbfc6095491f627c06214362c1ce2df890c83ba62
+    command.yaml: f21fc4ea33ea96756c1265c97092ada78332e5c10879f6bdf4e187ef5eb8791f
+    core.yaml: ed55c590d313d3b7f1f712f186cc14b2a76b7bf1d2651ef8f7b534ed47dc711f
+    fresh.yaml: d6b701b899b76272b2305418f2a9a12e5bddefab6d19d2680f4b24a8711e4e2a
+    hook.yaml: 76e134012686103099cd2292a129571c69c3b9fc85bc3ba3cecfc5868bd4565f
+    install.yaml: f6b378e2e4cab6a9e010ec565a09c092c22ddaad7bcd0f445c6677dd5d45784d
+    mcp.yaml: 3182608d87cf36b3f5420d065315091c6cd31d6496dd9de3eaf2fe1c336569f0
+    platform.yaml: e54b9860922f3754d1b34d7023b076f31c3ad96a9265df06591a49f3a78d22f7
+    render.yaml: 8de6a43006d5e68be7cdf1460719f9fd30270b3b18f4f63f63a5c54c8a9c0147
+    rule.yaml: b8880b8e302f6df3462e34c753f7905309a77274305a0c6b376d5a32ff428988
+    skill.yaml: 74e9939811aa02fcd99e4bf56ff2ffcf1957a6fb9a587f6f3ab2f93d7d4176dc
+    uri.yaml: 050e4f1c7232b4750a3c1ba0e36bc2482671891606815b1a8ffaef020b19625c
+
 - suite: 15
   date: 2026-10-26
   change_class: c
