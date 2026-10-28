@@ -547,7 +547,29 @@ def check_source_mechanisms() -> None:
 
 HOOK_A1_ROW_RE = re.compile(r"^\|\s*`([a-z][a-z0-9_]*)`\s*\|\s*(.+?)\s*\|$")
 HOOK_A1_PAIR_RE = re.compile(r"^([a-z][a-z0-9-]*) `([^`]+)`$")
-HOOK_A4_ROW_RE = re.compile(r"^\|\s*`([a-z][a-z0-9_]*)`\s*\|\s*([a-z][a-z0-9-]*)\s*\|\s*`([^`]+)`\s*\|\s*(lossless|degraded)\b")
+HOOK_A4_ROW_RE = re.compile(
+    r"^\|\s*`([a-z][a-z0-9_]*)`\s*\|\s*([a-z][a-z0-9-]*)\s*\|\s*(?:`([a-z][a-z0-9-]*)`)?\s*\|\s*`([^`]+)`\s*\|\s*(lossless|degraded)\b"
+)
+HOOK_A4_DIALECT_RE = re.compile(r"^\|\s*([a-z][a-z0-9-]*)\s*\|\s*((?:`[a-z][a-z0-9-]*`(?:,\s*)?)+)\s*\|\s*`([a-z][a-z0-9-]*)`\s*\|$")
+
+
+def _hook_a4_dialects() -> dict[str, tuple[tuple[str, ...], str]]:
+    """Parse the [ACIF-HOOK] A.4 dialect table: provider -> (dialects, default)."""
+    spec_text = (CONFORMANCE_ROOT.parent / "specs" / "hooks-interchange" / "spec.md").read_text(encoding="utf-8")
+    a4 = _spec_section(spec_text, r"^### A\.4 ")
+    if a4 is None:
+        raise AssertionError("[ACIF-HOOK] A.4 section not found")
+    dialects = {}
+    for line in a4.splitlines():
+        m = HOOK_A4_DIALECT_RE.match(line.strip())
+        if m:
+            listed = tuple(re.findall(r"`([^`]+)`", m.group(2)))
+            if m.group(3) not in listed:
+                raise AssertionError(f"[ACIF-HOOK] A.4 {m.group(1)}: default dialect {m.group(3)!r} is not one of {list(listed)}")
+            dialects[m.group(1)] = (listed, m.group(3))
+    if not dialects:
+        raise AssertionError("[ACIF-HOOK] A.4 dialect table parsed zero rows")
+    return dialects
 
 
 def check_hook_event_tables() -> None:
@@ -574,7 +596,7 @@ def check_hook_event_tables() -> None:
             pairs.append((pair.group(1), pair.group(2)))
         spec_natives[match.group(1)] = pairs
     spec_pins = {
-        (m.group(1), m.group(2)): (m.group(3), m.group(4) == "degraded")
+        (m.group(1), m.group(2), m.group(3)): (m.group(4), m.group(5) == "degraded")
         for m in (HOOK_A4_ROW_RE.match(line.strip()) for line in a4.splitlines())
         if m
     }
@@ -589,7 +611,14 @@ def check_hook_event_tables() -> None:
     for canonical in sorted(set(spec_natives) | set(adapter_natives)):
         if spec_natives.get(canonical) != adapter_natives.get(canonical):
             errors.append(f"A.1 {canonical}: spec {spec_natives.get(canonical)} != reference {adapter_natives.get(canonical)}")
-    for key in sorted(set(spec_pins) | set(reference.HOOK_RENDER_PINS)):
+    spec_dialects = _hook_a4_dialects()
+    if spec_dialects != reference.HOOK_DIALECTS:
+        errors.append(f"A.4 dialects: spec {spec_dialects} != reference {reference.HOOK_DIALECTS}")
+    for (canonical, provider, dialect) in spec_pins:
+        defined = spec_dialects.get(provider, ((), None))[0]
+        if (dialect is None) != (not defined) or (dialect is not None and dialect not in defined):
+            errors.append(f"A.4 {canonical}/{provider}: dialect {dialect!r} does not match the dialect table")
+    for key in sorted(set(spec_pins) | set(reference.HOOK_RENDER_PINS), key=str):
         if spec_pins.get(key) != reference.HOOK_RENDER_PINS.get(key):
             errors.append(f"A.4 {key}: spec {spec_pins.get(key)} != reference {reference.HOOK_RENDER_PINS.get(key)}")
     if errors:
@@ -677,7 +706,7 @@ def _nested_list(depth: int) -> list:
 
 
 INSTALL_ROW_RE = re.compile(
-    r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*([a-z, ]*?)\s*\|\s*`([^`]+)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$"
+    r"^\|\s*`([a-z][a-z0-9-]*)`\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*([a-z, ]*?)\s*\|\s*`([^`]+)`\s*\|\s*(\w+)\s*\|\s*(?:`([a-z][a-z0-9-]*)`)?\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$"
 )
 INSTALL_SCOPES = {"user", "project", "managed"}
 INSTALL_LAYOUTS = {"single_file", "directory_of_files", "merged_into_shared_file"}
@@ -705,14 +734,14 @@ def check_install_entry_points() -> None:
     section = _spec_section(spec_text, r"^### A\.2 ")
     if section is None:
         raise AssertionError("no A.2 section found in [ACIF-INSTALL]")
-    spec_rows: list[tuple[str, str, str, str, str, str, str, str]] = []
+    spec_rows: list[tuple[str, ...]] = []
     for line in section.splitlines():
         match = INSTALL_ROW_RE.match(line.strip())
         if match and match.group(1) != "Provider":
-            spec_rows.append(match.groups())
+            spec_rows.append(tuple(group or "" for group in match.groups()))
     if not spec_rows:
         raise AssertionError("A.2 table parsed zero rows")
-    yaml_rows: list[tuple[str, str, str, str, str, str, str, str]] = []
+    yaml_rows: list[tuple[str, ...]] = []
     errors: list[str] = []
     providers = list(matrix)
     if providers != sorted(providers):
@@ -725,6 +754,8 @@ def check_install_entry_points() -> None:
             if ctype not in INSTALL_TYPES:
                 errors.append(f"{provider}: unknown content type {ctype!r}")
             for entry in entries:
+                if "dialect" in entry and (not isinstance(entry["dialect"], str) or not entry["dialect"]):
+                    errors.append(f"{provider}/{ctype}: dialect present but empty on {entry.get('path_template')!r}")
                 os_value = entry.get("os")
                 if "os" not in entry:
                     os_cell = ""
@@ -744,10 +775,20 @@ def check_install_entry_points() -> None:
                     os_cell = ", ".join(os_value)
                 yaml_rows.append(
                     (provider, ctype, str(entry.get("scope")), os_cell, str(entry.get("path_template")),
-                     str(entry.get("layout")), str(entry.get("status")), str(entry.get("as_of")))
+                     str(entry.get("layout")), str(entry.get("dialect", "")), str(entry.get("status")),
+                     str(entry.get("as_of")))
                 )
     seen: set[tuple[str, str, str, str]] = set()
-    for provider, ctype, scope, os_cell, template, layout, status, _as_of in yaml_rows:
+    # [ACIF-INSTALL] §6: dialect appears on every hook row of a provider
+    # [ACIF-HOOK] A.4 lists with dialects, names one of them, and appears
+    # nowhere else.
+    hook_dialects = _hook_a4_dialects()
+    for provider, ctype, scope, os_cell, template, layout, dialect, status, _as_of in yaml_rows:
+        defined = hook_dialects.get(provider, ((), None))[0] if ctype == "hook" else ()
+        if defined and dialect not in defined:
+            errors.append(f"{provider}/{ctype}: dialect {dialect!r} on {template!r} is not one of {list(defined)}")
+        elif not defined and dialect:
+            errors.append(f"{provider}/{ctype}: dialect {dialect!r} on {template!r}, but A.4 defines no dialects for it")
         if scope not in INSTALL_SCOPES:
             errors.append(f"{provider}/{ctype}: scope {scope!r} outside the closed enum")
         if layout not in INSTALL_LAYOUTS:

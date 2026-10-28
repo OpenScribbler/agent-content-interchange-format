@@ -99,11 +99,27 @@ window and no reviewer subset**. The evidence standard is the
 observation itself, recorded in the amended row's `as_of`. A retired
 location moves to `status: superseded` and is never deleted
 ([ACIF-INSTALL] §12). Rows never move canonical bytes (nothing in the
-matrix participates in any hash), so no vector expectation can flip;
-the suite impact is confined to the install-entry-points export and any
-matrix-pinned vector fixtures, inventoried in the manifest note. A
+matrix participates in any hash), so no hash expectation can flip; the
+suite impact is confined to the install-entry-points export and the
+vectors that resolve matrix rows, whose expectations can flip and are
+inventoried in the manifest note (the `dialect` exception below). A
 change to the descriptor's grammar or enums is not a row-data
 amendment; it is Class C.
+
+A hook row's `dialect` ([ACIF-INSTALL] §6) is row data: correcting
+which existing dialect a file reads, or giving a new row of a
+multi-dialect provider its dialect, is an observation about a file and
+lands in this lane. It changes which event names an install writes to
+that row and how [ACIF-HOOK] §11 judges a blocking hook there, so it
+can flip the expectations of vectors that resolve the row through
+`install_target_entry` (TV-HOOK-t). The manifest note lists each
+flipped vector and case. A flip of a §11 disposition between refused
+and proceeded is a change to whether a gate is installed, so such an
+amendment does not land on observation alone: it needs at least the
+Class C vector-impact inventory review before merge, though not a
+SHAPE.md decision row or reviewer subset. Minting a dialect, or giving a provider a
+second one, adds [ACIF-HOOK] Appendix A.4 vocabulary and pins and is
+Class C.
 
 A **provider-identity amendment** — the slug itself changes because the
 vendor renamed the product — carries three obligations a location
@@ -177,7 +193,7 @@ re-verification of the affected scope is warranted.
 
 ## Suite and report impact
 
-The conformance suite (191 vectors at this writing) is normatively
+The conformance suite (193 vectors at this writing) is normatively
 authoritative over prose, and conformance reports pin the exact catalog
 content hashes and binding-set hash they ran against. Those facts drive
 the impact rules:

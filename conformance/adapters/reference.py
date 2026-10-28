@@ -119,33 +119,73 @@ for _canonical in sorted(HOOK_NATIVES):
     for _provider, _native in HOOK_NATIVES[_canonical]:
         EVENT_MAP.setdefault(_native, _canonical)
 EVENT_MAP["errorOccurred"] = "error_occurred"
-# [ACIF-HOOK] Appendix A.4: (canonical, provider) -> (render-back target,
-# degraded).
+# [ACIF-HOOK] Appendix A.4 dialect table: provider -> (dialects, default).
+# A provider absent here has one dialect and carries no dialect token.
+HOOK_DIALECTS = {"devin": (("cli", "cascade"), "cli")}
+# [ACIF-HOOK] Appendix A.4: (canonical, provider, dialect) -> (render-back
+# target, degraded). dialect is None on a single-dialect provider's row.
 HOOK_RENDER_PINS = {
-    ("before_prompt", "devin"): ("UserPromptSubmit", False),
-    ("agent_stop", "devin"): ("Stop", False),
-    ("session_start", "devin"): ("SessionStart", False),
-    ("session_end", "devin"): ("SessionEnd", False),
-    ("worktree_create", "devin"): ("post_setup_worktree", True),
-    ("transcript_export", "devin"): ("post_cascade_response_with_transcript", True),
-    ("file_changed", "devin"): ("post_write_code", True),
-    ("before_shell_execute", "devin"): ("pre_run_command", True),
-    ("after_shell_execute", "devin"): ("post_run_command", True),
-    ("before_mcp_execute", "devin"): ("pre_mcp_tool_use", True),
-    ("after_mcp_execute", "devin"): ("post_mcp_tool_use", True),
-    ("before_file_read", "devin"): ("pre_read_code", True),
-    ("after_model", "cursor"): ("afterAgentResponse", True),
+    ("before_tool_execute", "devin", "cli"): ("PreToolUse", False),
+    ("after_tool_execute", "devin", "cli"): ("PostToolUse", False),
+    ("permission_request", "devin", "cli"): ("PermissionRequest", False),
+    ("after_compact", "devin", "cli"): ("PostCompaction", False),
+    ("before_prompt", "devin", "cli"): ("UserPromptSubmit", False),
+    ("agent_stop", "devin", "cli"): ("Stop", False),
+    ("session_start", "devin", "cli"): ("SessionStart", False),
+    ("session_end", "devin", "cli"): ("SessionEnd", False),
+    ("worktree_create", "devin", "cli"): ("post_setup_worktree", True),
+    ("transcript_export", "devin", "cli"): ("post_cascade_response_with_transcript", True),
+    ("file_changed", "devin", "cli"): ("post_write_code", True),
+    ("before_shell_execute", "devin", "cli"): ("pre_run_command", True),
+    ("after_shell_execute", "devin", "cli"): ("post_run_command", True),
+    ("before_mcp_execute", "devin", "cli"): ("pre_mcp_tool_use", True),
+    ("after_mcp_execute", "devin", "cli"): ("post_mcp_tool_use", True),
+    ("before_file_read", "devin", "cli"): ("pre_read_code", True),
+    ("before_tool_execute", "devin", "cascade"): ("PreToolUse", True),
+    ("after_tool_execute", "devin", "cascade"): ("PostToolUse", True),
+    ("permission_request", "devin", "cascade"): ("PermissionRequest", True),
+    ("after_compact", "devin", "cascade"): ("PostCompaction", True),
+    ("before_prompt", "devin", "cascade"): ("pre_user_prompt", False),
+    ("agent_stop", "devin", "cascade"): ("post_cascade_response", True),
+    ("session_start", "devin", "cascade"): ("SessionStart", True),
+    ("session_end", "devin", "cascade"): ("SessionEnd", True),
+    ("worktree_create", "devin", "cascade"): ("post_setup_worktree", True),
+    ("transcript_export", "devin", "cascade"): ("post_cascade_response_with_transcript", False),
+    ("file_changed", "devin", "cascade"): ("post_write_code", False),
+    ("before_shell_execute", "devin", "cascade"): ("pre_run_command", False),
+    ("after_shell_execute", "devin", "cascade"): ("post_run_command", False),
+    ("before_mcp_execute", "devin", "cascade"): ("pre_mcp_tool_use", False),
+    ("after_mcp_execute", "devin", "cascade"): ("post_mcp_tool_use", False),
+    ("before_file_read", "devin", "cascade"): ("pre_read_code", False),
+    ("after_model", "cursor", None): ("afterAgentResponse", True),
 }
 
 
-def render_hook_event(event: str, target: str) -> tuple[str, bool]:
-    """A.4 resolution order: (emitted name, emits event_untranslatable)."""
-    if (event, target) in HOOK_RENDER_PINS:
-        return HOOK_RENDER_PINS[(event, target)]
+def hook_render_dialect(target: str, dialect: Any) -> str | None:
+    """A.4: the dialect a render uses. None for a single-dialect provider;
+    the provider's default when the context names none. Raises Unsupported
+    for a dialect A.4 does not define for the provider."""
+    if target not in HOOK_DIALECTS:
+        if dialect is not None:
+            raise Unsupported()
+        return None
+    dialects, default = HOOK_DIALECTS[target]
+    if dialect is None:
+        return default
+    if dialect not in dialects:
+        raise Unsupported()
+    return dialect
+
+
+def render_hook_event(event: str, target: str, dialect: str | None = None) -> tuple[str, bool]:
+    """A.4 resolution order: (emitted name, emits event_untranslatable).
+    dialect is the value hook_render_dialect returned."""
+    if (event, target, dialect) in HOOK_RENDER_PINS:
+        return HOOK_RENDER_PINS[(event, target, dialect)]
     if target not in HOOK_PROVIDERS:
         return event, False
     names = [native for provider, native in HOOK_NATIVES.get(event, []) if provider == target]
-    if len(names) == 1:
+    if len(names) == 1 and target not in HOOK_DIALECTS:
         return names[0], False
     return event, True
 
@@ -761,7 +801,9 @@ def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:
                 raise Unsupported()
             # Both axes are evaluated so each disposition is disclosed; the
             # operator override reaches only the degraded-event refusal.
-            event = _event_install_disposition(hook, provider, inp.get("install_operator_override") is True)
+            event = _event_install_disposition(
+                hook, provider, inp.get("install_target_entry"), inp.get("install_operator_override") is True, target
+            )
             diagnostics.extend(event["diagnostics"])
             if event["install"] != "proceed":
                 install = event["install"]
@@ -769,14 +811,35 @@ def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:
     raise Unsupported()
 
 
-def _event_install_disposition(hook: dict[str, Any], provider: str, override: bool) -> dict[str, Any]:
-    """[ACIF-HOOK] §11 degraded event render: per-provider install disposition."""
+def _event_install_disposition(
+    hook: dict[str, Any], provider: str, entry: Any, override: bool, inp_os: Any = None
+) -> dict[str, Any]:
+    """[ACIF-HOOK] §11 degraded event render, judged on the resolved install
+    row: the row's dialect selects the A.4 render. With no row named, the
+    provider's default dialect stands in for its first current row."""
     event = hook.get("event")
     if not isinstance(event, str):
         raise Unsupported()
+    row: dict[str, Any] | None = None
+    if entry is not None:
+        if not isinstance(entry, dict):
+            raise Unsupported()
+        rows = [
+            r
+            for r in _install_matrix().get((provider, "hook"), [])
+            if r.get("scope") == entry.get("scope") and r.get("path_template") == entry.get("path_template")
+        ]
+        if len(rows) != 1:
+            raise Unsupported()
+        row = rows[0]
+        # [ACIF-INSTALL] §6: a row that OS filtering removes is not a location.
+        target_os = inp_os
+        if target_os is not None and "os" in row and target_os not in row["os"]:
+            raise Unsupported()
+    dialect = hook_render_dialect(provider, row.get("dialect") if row is not None else None)
     blocking = hook.get("blocking") is True
-    _, degraded = render_hook_event(event, provider)
-    unsurveyed = provider not in HOOK_PROVIDERS and (event, provider) not in HOOK_RENDER_PINS
+    _, degraded = render_hook_event(event, provider, dialect)
+    unsurveyed = provider not in HOOK_PROVIDERS and not any(key[:2] == (event, provider) for key in HOOK_RENDER_PINS)
     if not degraded and not (blocking and unsurveyed):
         return {"install": "proceed", "diagnostics": []}
     if not blocking:
@@ -785,7 +848,11 @@ def _event_install_disposition(hook: dict[str, Any], provider: str, override: bo
         install, disposition = "proceed", "overridden"
     else:
         install, disposition = UNRESOLVED_INSTALL, "refused"
-    params = {"event": event, "provider": provider, "disposition": disposition}
+    params: dict[str, Any] = {"event": event, "provider": provider, "disposition": disposition}
+    if row is not None:
+        params["path_template"] = row["path_template"]
+        if "dialect" in row:
+            params["dialect"] = row["dialect"]
     return {"install": install, "diagnostics": [{"id": "acif.hook.event_untranslatable", "params": params}]}
 
 
@@ -847,7 +914,9 @@ def handle_render(inp: dict[str, Any]) -> dict[str, Any]:
         scripts = _first_handler_scripts(hook)
         event = hook.get("event")
         diagnostics: list[dict[str, Any]] = []
-        native, degraded = render_hook_event(event, target)
+        invocation = inp.get("invocation")
+        dialect = invocation.get("target_dialect") if isinstance(invocation, dict) else None
+        native, degraded = render_hook_event(event, target, hook_render_dialect(target, dialect))
         if degraded:
             diagnostics.append({"id": "acif.hook.event_untranslatable", "params": {"event": event, "provider": target}})
         event = native
