@@ -218,7 +218,7 @@ def _rand_uuid4(rng: random.Random) -> str:
 
 
 def _bad_uuid(rng: random.Random) -> str:
-    choice = rng.randrange(4)
+    choice = rng.randrange(5)
     if choice == 0:
         return "not-a-uuid"
     if choice == 1:
@@ -227,6 +227,9 @@ def _bad_uuid(rng: random.Random) -> str:
         # version nibble 1, not 4
         u = _rand_uuid4(rng)
         return u[:14] + "1" + u[15:]
+    if choice == 3:
+        # [ACIF-CORE] §5.1: a UUID's hex digits are lowercase
+        return _rand_uuid4(rng).upper()
     return _rand_uuid4(rng)[:-1]
 
 
@@ -271,6 +274,9 @@ def _gen_sidecar(rng: random.Random) -> dict[str, Any]:
         section["license"] = {"spdx": rng.choice(_SPDX_VALID)}
     if rng.random() < 0.2:
         section["pack_id"] = _rand_uuid4(rng)
+    if rng.random() < 0.2:
+        # A forbidden name below the top level is extension data ([ACIF-CORE] §5.2).
+        section[kind] = {rng.choice(FORBIDDEN_FIELDS): rng.choice(_SEMVER_VALID)}
     items = list(section.items())
     rng.shuffle(items)
     return {

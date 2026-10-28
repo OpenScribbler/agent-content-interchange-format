@@ -59,7 +59,8 @@ RAW_LINE_SEPARATORS = ("\u0085", "\u2028", "\u2029")
 # DEL; C1 other than U+0085; a surrogate; U+FFFE and U+FFFF.
 NON_PRINTABLE = re.compile("[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]")
 
-UUID_V4 = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
+# [ACIF-CORE] §5.1: lowercase hex only; an uppercase digit is id_invalid.
+UUID_V4 = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
 SEMVER = re.compile(
     r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"
     r"(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
@@ -471,7 +472,8 @@ def publisher_section_from_mapping(parsed, kind: str) -> dict | None:
     declared = {key: value for key, value in parsed.items() if value is not None}
     if not declared:
         return None
-    # 4. Forbidden fields.
+    # 4. Forbidden fields, top-level keys only ([ACIF-CORE] §5.2): a nested
+    # key of the same name is extension data.
     for key in declared:
         if key in FORBIDDEN_FIELDS:
             raise FrontmatterReject("acif.envelope.forbidden_field", verdict=True, params={"field": key})

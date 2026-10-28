@@ -1087,20 +1087,25 @@ def _open_no_redirect(url: str, trust_ca: str, resolve: dict[str, str]) -> dict[
 
 
 def _read_body_files(root: Path, entry_file: str) -> dict[str, bytes]:
-    # [ACIF-CORE] §7.4 step order is reject precedence: symlink (step 2),
-    # then control character and NFC collision (step 3), then empty.
+    # [ACIF-CORE] §7.4 step order is reject precedence: the VCS exclusion
+    # (step 1), so a symlink under .git or .hg is skipped, never refused;
+    # then symlink (step 2), control character and NFC collision (step 3),
+    # then empty.
     files: dict[str, bytes] = {}
     for dirpath, dirnames, filenames in os.walk(root):
         current = Path(dirpath)
-        for dirname in list(dirnames):
+        dirnames[:] = [dirname for dirname in dirnames if dirname not in VCS_DIRS]
+        for dirname in dirnames:
             if (current / dirname).is_symlink():
                 raise SpecError("acif.body.symlink")
         for filename in filenames:
+            if filename in VCS_DIRS:
+                continue
             path = current / filename
             if path.is_symlink():
                 raise SpecError("acif.body.symlink")
             files[path.relative_to(root).as_posix()] = path.read_bytes()
-    enumerated = [rel for rel in files if not any(part in VCS_DIRS for part in rel.split("/"))]
+    enumerated = list(files)
     if classify(files, entry_file) == "multi-file":
         # The §7.4 manifest runs only for a multi-file body (§7.2).
         check_raw_paths(enumerated)

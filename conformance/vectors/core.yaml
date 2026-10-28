@@ -61,14 +61,19 @@
 - id: TV-5
   spec: "[ACIF-PUBLISHER] §8.3"
   harness: static
-  description: declared pack_id naming a nonexistent pack → unresolved; install refuses
+  description: declared pack_id naming a nonexistent pack → unresolved; install refuses. A pack_id that differs from a known pack id only in hex case names no pack ([ACIF-CORE] §5.1 byte comparison)
   input:
     item:
       publisher_section: {pack_id: "99999999-9999-4999-8999-999999999999"}
     known_packs: []
+    uppercase_pack_id:
+      item:
+        publisher_section: {pack_id: "AAAAAAAA-AAAA-4AAA-AAAA-AAAAAAAAAAAA"}
+      known_packs: [{id: "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa"}]
   expect:
     pack_resolution: unresolved
     install: refuse-unless-operator-opt-in
+    uppercase_pack_id: {pack_resolution: unresolved, install: refuse-unless-operator-opt-in}
 
 - id: TV-6
   spec: "[ACIF-CORE] §5.2; [ACIF-PUBLISHER] §5.4"
@@ -136,18 +141,22 @@
 - id: TV-11
   spec: "[ACIF-CORE] §5.1"
   harness: static
-  description: envelope field validation — non-enum kind, non-UUIDv4 id, non-SemVer version, non-SPDX license.spdx each reject
+  description: envelope field validation — non-enum kind, non-UUIDv4 id, non-SemVer version, non-SPDX license.spdx each reject; an id with an uppercase hex digit is not a valid UUID here
   input:
     cases:
       - {kind: "Skill", id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo"}
       - {kind: skill, id: "not-a-uuid", display_name: "Demo"}
       - {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo", version: "1.0"}
       - {kind: skill, id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", display_name: "Demo", license: {spdx: "MIT License"}}
+      - {kind: skill, id: "F47AC10B-58CC-4372-A567-0E02B2C3D479", display_name: "Demo"}
+      - {kind: skill, id: "f47ac10b-58cc-4372-A567-0e02b2c3d479", display_name: "Demo"}
   expect:
     case_1: {conformant: false, reason: acif.envelope.kind_invalid, reason_note: kind-not-in-closed-enum}
     case_2: {conformant: false, reason: acif.envelope.id_invalid, reason_note: id-not-uuid-v4}
     case_3: {conformant: false, reason: acif.envelope.version_invalid, reason_note: version-not-semver}
     case_4: {conformant: false, reason: acif.envelope.license_spdx_invalid, reason_note: license-spdx-not-identifier}
+    case_5: {conformant: false, reason: acif.envelope.id_invalid, reason_note: id-uppercase-hex}
+    case_6: {conformant: false, reason: acif.envelope.id_invalid, reason_note: id-mixed-case-hex}
 
 - id: TV-12
   spec: "[ACIF-CORE] §7.5"
@@ -171,17 +180,28 @@
 - id: TV-13
   spec: "[ACIF-CORE] §7.4, §8.7"
   harness: static
-  description: body-boundary rejects — symlink, NFC path collision, empty body
+  description: body-boundary rejects — symlink, NFC path collision, empty body; a symlink under a version-control directory is excluded with it, not rejected, while one elsewhere in the same body still rejects
   input:
     symlink:
       files: {SKILL.md: "Prose.\n"}
       symlinks: [{path: "scripts/link.sh", target: "/etc/passwd"}]
+    symlink_under_vcs_dir:   # step 1 excludes .hg/link before the step 2 symlink check
+      files: {SKILL.md: "Use this skill.\n", helper.md: "Helper notes.\n"}
+      symlinks: [{path: ".hg/link", target: "../helper.md"}]
+    without_vcs_dir:   # the same body with no .hg directory
+      files: {SKILL.md: "Use this skill.\n", helper.md: "Helper notes.\n"}
+    symlink_outside_vcs_dir:   # the excluded .hg/link does not excuse scripts/link.sh
+      files: {SKILL.md: "Use this skill.\n", helper.md: "Helper notes.\n"}
+      symlinks: [{path: ".hg/link", target: "../helper.md"}, {path: "scripts/link.sh", target: "../helper.md"}]
     path_collision:
       files_raw_paths: ["caf\u00E9.md", "cafe\u0301.md"]   # NFC and NFD spellings of one name
     empty:
       files: {LICENSE: "MIT\n", README.md: "readme\n"}
   expect:
     symlink: {error: acif.body.symlink}
+    symlink_under_vcs_dir: {body_hash: "b3b25353b286b984c3e9e68057e1c1639ba50d319d90ddb98e2dddce2312b94f"}
+    without_vcs_dir: {body_hash: "b3b25353b286b984c3e9e68057e1c1639ba50d319d90ddb98e2dddce2312b94f"}
+    symlink_outside_vcs_dir: {error: acif.body.symlink}
     path_collision: {error: acif.body.path_collision}
     empty: {error: acif.body.empty}
 
@@ -349,6 +369,12 @@
         files: {SKILL.md: "---\nkind: widget\ndisplay_name: Demo\n---\nUse this skill.\n"}
       forbidden_field:
         files: {SKILL.md: "---\ndisplay_name: Demo\nresolved_version: 1.0.0\n---\nUse this skill.\n"}
+      nested_forbidden_name:   # only top-level keys are forbidden; a nested one is extension data
+        files: {SKILL.md: "---\ndisplay_name: Demo\nskill:\n  resolved_version: 1.0.0\nmetadata:\n  resolved_version: 1.0.0\n---\nUse this skill.\n"}
+      id_uppercase:
+        files: {SKILL.md: "---\nid: F47AC10B-58CC-4372-A567-0E02B2C3D479\ndisplay_name: Demo\n---\nUse this skill.\n"}
+      id_mixed_case:
+        files: {SKILL.md: "---\nid: f47ac10b-58cc-4372-A567-0e02b2c3d479\ndisplay_name: Demo\n---\nUse this skill.\n"}
       version_float:
         files: {SKILL.md: "---\ndisplay_name: Demo\nversion: 1.0\n---\nUse this skill.\n"}
       version_short_string:
@@ -441,6 +467,12 @@
     kind_mismatch: {error: acif.publisher.frontmatter_kind_mismatch}
     kind_invalid: {conformant: false, reason: acif.envelope.kind_invalid}
     forbidden_field: {conformant: false, reason: acif.envelope.forbidden_field, params: {field: resolved_version}}
+    nested_forbidden_name:
+      # {"display_name":"Demo","skill":{"metadata":{"resolved_version":"1.0.0"},"skill":{"resolved_version":"1.0.0"}}}
+      publisher_section: {display_name: Demo, skill: {skill: {resolved_version: "1.0.0"}, metadata: {resolved_version: "1.0.0"}}}
+      metadata_hash: "4aae694c554a9f6e99d2949a0dfc232386c3f96fe07fbaefada1258a3ebc1126"
+    id_uppercase: {conformant: false, reason: acif.envelope.id_invalid}
+    id_mixed_case: {conformant: false, reason: acif.envelope.id_invalid}
     version_float: {conformant: false, reason: acif.envelope.version_invalid}
     version_short_string: {conformant: false, reason: acif.envelope.version_invalid}
     duplicate_key: {error: acif.frontmatter.malformed}

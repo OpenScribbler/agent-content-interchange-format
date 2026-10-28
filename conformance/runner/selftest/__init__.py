@@ -215,8 +215,9 @@ def check_verdict_reason_gating() -> None:
         return result.status == "pass" and all(check["pass"] for check in result.checks)
 
     tv11 = catalogs.by_id["TV-11"]
-    minted = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason"]} for i in range(1, 5)]
-    free_text = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason_note"]} for i in range(1, 5)]
+    cases = range(1, len(tv11.data["input"]["cases"]) + 1)
+    minted = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason"]} for i in cases]
+    free_text = [{"conformant": False, "reason": tv11.data["expect"][f"case_{i}"]["reason_note"]} for i in cases]
     if not run("TV-11", 2, minted):
         raise AssertionError("protocol-2 adapter emitting minted identifiers must pass TV-11")
     if run("TV-11", 2, free_text):

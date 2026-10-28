@@ -131,7 +131,7 @@ specs/
   render-back/           # [ACIF-RENDER]    (L4)
   install-targets/       # [ACIF-INSTALL]   (L5)
 conformance/             # normative test vectors + informative reference impls
-SHAPE.md                 # historical design record (Decisions #1–#52)
+SHAPE.md                 # historical design record (Decisions #1–#53)
 ROADMAP.md               # deferred scope
 examples/                # end-to-end traces over real-world content
 ```

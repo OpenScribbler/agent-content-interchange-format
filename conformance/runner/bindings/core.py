@@ -171,6 +171,10 @@ def tv_5(vector: Vector, session: Any, ctx: Any):
     response = send(result, session, ctx, resolve_pack(inp["item"], inp["known_packs"]))
     assert_result_field(result, "pack", response, "pack_resolution", exp["pack_resolution"])
     assert_result_field(result, "pack", response, "install", exp["install"])
+    case = inp["uppercase_pack_id"]
+    response = send(result, session, ctx, resolve_pack(case["item"], case["known_packs"]))
+    assert_result_field(result, "uppercase_pack_id", response, "pack_resolution", exp["uppercase_pack_id"]["pack_resolution"])
+    assert_result_field(result, "uppercase_pack_id", response, "install", exp["uppercase_pack_id"]["install"])
     return result
 
 
@@ -305,12 +309,12 @@ def tv_13(vector: Vector, session: Any, ctx: Any):
     result = result_for(vector)
     inp = vector.data["input"]
     exp = vector.data["expect"]
-    response = send(result, session, ctx, _ingest_body(ctx, inp["symlink"]))
-    assert_error(result, "symlink", response, exp["symlink"]["error"])
-    response = send(result, session, ctx, _ingest_body(ctx, inp["path_collision"]))
-    assert_error(result, "path_collision", response, exp["path_collision"]["error"])
-    response = send(result, session, ctx, _ingest_body(ctx, inp["empty"]))
-    assert_error(result, "empty", response, exp["empty"]["error"])
+    for case, expected in exp.items():
+        response = send(result, session, ctx, _ingest_body(ctx, inp[case]))
+        if "error" in expected:
+            assert_error(result, case, response, expected["error"])
+        else:
+            assert_result_field(result, case, response, "body_hash", expected["body_hash"])
     return result
 
 

@@ -438,8 +438,12 @@ per-case discrimination lives in each case's input key and the asserted
 | TV-11 case_2 | `id-not-uuid-v4` | `acif.envelope.id_invalid` |
 | TV-11 case_3 | `version-not-semver` | `acif.envelope.version_invalid` |
 | TV-11 case_4 | `license-spdx-not-identifier` | `acif.envelope.license_spdx_invalid` |
+| TV-11 case_5 | `id-uppercase-hex` | `acif.envelope.id_invalid` |
+| TV-11 case_6 | `id-mixed-case-hex` | `acif.envelope.id_invalid` |
 | TV-L2-g `kind_invalid` | *none (minted at authoring)* | `acif.envelope.kind_invalid` |
 | TV-L2-g `forbidden_field` | *none (minted at authoring)* | `acif.envelope.forbidden_field` |
+| TV-L2-g `id_uppercase` | *none (minted at authoring)* | `acif.envelope.id_invalid` |
+| TV-L2-g `id_mixed_case` | *none (minted at authoring)* | `acif.envelope.id_invalid` |
 | TV-L2-g `version_float` | *none (minted at authoring)* | `acif.envelope.version_invalid` |
 | TV-L2-g `version_short_string` | *none (minted at authoring)* | `acif.envelope.version_invalid` |
 | TV-L2-g `version_block_scalar` | *none (minted at authoring)* | `acif.envelope.version_invalid` |

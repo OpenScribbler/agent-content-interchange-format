@@ -103,6 +103,8 @@ def compute() -> dict[str, list[str]]:
             assert exc.error == error, (raw, exc.error)
         else:
             raise AssertionError(f"TV-14: {raw!r} must reject")
+    # TV-13 — a .hg/ symlink is excluded with its directory ([ACIF-CORE] §7.4 step 1)
+    tv13_vcs = body_hash_multi({"SKILL.md": b"Use this skill.\n", "helper.md": b"Helper notes.\n"}, "SKILL.md")
     tv14_c1 = body_hash_multi({"SKILL.md": b"Prose.\n", "notes\u0080.md": b"collision probe\n"}, "SKILL.md")
     # TV-L2-g — frontmatter-to-publisher_section layout ([ACIF-PUBLISHER] §5.6)
     l2g = []
@@ -120,6 +122,7 @@ def compute() -> dict[str, list[str]]:
         "display_name: Demo\nn: 9007199254740991\n",
         "display_name: Demo\nx: [?foo, ::vector]\n",
         "display_name: Demo\nx: [a,\n  \tb]\n",
+        "display_name: Demo\nskill:\n  resolved_version: 1.0.0\nmetadata:\n  resolved_version: 1.0.0\n",
     ):
         section = publisher_section_from_frontmatter(f"---\n{frontmatter}---\nUse this skill.\n".encode(), "skill")
         l2g += [jcs(section).decode("utf-8"), metadata_hash(section)]
@@ -127,7 +130,7 @@ def compute() -> dict[str, list[str]]:
     assert null_value == {"display_name": "Demo"}, "a null-valued key is absent"
     tab_separated = publisher_section_from_frontmatter(b"---\ndisplay_name:\tDemo\n---\nx\n", "skill")
     assert tab_separated == {"display_name": "Demo"}, "a tab after the colon separates"
-    out["core.yaml"] = [tv1, tv2, tv9_bytes, tv9_hash, tv12_a, tv12_c, tv14_c1, *l2g]
+    out["core.yaml"] = [tv1, tv2, tv9_bytes, tv9_hash, tv12_a, tv12_c, tv13_vcs, tv14_c1, *l2g]
 
     # ── mcp.yaml ─────────────────────────────────────────────────────────────
     mcp_stdio = {"servers": {"demo": {
