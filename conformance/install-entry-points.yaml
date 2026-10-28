@@ -161,14 +161,14 @@ install_entry_points:
       - {scope: managed, os: [linux], path_template: "/etc/windsurf/workflows/<content-name>.md", layout: single_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
       - {scope: managed, os: [windows], path_template: "C:/ProgramData/Windsurf/workflows/<content-name>.md", layout: single_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
     hook:
-      - {scope: user, os: [darwin, linux], path_template: "~/.config/devin/config.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: user, os: [windows], path_template: "<appdata>/devin/config.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: user, path_template: "~/.codeium/windsurf/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: user, path_template: "~/.codeium/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: project, path_template: ".devin/hooks.v1.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: project, path_template: ".devin/config.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: project, path_template: ".devin/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-09 verification"}
-      - {scope: project, path_template: ".windsurf/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-09 verification"}
+      - {scope: user, os: [darwin, linux], path_template: "~/.config/devin/config.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: user, os: [windows], path_template: "<appdata>/devin/config.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: user, path_template: "~/.codeium/windsurf/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: user, path_template: "~/.codeium/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: project, path_template: ".devin/hooks.v1.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: project, path_template: ".devin/config.json", layout: merged_into_shared_file, dialect: cli, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: project, path_template: ".devin/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
+      - {scope: project, path_template: ".windsurf/hooks.json", layout: merged_into_shared_file, dialect: cascade, status: current, as_of: "docs.devin.ai 2026-10-28 verification"}
     mcp_config:
       - {scope: user, os: [darwin, linux], path_template: "~/.config/devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}
       - {scope: user, os: [windows], path_template: "<appdata>/devin/mcp_config.json", layout: merged_into_shared_file, status: current, as_of: "docs.devin.ai 2026-09 verification"}

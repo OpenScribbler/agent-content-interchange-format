@@ -337,7 +337,8 @@ to; the adapter evaluates the [ACIF-HOOK] §11 degraded-event rule for
 that one provider), optional `install_operator_override` (`true` when the
 operator has opted in to override the [ACIF-HOOK] §11 degraded-event
 refusal for that item and one install row: the row `install_target_entry`
-names, or the provider's default row when it is absent; it never overrides the OS
+names, or, when it is absent, the provider's default-dialect render with
+no row named; it never overrides the OS
 coverage-gap refusal; absent means no override). With both
 `install_target_os` and `install_target_provider` present, the adapter
 evaluates both rules and discloses each. Optional `install_target_entry`

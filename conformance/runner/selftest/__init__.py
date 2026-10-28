@@ -563,7 +563,10 @@ def _hook_a4_dialects() -> dict[str, tuple[tuple[str, ...], str]]:
     for line in a4.splitlines():
         m = HOOK_A4_DIALECT_RE.match(line.strip())
         if m:
-            dialects[m.group(1)] = (tuple(re.findall(r"`([^`]+)`", m.group(2))), m.group(3))
+            listed = tuple(re.findall(r"`([^`]+)`", m.group(2)))
+            if m.group(3) not in listed:
+                raise AssertionError(f"[ACIF-HOOK] A.4 {m.group(1)}: default dialect {m.group(3)!r} is not one of {list(listed)}")
+            dialects[m.group(1)] = (listed, m.group(3))
     if not dialects:
         raise AssertionError("[ACIF-HOOK] A.4 dialect table parsed zero rows")
     return dialects
@@ -751,6 +754,8 @@ def check_install_entry_points() -> None:
             if ctype not in INSTALL_TYPES:
                 errors.append(f"{provider}: unknown content type {ctype!r}")
             for entry in entries:
+                if "dialect" in entry and (not isinstance(entry["dialect"], str) or not entry["dialect"]):
+                    errors.append(f"{provider}/{ctype}: dialect present but empty on {entry.get('path_template')!r}")
                 os_value = entry.get("os")
                 if "os" not in entry:
                     os_cell = ""

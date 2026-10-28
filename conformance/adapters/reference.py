@@ -146,10 +146,10 @@ HOOK_RENDER_PINS = {
     ("permission_request", "devin", "cascade"): ("PermissionRequest", True),
     ("after_compact", "devin", "cascade"): ("PostCompaction", True),
     ("before_prompt", "devin", "cascade"): ("pre_user_prompt", False),
-    ("agent_stop", "devin", "cascade"): ("post_cascade_response", False),
-    ("session_start", "devin", "cascade"): ("session_start", False),
-    ("session_end", "devin", "cascade"): ("session_end", False),
-    ("worktree_create", "devin", "cascade"): ("post_setup_worktree", False),
+    ("agent_stop", "devin", "cascade"): ("post_cascade_response", True),
+    ("session_start", "devin", "cascade"): ("SessionStart", True),
+    ("session_end", "devin", "cascade"): ("SessionEnd", True),
+    ("worktree_create", "devin", "cascade"): ("post_setup_worktree", True),
     ("transcript_export", "devin", "cascade"): ("post_cascade_response_with_transcript", False),
     ("file_changed", "devin", "cascade"): ("post_write_code", False),
     ("before_shell_execute", "devin", "cascade"): ("pre_run_command", False),
@@ -802,7 +802,7 @@ def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:
             # Both axes are evaluated so each disposition is disclosed; the
             # operator override reaches only the degraded-event refusal.
             event = _event_install_disposition(
-                hook, provider, inp.get("install_target_entry"), inp.get("install_operator_override") is True
+                hook, provider, inp.get("install_target_entry"), inp.get("install_operator_override") is True, target
             )
             diagnostics.extend(event["diagnostics"])
             if event["install"] != "proceed":
@@ -811,7 +811,9 @@ def handle_evaluate_install(inp: dict[str, Any]) -> dict[str, Any]:
     raise Unsupported()
 
 
-def _event_install_disposition(hook: dict[str, Any], provider: str, entry: Any, override: bool) -> dict[str, Any]:
+def _event_install_disposition(
+    hook: dict[str, Any], provider: str, entry: Any, override: bool, inp_os: Any = None
+) -> dict[str, Any]:
     """[ACIF-HOOK] §11 degraded event render, judged on the resolved install
     row: the row's dialect selects the A.4 render. With no row named, the
     provider's default dialect stands in for its first current row."""
@@ -830,6 +832,10 @@ def _event_install_disposition(hook: dict[str, Any], provider: str, entry: Any, 
         if len(rows) != 1:
             raise Unsupported()
         row = rows[0]
+        # [ACIF-INSTALL] §6: a row that OS filtering removes is not a location.
+        target_os = inp_os
+        if target_os is not None and "os" in row and target_os not in row["os"]:
+            raise Unsupported()
     dialect = hook_render_dialect(provider, row.get("dialect") if row is not None else None)
     blocking = hook.get("blocking") is True
     _, degraded = render_hook_event(event, provider, dialect)
