@@ -62,7 +62,7 @@ degraded-but-safe, not an outage — the totality net catches the
 unmapped form as a diagnostic with a defined fallback; what the window
 degrades is canonicalization completeness, never availability.
 
-No reviewer subset is required for Class B; the review is the
+No Class C review is required for Class B; the review is the
 totality-net evidence (the diagnostic fired on real provider content)
 plus the classification test above.
 
@@ -95,7 +95,7 @@ writes to the stale location with normative confidence until the
 amendment lands.
 
 Accordingly: row-data amendments land **on observation, with no batch
-window and no reviewer subset**. The evidence standard is the
+window and no Class C review**. The evidence standard is the
 observation itself, recorded in the amended row's `as_of`. A retired
 location moves to `status: superseded` and is never deleted
 ([ACIF-INSTALL] §12). Rows never move canonical bytes (nothing in the
@@ -115,11 +115,12 @@ can flip the expectations of vectors that resolve the row through
 `install_target_entry` (TV-HOOK-t). The manifest note lists each
 flipped vector and case. A flip of a §11 disposition between refused
 and proceeded is a change to whether a gate is installed, so such an
-amendment does not land on observation alone: it needs at least the
-Class C vector-impact inventory review before merge, though not a
-SHAPE.md decision row or reviewer subset. Minting a dialect, or giving a provider a
-second one, adds [ACIF-HOOK] Appendix A.4 vocabulary and pins and is
-Class C.
+amendment does not land on observation alone: it needs one reviewer
+who did not draft it to check the vector-impact inventory against every
+vector whose expectation it touches, recorded in the PR, before merge,
+though not a SHAPE.md decision row or the full Class C review.
+Minting a dialect, or giving a provider a second one, adds [ACIF-HOOK]
+Appendix A.4 vocabulary and pins and is Class C.
 
 A **provider-identity amendment** — the slug itself changes because the
 vendor renamed the product — carries three obligations a location
@@ -167,11 +168,26 @@ the filer — convenes the response:
 
 1. A SHAPE.md decision row (numbered, with rationale and rejected
    alternatives) — identifiers and vocabulary are never invented ad hoc.
-2. A targeted reviewer subset (3–4 reviewers chosen for the question) or
-   full panel, per the question's weight.
-3. Spec edits in the owning document, normative appendix updates, and
+2. Spec edits in the owning document, normative appendix updates, and
    the vector/binding/selftest work the decision names.
-4. An explicit **vector-impact inventory** (below).
+3. An explicit **vector-impact inventory** in the decision row (below).
+4. The **Class C review** of steps 1 to 3, once they are drafted, by at
+   least two reviewers the maintainer convenes who did not draft the
+   change. When two or more reviewers are AI, at least two of them run
+   on different model families; a fresh session of the drafting model
+   counts as a reviewer who did not draft it. Each reviewer asks four
+   questions of the change: whether two implementers would read each
+   requirement the same way and a test could tell whether one meets it;
+   whether the people it asks to act will act, given their time and
+   incentives; which step of the attack chain through it nothing stops;
+   and what it costs to build and run, and who carries that cost. Each
+   reviewer also checks the inventory against every existing vector
+   whose expectation the change touches, edited or not. A fix that
+   changes a vector or the inventory after review is checked again by a
+   reviewer before merge. The PR body records each reviewer, its model,
+   and each finding with its disposition, fixed or rejected with a
+   reason, and a review that found nothing says so. The change merges
+   once every finding has a disposition.
 
 ### Suite-defect repairs (`repair`)
 
@@ -213,7 +229,7 @@ the impact rules:
   enforced at review time, not by tooling: any vector whose `expect`
   block changes in the landing commit but is absent from the cited
   inventory blocks the merge. (A future runner self-check MAY mechanize
-  this; until then the check is the reviewer's.)
+  this; until then the check is the reviewers'.)
 - **Standing reports stay valid; they may stop being current.** A report
   is a permanent claim about the catalog and binding-set hashes it pins.
   A suite change never invalidates it retroactively — it supersedes it.
