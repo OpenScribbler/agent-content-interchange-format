@@ -62,7 +62,7 @@ degraded-but-safe, not an outage — the totality net catches the
 unmapped form as a diagnostic with a defined fallback; what the window
 degrades is canonicalization completeness, never availability.
 
-No independent review is required for Class B; the review is the
+No Class C review is required for Class B; the review is the
 totality-net evidence (the diagnostic fired on real provider content)
 plus the classification test above.
 
@@ -95,7 +95,7 @@ writes to the stale location with normative confidence until the
 amendment lands.
 
 Accordingly: row-data amendments land **on observation, with no batch
-window and no independent review**. The evidence standard is the
+window and no Class C review**. The evidence standard is the
 observation itself, recorded in the amended row's `as_of`. A retired
 location moves to `status: superseded` and is never deleted
 ([ACIF-INSTALL] §12). Rows never move canonical bytes (nothing in the
@@ -118,7 +118,7 @@ and proceeded is a change to whether a gate is installed, so such an
 amendment does not land on observation alone: it needs one reviewer
 who did not draft it to check the vector-impact inventory against every
 vector whose expectation it touches, recorded in the PR, before merge,
-though not a SHAPE.md decision row or the full independent review.
+though not a SHAPE.md decision row or the full Class C review.
 Minting a dialect, or giving a provider a second one, adds [ACIF-HOOK]
 Appendix A.4 vocabulary and pins and is Class C.
 
@@ -170,8 +170,8 @@ the filer — convenes the response:
    alternatives) — identifiers and vocabulary are never invented ad hoc.
 2. Spec edits in the owning document, normative appendix updates, and
    the vector/binding/selftest work the decision names.
-3. An explicit **vector-impact inventory** (below).
-4. An independent review of steps 1 to 3, once they are drafted, by at
+3. An explicit **vector-impact inventory** in the decision row (below).
+4. The **Class C review** of steps 1 to 3, once they are drafted, by at
    least two reviewers the maintainer convenes who did not draft the
    change. When two or more reviewers are AI, at least two of them run
    on different model families; a fresh session of the drafting model
@@ -184,10 +184,10 @@ the filer — convenes the response:
    reviewer also checks the inventory against every existing vector
    whose expectation the change touches, edited or not. A fix that
    changes a vector or the inventory after review is checked again by a
-   reviewer before merge. The PR records each reviewer, its model, and
-   each finding with its disposition, fixed or rejected with a reason,
-   and a review that found nothing says so. The change merges once every
-   finding has a disposition.
+   reviewer before merge. The PR body records each reviewer, its model,
+   and each finding with its disposition, fixed or rejected with a
+   reason, and a review that found nothing says so. The change merges
+   once every finding has a disposition.
 
 ### Suite-defect repairs (`repair`)
 
