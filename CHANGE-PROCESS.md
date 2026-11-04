@@ -62,7 +62,7 @@ degraded-but-safe, not an outage — the totality net catches the
 unmapped form as a diagnostic with a defined fallback; what the window
 degrades is canonicalization completeness, never availability.
 
-No reviewer subset is required for Class B; the review is the
+No independent review is required for Class B; the review is the
 totality-net evidence (the diagnostic fired on real provider content)
 plus the classification test above.
 
@@ -95,7 +95,7 @@ writes to the stale location with normative confidence until the
 amendment lands.
 
 Accordingly: row-data amendments land **on observation, with no batch
-window and no reviewer subset**. The evidence standard is the
+window and no independent review**. The evidence standard is the
 observation itself, recorded in the amended row's `as_of`. A retired
 location moves to `status: superseded` and is never deleted
 ([ACIF-INSTALL] §12). Rows never move canonical bytes (nothing in the
@@ -117,7 +117,7 @@ flipped vector and case. A flip of a §11 disposition between refused
 and proceeded is a change to whether a gate is installed, so such an
 amendment does not land on observation alone: it needs at least the
 Class C vector-impact inventory review before merge, though not a
-SHAPE.md decision row or reviewer subset. Minting a dialect, or giving a provider a
+SHAPE.md decision row or independent review. Minting a dialect, or giving a provider a
 second one, adds [ACIF-HOOK] Appendix A.4 vocabulary and pins and is
 Class C.
 
@@ -167,18 +167,20 @@ the filer — convenes the response:
 
 1. A SHAPE.md decision row (numbered, with rationale and rejected
    alternatives) — identifiers and vocabulary are never invented ad hoc.
-2. An independent review of the decision row and the spec edits by at
-   least two reviewers who did not draft them, on different models when
-   the reviewers are AI. Each asks four questions of the change: whether two
-   implementers would read each requirement the same way and a test
+2. Spec edits in the owning document, normative appendix updates, and
+   the vector/binding/selftest work the decision names.
+3. An explicit **vector-impact inventory** (below).
+4. An independent review of steps 1 to 3, once they are drafted, by at
+   least two reviewers who did not draft the change. AI reviewers run on
+   two different models; a fresh session of the drafting model counts as
+   one of them. Each reviewer asks four questions of the change: whether
+   two implementers would read each requirement the same way and a test
    could tell whether one meets it; whether the people it asks to act
    will act, given their time and incentives; which step of the attack
    chain through it nothing stops; and what it costs to build and run,
-   and who carries that cost. The maintainer adds a reviewer for a
-   question these four do not reach.
-3. Spec edits in the owning document, normative appendix updates, and
-   the vector/binding/selftest work the decision names.
-4. An explicit **vector-impact inventory** (below).
+   and who carries that cost. Each reviewer also checks the inventory
+   against the vectors the change touches. The PR records each reviewer,
+   its model, and each finding with its disposition.
 
 ### Suite-defect repairs (`repair`)
 
