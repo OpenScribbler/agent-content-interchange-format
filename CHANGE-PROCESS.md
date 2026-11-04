@@ -167,8 +167,15 @@ the filer — convenes the response:
 
 1. A SHAPE.md decision row (numbered, with rationale and rejected
    alternatives) — identifiers and vocabulary are never invented ad hoc.
-2. A targeted reviewer subset (3–4 reviewers chosen for the question) or
-   full panel, per the question's weight.
+2. An independent review of the decision row and the spec edits by at
+   least two reviewers who did not draft them, on different models when
+   the reviewers are AI. Each asks four questions of the change: whether two
+   implementers would read each requirement the same way and a test
+   could tell whether one meets it; whether the people it asks to act
+   will act, given their time and incentives; which step of the attack
+   chain through it nothing stops; and what it costs to build and run,
+   and who carries that cost. The maintainer adds a reviewer for a
+   question these four do not reach.
 3. Spec edits in the owning document, normative appendix updates, and
    the vector/binding/selftest work the decision names.
 4. An explicit **vector-impact inventory** (below).
